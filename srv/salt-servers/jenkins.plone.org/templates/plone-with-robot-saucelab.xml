@@ -1,0 +1,119 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <displayName>${options['displayName']}</displayName>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.plugins.git.GitSCM">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <name></name>
+        <refspec></refspec>
+        <url>${options['git_url']}</url>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>${options['git_branch']}</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <disableSubmodules>false</disableSubmodules>
+    <recursiveSubmodules>false</recursiveSubmodules>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <authorOrCommitter>false</authorOrCommitter>
+    <clean>false</clean>
+    <wipeOutWorkspace>false</wipeOutWorkspace>
+    <pruneBranches>false</pruneBranches>
+    <remotePoll>false</remotePoll>
+    <ignoreNotifyCommit>false</ignoreNotifyCommit>
+    <useShallowClone>false</useShallowClone>
+    <buildChooser class="hudson.plugins.git.util.DefaultBuildChooser"/>
+    <gitTool>Default</gitTool>
+    <submoduleCfg class="list"/>
+    <relativeTargetDir></relativeTargetDir>
+    <reference></reference>
+    <excludedRegions></excludedRegions>
+    <excludedUsers></excludedUsers>
+    <gitConfigName></gitConfigName>
+    <gitConfigEmail></gitConfigEmail>
+    <skipTag>false</skipTag>
+    <includedRegions></includedRegions>
+    <scmName></scmName>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector"/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>${options['python']} bootstrap.py
+bin/buildout -c jenkins.cfg
+
+export REMOTE_URL=&quot;http://plone:230449d8-361a-4eca-ae14-5ed0b9be0941@ondemand.saucelabs.com:80/wd/hub&quot;
+export ZSERVER_HOST=&quot;0.0.0.0&quot;
+export ZSERVER_PORT=&quot;4001&quot;
+
+DESIRED_CAPABILITIES=$(cat &lt;&lt;EOF | python -
+import os
+SELENIUM_DRIVER = os.environ.get(&apos;SELENIUM_DRIVER&apos;)
+DESIRED_CAPABILITIES = &apos;&apos;
+for item in SELENIUM_DRIVER.split(&apos;?&apos;, 1)[1].split(&apos;&amp;&apos;):
+    DESIRED_CAPABILITIES += &apos;,&apos;
+    item = item.replace(&apos;=&apos;, &apos;:&apos;)
+    item = item.replace(&apos;os:&apos;, &apos;platform:&apos;)
+    item = item.replace(&apos;browser-version:&apos;, &apos;version:&apos;)
+    DESIRED_CAPABILITIES += item
+DESIRED_CAPABILITIES = DESIRED_CAPABILITIES[1:]
+JOB_NAME = os.environ.get(&apos;JOB_NAME&apos;).replace(&apos;jenkins-&apos;, &apos;&apos;).replace(&apos;/SELENIUM_DRIVER=&apos;, &apos; | &apos;)
+BULD_NUMBER = os.environ.get(&apos;BUILD_NUMBER&apos;)
+DESIRED_CAPABILITIES += &apos;,name:&apos; + JOB_NAME + &apos; | #&apos; + BULD_NUMBER
+print DESIRED_CAPABILITIES
+EOF
+)
+export DESIRED_CAPABILITIES
+
+BROWSER=$(echo $SELENIUM_DRIVER | perl -pe &apos;s|.*browser=(.*?)&amp;.*|\1|&apos;)
+export BROWSER
+
+echo $SELENIUM_DRIVER
+echo $DESIRED_CAPABILITIES
+echo $BROWSER
+bin/jenkins-test-robot</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.plugins.robot.RobotPublisher>
+      <outputPath>parts/test</outputPath>
+      <reportFileName>robot_report.html</reportFileName>
+      <logFileName>robot_log.html</logFileName>
+      <outputFileName>robot_output.xml</outputFileName>
+      <passThreshold>100.0</passThreshold>
+      <unstableThreshold>80.0</unstableThreshold>
+      <logFileLink>robot_log.html</logFileLink>
+      <otherFiles>
+        <string></string>
+      </otherFiles>
+      <onlyCritical>true</onlyCritical>
+    </hudson.plugins.robot.RobotPublisher>
+  </publishers>
+  <buildWrappers>
+    <hudson.plugins.sauce__ondemand.SauceOnDemandBuildWrapper>
+      <enableSauceConnect>true</enableSauceConnect>
+      <seleniumHost></seleniumHost>
+      <seleniumPort></seleniumPort>
+      <seleniumInformation>
+        <webDriverBrowsers>
+          <string>Windows_2008internet_explorer9</string>
+        </webDriverBrowsers>
+        <isWebDriver>true</isWebDriver>
+      </seleniumInformation>
+      <webDriverBrowsers reference="../seleniumInformation/webDriverBrowsers"/>
+      <launchSauceConnectOnSlave>true</launchSauceConnectOnSlave>
+      <httpsProtocol></httpsProtocol>
+    </hudson.plugins.sauce__ondemand.SauceOnDemandBuildWrapper>
+  </buildWrappers>
+</project>

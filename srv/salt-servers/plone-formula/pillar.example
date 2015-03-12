@@ -1,0 +1,6 @@
+plone:
+  lookup:
+    instance_location: '/opt/plone-instance'
+    instance_name: 'simple-instance'
+    user: 'ploneuser'
+    group: 'plonegroup'

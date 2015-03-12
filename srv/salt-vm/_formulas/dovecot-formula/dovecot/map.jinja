@@ -1,0 +1,11 @@
+{% set dovecot = salt['grains.filter_by']({
+    'Debian': {
+        'config': {
+            'local': '# no customization',
+            'dovecotext': {},
+            'confext': {},
+            'conf': {},
+            },
+        'packages': ['imapd'],
+    },
+}, merge=salt['pillar.get']('dovecot:lookup')) %}

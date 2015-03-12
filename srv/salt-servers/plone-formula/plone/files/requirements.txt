@@ -1,0 +1,2 @@
+zc.buildout==2.2.1
+distribute==0.7.3

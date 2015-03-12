@@ -1,0 +1,62 @@
+local:
+  /etc/sudoers.d:
+    file:
+    - clean: false
+    - dir_mode: null
+    - exclude_pat: null
+    - file_mode: null
+    - follow_symlinks: false
+    - group: null
+    - makedirs: false
+    - recurse: null
+    - require: []
+    - user: null
+    - directory
+    - order: 10002
+    __sls__: users
+    __env__: base
+  sudo:
+    group:
+    - addusers: null
+    - delusers: null
+    - gid: null
+    - members: null
+    - system: true
+    - present
+    - order: 10000
+    pkg:
+    - allow_updates: false
+    - fromrepo: null
+    - pkgs: null
+    - refresh: null
+    - require:
+      - group: sudo
+      - file: /etc/sudoers.d
+    - skip_suggestions: false
+    - skip_verify: false
+    - sources: null
+    - version: null
+    - installed
+    - order: 10001
+    __sls__: users
+    __env__: base
+  sudoer-defaults:
+    file:
+    - context: null
+    - defaults: null
+    - makedirs: false
+    - name: /etc/sudoers
+    - require:
+      - pkg: sudo
+    - source: null
+    - source_hash: null
+    - source_hashes: null
+    - sources: null
+    - template: jinja
+    - text:
+      - Defaults   env_reset
+      - Defaults   secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    - append
+    - order: 10003
+    __sls__: users
+    __env__: base

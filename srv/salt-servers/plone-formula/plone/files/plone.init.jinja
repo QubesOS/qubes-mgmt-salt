@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# LSB Source function library
+. /lib/lsb/init-functions
+
+RETVAL=0
+export ZSYSLOG="anything"
+
+instancepath="{{ instancepath }}"
+instancename="{{ instancename }}"
+
+start() {
+    echo "Starting ${instancename} server..."
+    ${instancepath}/bin/plonectl start
+}
+
+
+stop() {
+    echo "Stopping ${instancename} server..."
+    ${instancepath}/bin/plonectl stop
+}
+
+restart() {
+   stop
+   start
+}
+
+
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  status)
+    echo "Zope Server:"
+    ${instancepath}/bin/plonectl status
+    # workaround ploneclt exit status 0 even if instance is not running
+    ${instancepath}/bin/plonectl status  | grep "not running" && exit 3
+    ;;
+  restart)
+    restart
+    ;;
+  condrestart)
+    [ -e /var/lock/${instancename} ] && restart
+    ;;
+  *)
+    echo $"Usage: $0 {start|stop|status|restart|condrestart}"
+    RETVAL=2
+esac
+
+exit $RETVAL

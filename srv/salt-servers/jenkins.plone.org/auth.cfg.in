@@ -1,0 +1,6 @@
+[buildout]
+jenkins-username =
+jenkins-password =
+jenkins-apitoken =
+github-username =
+github-password =

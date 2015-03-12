@@ -1,0 +1,250 @@
+- job-template:
+    # Main (per-package) setup job:
+    # GitHub triggers these jobs,
+    # which are responsible to freeze buildout.coredev
+    # status and pass it on to downstream jobs,
+    # where the CI (tests, code analysis, release...) is actually done
+    name: '{name}-{package}-{plone-version}-py{python-version}-seed'
+    project-type: freestyle
+    display-name: '{package} {plone-version} Python {python-version} (seed)'
+
+    properties:
+        - github:
+            url: https://github.com/{organization}/{package}/
+
+    scm:
+        - git:
+            url: git://github.com/{organization}/{package}.git
+
+    triggers:
+        - github
+
+    builders:
+        - shell: |
+            mkdir -p /var/lib/jenkins/buildout-shared-eggs
+            rm -rf buildout.coredev > /dev/null
+            git clone https://github.com/plone/buildout.coredev.git
+            cd buildout.coredev
+            git checkout {plone-version}
+            {pybinary} bootstrap.py -c jenkins.cfg -v {buildout-version}
+            ./bin/buildout -c jenkins.cfg buildout:eggs-directory=/var/lib/jenkins/buildout-shared-eggs
+            for folder in parts/* ; do touch ${{folder}}/.KEEP_ME; done
+            mkdir -p parts/jenkins-test/testreports
+            touch parts/jenkins-test/testreports/.KEEP_ME
+
+    publishers:
+        - clone-workspace:
+              criteria: 'any'
+              archive-method: 'tar'
+              override-default-excludes: true
+              workspace-glob: 'buildout.coredev/**/*'
+              workspace-exclude-glob: ''
+
+        - trigger:
+            project: '{name}-{package}-{plone-version}-py{python-version}-checkout'
+            threshold: SUCCESS
+
+        - aggregate-tests:
+            include-failed-builds: true
+
+        - archive:
+            artifacts: 'buildout.coredev/parts/jenkins-test/testreports/*'
+            allow-empty: 'true'
+
+        - fingerprint:
+            files: 'buildout.coredev/parts/jenkins-test/testreports/*.xml'
+
+- job-template:
+    # Per-package auto-checkout verification
+    # The 'seed' job runs this job to run the auto-checkout verification for
+    # the package
+    name: '{name}-{package}-{plone-version}-py{python-version}-checkout'
+    project-type: freestyle
+    display-name: '{package} {plone-version} Python {python-version} (checkout)'
+    scm:
+        - workspace:
+            parent-job: '{name}-{package}-{plone-version}-py{python-version}-seed'
+            criteria: Any
+
+    builders:
+        - shell: |
+            cd buildout.coredev
+            ./bin/manage check-checkout {package} checkouts.cfg
+
+    publishers:
+        - clone-workspace:
+              criteria: 'any'
+              archive-method: 'tar'
+              override-default-excludes: true
+              workspace-glob: 'buildout.coredev/**/*'
+              workspace-exclude-glob: ''
+
+        - trigger:
+            project: '{name}-{package}-{plone-version}-py{python-version}-tests'
+            threshold: SUCCESS
+
+        - aggregate-tests:
+            include-failed-builds: true
+
+        - archive:
+            artifacts: 'buildout.coredev/parts/jenkins-test/testreports/*'
+            allow-empty: 'true'
+
+        - fingerprint:
+            files: 'buildout.coredev/parts/jenkins-test/testreports/*.xml'
+
+- job-template:
+    # Per-package test runner
+    # The 'checkout' job runs this job to run tests on the package itself.
+    # This way we can give early feedback to developers that made a commit
+    # without having to way to run all packages tests.
+    name: '{name}-{package}-{plone-version}-py{python-version}-tests'
+    project-type: freestyle
+    display-name: '{package} {plone-version} Python {python-version} (tests)'
+    scm:
+        - workspace:
+            parent-job: '{name}-{package}-{plone-version}-py{python-version}-checkout'
+            criteria: Any
+
+    builders:
+        - shell: |
+            cd buildout.coredev
+            ./bin/jenkins-test -s {package}
+
+    publishers:
+        - junit:
+            results: buildout.coredev/parts/jenkins-test/testreports/*.xml
+
+        - email-ext:
+            recipients: plone-testbot@lists.plone.org
+            regression: true
+
+        - robot:
+            output-path: buildout.coredev/parts/jenkins-test
+            log-file-link: robot_report.html#total_all
+            report-html: robot_report.html
+            log-html: robot_log.html
+            output-xml: robot_output.xml
+            pass-threshold: 100.0
+            unstable-threshold: 80.0
+            only-critical: true
+            other-files:
+                - robot_*.png
+
+        - trigger:
+            project: '{name}-{package}-{plone-version}-py{python-version}'
+            threshold: SUCCESS
+
+        - archive:
+            artifacts: 'buildout.coredev/parts/jenkins-test/testreports/*'
+            allow-empty: 'true'
+
+        - fingerprint:
+            files: 'buildout.coredev/parts/jenkins-test/testreports/*.xml'
+
+    wrappers:
+        - xvfb:
+            name: default
+            screen: 1024x768x24
+
+- job-template:
+    # Run all tests
+    # Runs all tests from buildout.coredev.
+    name: '{name}-{package}-{plone-version}-py{python-version}'
+    project-type: freestyle
+    display-name: '{package} {plone-version} Python {python-version}'
+    scm:
+        - workspace:
+            parent-job: '{name}-{package}-{plone-version}-py{python-version}-seed'
+            criteria: Any
+
+    builders:
+        - shell: |
+            cd buildout.coredev
+            sed -i 's/-seed//g' bin/jenkins-alltests
+            ./bin/jenkins-alltests -u
+
+    publishers:
+        - junit:
+            results: buildout.coredev/parts/jenkins-test/testreports/*.xml
+
+        - email-ext:
+            recipients: plone-testbot@lists.plone.org
+            regression: true
+
+#        - robot:
+#            output-path: buildout.coredev/parts/jenkins-test
+#            log-file-link: robot_report.html#total_all
+#            report-html: robot_report.html
+#            log-html: robot_log.html
+#            output-xml: robot_output.xml
+#            pass-threshold: 100.0
+#            unstable-threshold: 80.0
+#            only-critical: true
+#            other-files:
+#                - robot_*.png
+
+        - trigger:
+            project: 'plone-{plone-version}-py{python-version}'
+            threshold: SUCCESS
+
+        - archive:
+            artifacts: 'buildout.coredev/parts/jenkins-test/testreports/*'
+            allow-empty: 'true'
+
+        - fingerprint:
+            files: 'buildout.coredev/parts/jenkins-test/testreports/*.xml'
+
+    wrappers:
+        - xvfb:
+            name: default
+            screen: 1024x768x24
+
+- project:
+    # All package specific related jobs are grouped here:
+    # A matrix of package, plone version and python version jobs are created.
+    # So 4 jobs per package.
+    name: package
+    package:
+        - PACKAGE_REPLACE_ME:
+    plone-version:
+        - '5.0':
+            buildout-version: '2.2.1'
+        - '4.3':
+            buildout-version: '1.7.1'
+    python-version:
+        - '2.7':
+            pybinary: 'python2.7'
+#        - '2.6':
+#            pybinary: 'python2.6'
+    jobs:
+      - '{name}-{package}-{plone-version}-py{python-version}-seed'
+      - '{name}-{package}-{plone-version}-py{python-version}-checkout'
+      - '{name}-{package}-{plone-version}-py{python-version}-tests'
+      - '{name}-{package}-{plone-version}-py{python-version}'
+
+- job-template:
+    # buildout.coredev main template:
+    # This job runs all tests from all packages.
+    name: '{name}-{plone-version}-py{python-version}'
+    project-type: freestyle
+    display-name: 'Plone {plone-version} Python {python-version}'
+
+    publishers:
+        - aggregate-tests:
+            include-failed-builds: true
+
+- project:
+    # Plone global project.
+    # A matrix of Plone and Python versions jobs are created.
+    name: plone
+    plone-version:
+        - '5.0'
+        - '4.3'
+    python-version:
+        - '2.7':
+            pybinary: 'python2.7'
+        - '2.6':
+            pybinary: 'python2.6'
+    jobs:
+      - '{name}-{plone-version}-py{python-version}'

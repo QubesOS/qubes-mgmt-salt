@@ -1,0 +1,32 @@
+#!/bin/bash -e
+# vim: set ts=4 sw=4 sts=4 et :
+
+installConfigurationFile() {
+    file="${1}"
+
+    if ! [ -f "${HOME}/.${file}" ]; then
+        if [ -f "/etc/xdg/${file}" ]; then
+            cp "/etc/xdg/${file}" "${HOME}/.${file}"
+        fi
+    fi
+}
+
+# Fix for Fedora blurry fonts
+if [ -f "/etc/os-release" ]; then
+    source /etc/os-release
+
+    if [ "$ID" == "fedora" ] && [ -f "/etc/xdg/fedora-font-fix.conf" ]; then
+        if ! [ -f "${HOME}/.config/fontconfig/conf.d/fedora-font-fix.conf" ]; then
+            mkdir -p "${HOME}/.config/fontconfig/conf.d"
+            cp "/etc/xdg/fedora-font-fix.conf" "${HOME}/.config/fontconfig/conf.d/fedora-font-fix.conf"
+        fi
+    fi
+fi
+
+installConfigurationFile "fonts.conf"
+installConfigurationFile "Xresources"
+
+if [ -x /usr/bin/xsettingsd ]; then
+    installConfigurationFile "xsettingsd"
+    /usr/bin/xsettingsd &
+fi

@@ -1,0 +1,54 @@
+# This is a test state file which can be used to make sure the
+# state files output matches the output in here
+local:
+  bobby_user:
+    group:
+    - addusers: null
+    - delusers: null
+    - gid: null
+    - members: null
+    - name: users
+    - system: false
+    - present
+    user:
+    - createhome: true
+    - date: null
+    - enforce_password: true
+    - expire: null
+    - fullname: null
+    - gid: null
+    - gid_from_name: true
+    - groups:
+      - users
+    - home: /home/bobby
+    - homephone: null
+    - inactdays: null
+    - maxdays: null
+    - mindays: null
+    - name: bobby
+    - optional_groups: []
+    - password: null
+    - remove_groups: true
+    - roomnumber: null
+    - shell: null
+    - system: false
+    - uid: 4000
+    - unique: true
+    - warndays: null
+    - workphone: null
+    - present
+    file:
+    - clean: false
+    - dir_mode: null
+    - exclude_pat: null
+    - file_mode: null
+    - follow_symlinks: false
+    - group: users
+    - makedirs: true
+    - mode: 770
+    - name: /home/bobby
+    - recurse: null
+    - require: []
+    - user: bobby
+    - directory
+

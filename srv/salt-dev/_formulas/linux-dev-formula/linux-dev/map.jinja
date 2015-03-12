@@ -1,0 +1,19 @@
+{% set linux_dev_pkgs = salt['grains.filter_by']({
+    'Debian': {
+        'pkgs': [
+            'build-essential',
+            'git',
+            'subversion',
+            'mercurial',
+        ],
+    },
+    'RedHat': {
+        'pkgs': [
+            'rpm-build',
+            'rpmdevtools',
+            'fedora-packager',
+            'make',
+            'mock',
+        ],
+    },
+}, merge=salt['pillar.get']('linux_dev_pkgs:lookup')) %}

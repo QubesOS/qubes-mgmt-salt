@@ -1,0 +1,12 @@
+# Managed by saltstack.
+
+# This is a ultra-minimal valid VCL for Varnish that uses the default conf
+# already present in the code. That means an conservative approach regarding
+# cache policies (e.g. no caching of any cookie related object).
+
+backend default {
+    .host = "{{ salt['pillar.get']('varnish:vcl:backend_default_host',
+                                   '127.0.0.1') }}";
+    .port = "{{ salt['pillar.get']('varnish:vcl:backend_default_port',
+                                   '8080') }}";
+}

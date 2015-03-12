@@ -1,0 +1,8 @@
+{% set virtualenv = salt['grains.filter_by']({
+    'Debian': {
+        'pkg': 'python-virtualenv',
+    },
+    'RedHat': {
+        'pkg': 'python-virtualenv',
+    },
+}, merge=salt['pillar.get']('virtualenv:lookup')) %}

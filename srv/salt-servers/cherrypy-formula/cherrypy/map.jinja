@@ -1,0 +1,9 @@
+{% set cherrypy = salt['grains.filter_by']({
+    'Debian': {
+        'pkg': 'python-cherrypy3',
+        'pip_pkg': 'CherryPy',
+    },
+    'RedHat': {
+        'pip_pkg': 'CherryPy',
+    },
+}, merge=salt['pillar.get']('cherrypy:lookup')) %}

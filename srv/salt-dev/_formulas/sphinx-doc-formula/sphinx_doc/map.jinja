@@ -1,0 +1,10 @@
+{% set sphinx = salt['grains.filter_by']({
+    'Debian': {
+        'pkg': 'python-sphinx',
+        'pip_pkg': 'Sphinx',
+    },
+    'RedHat': {
+        'pkg': 'python-sphinx',
+        'pip_pkg': 'Sphinx',
+    },
+}, merge=salt['pillar.get']('sphinx_doc:lookup')) %}
