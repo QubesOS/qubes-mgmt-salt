@@ -14,29 +14,29 @@ salt-rootfs:
       - service: salt-minion
 
 # rootfs configuration file
-$with /etc/salt/master.d/rootfs.conf.dev:
+$with /etc/salt/master.d/file-directory-settings.conf:
   file:
     - absent
     - require_in:
       - file: /srv/salt/top.sls
 
-  /etc/salt/master.d/rootfs.conf:
+  /etc/salt/master.d/file-directory-settings.conf:
     file.managed:
-      - source: salt://salt/files/master.d/rootfs.conf
+      - source: salt://salt/files/master.d/file-directory-settings.conf
       - user: root
       - group: root
       - mode: 640
 
 # use master rootfs configuration file
-$with /etc/salt/minion.d/rootfs.conf.dev:
+$with /etc/salt/minion.d/file-directory-settings.conf.dev:
   file:
     - absent
     - require_in:
       - file: /srv/salt/top.sls
 
-  /etc/salt/minion.d/rootfs.conf:
+  /etc/salt/minion.d/file-directory-settings.conf:
     file.managed:
-      - source: salt://salt/files/master.d/rootfs.conf
+      - source: salt://salt/files/master.d/file-directory-settings.conf
       - user: root
       - group: root
       - mode: 640

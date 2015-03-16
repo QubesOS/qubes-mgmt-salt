@@ -14,5 +14,5 @@
 # --> salt-call --local state.highstate test=True
 
 base:
-  '*':
+  '*': []
     # --- salt applications ---

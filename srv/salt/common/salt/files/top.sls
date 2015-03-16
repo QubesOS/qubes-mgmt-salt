@@ -14,42 +14,44 @@
 # --> salt-call --local state.highstate test=True
 
 base:
+  # === Common ================================================================
   '*':
     # --- salt applications ---
-    - python_pip
     - salt
     - salt.gnupg
-    - salt.minion
-    # salt.master
-    # salt.api
-    # salt.gitfs
-    # salt.syndic
-    # salt.halite
-    # salt.minion.absent    # Not implemented
+    - salt.minion_absent
     - salt.master_absent
     - salt.api_absent
     - salt.syndic_absent
     - salt.halite_absent
 
     # --- system configurations ---
-    # users
-
-    # --- dom0 configurations ---
-    - dom0
+    - users
 
     # --- utilities ---
-    # os
     - vim
 
-    # --- appearance ---
-    # theme
-    # theme.fonts_ubuntu
-    # theme.fonts_source_code_pro
+  # === Dom0 ==================================================================
+  'virtual:Qubes':
+    - match: grain
 
-    # --- development ---
-    # salt.gitfs_dev
-    # nginx
-    # nginx.common
-    # nginx.package
-    # nginx.users
-    # jenkins
+    # --- salt applications ---
+
+    # --- dom0 configurations ---
+    - tests
+
+  # === DomU ==================================================================
+  'virtual_subtype:Xen PV DomU':
+    - match: grain
+
+    # --- salt applications ---
+    - python_pip  # Not needed if salt installed via repo (yum, apt-get)
+
+    # --- appearance ---
+    - theme
+    - theme.fonts_ubuntu
+    - theme.fonts_source_code_pro
+
+dev:
+  # === Common ================================================================
+  '*': []

@@ -14,7 +14,11 @@
 # --> salt-call --local state.highstate test=True
 
 base:
-  '*':
+  'virtual:Qubes':
+    - match: grain
+
     # --- salt applications ---
 
-    # --- development ---
+    # --- dom0 configurations ---
+    - tests
+

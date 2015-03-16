@@ -14,9 +14,7 @@
 # --> salt-call --local state.highstate test=True
 
 base:
-  '*':
+  '*': []
     # --- salt applications ---
 
-    # --- dom0 configurations ---
-    - tests
-
+    # --- development ---

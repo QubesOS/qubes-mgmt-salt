@@ -14,7 +14,9 @@
 # --> salt-call --local state.highstate test=True
 
 base:
-  '*':
+  'virtual_subtype:Xen PV DomU':
+    - match: grain
+
     # --- salt applications ---
     - python_pip  # Not needed if salt installed via repo (yum, apt-get)
 
