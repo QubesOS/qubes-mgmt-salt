@@ -69,15 +69,20 @@ Cavaets:
 
 
 import sys
+import re
+import StringIO
 import copy
 
+import salt.loader
+import salt.fileclient
 from salt.utils.pyobjects import Registry
 
 import yamlscript_utils
 from yamlscript_utils import (RenderError,
-                              find_state,
                               DataWrapper,
+                              YSOrderedDict,
                               update,
+                              ###get_pillar_data,
                               debug
                               )
 
@@ -103,6 +108,48 @@ def get_state_function(state_name, function):
     module = globals().get(state_camel, None)
     state_function = getattr(module, function, None)
     return state_function
+
+def find_state(data, state_id, state_name, replace=None):
+    '''
+    State could be nested somewhere in the defaults dictionary so keep looking
+    until its found
+
+    TODO:  Add some type of caching since this function can be quite expensive
+    '''
+    if replace and isinstance(replace, DataWrapper):
+        replace = replace._data  # pylint: disable=W0212
+
+    if isinstance(data, DataWrapper):
+        data = data._data  # pylint: disable=W0212
+
+    if not isinstance(data, dict):
+        return None
+
+    # If state is in root node, return it
+    if (state_id in data.keys()
+            and isinstance(data[state_id], dict)
+            and state_name in data[state_id].keys()):
+        if replace:
+            data[state_id][state_name] = replace[state_name]
+        return data
+
+    for key_node, value_node in data.items():
+        if (isinstance(value_node, dict)
+                and state_id in value_node.keys()
+                and isinstance(value_node[state_id], dict)
+                and state_name in value_node[state_id].keys()):
+            if replace:
+                data[key_node][state_id][state_name] = replace[state_name]
+            return data[key_node]
+        elif isinstance(value_node, dict):
+            state = find_state(value_node, state_id, state_name)
+            if state is not None:
+                if replace:
+                    state[state_id][state_name] = replace[state_name]
+                return state
+
+    # Could not find state
+    return None
 
 
 class Data(object):
@@ -373,6 +420,9 @@ class Render(object):
         '''
         self.sls_type = sls_type
 
+        # Pillars and templates store their data in salt_data
+        self.salt_data = YSOrderedDict()
+
         # Set gloabl namespace so we have access to pyobjects state
         # function and convenience methods
         self._globals.update(_globals)
@@ -496,11 +546,6 @@ class Render(object):
         disable the registry since all we're looking for here is python objects,
         not salt state data.
         '''
-        # XXX Place at top
-        import re
-        import StringIO
-        import salt.fileclient
-
         client = salt.fileclient.get_file_client(__opts__)
         template = StringIO.StringIO(code)
 
@@ -577,7 +622,6 @@ class Render(object):
         renderer will mark the actual line of code that has an error within the
         template code
         '''
-
         # Process any sls imports first
         code = self.process_sls_imports(code)
 
@@ -714,7 +758,7 @@ class Render(object):
         :return: A DataWrapper (other_data)
         :rtype: DataWrapper
         '''
-        self.data.update(self._locals['__data__'], other_data)  # XXX3
+        self.data.update(self._locals['__data__'], other_data)
         return DataWrapper(other_data)
 
     def add(self, data, state_id, state_name):
@@ -732,29 +776,42 @@ class Render(object):
         :rtype: salt.utils.pyobjects.State
         '''
         # Keep the original state intact in case it needs to be re-used
-        state = copy.deepcopy(data[state_id][state_name])
+        scalar = copy.deepcopy(data[state_id][state_name])
 
         # Lets see if any values need to be eval'd
         try:
-            state = self.evaluate_state_items(state)
+            scalar = self.evaluate_state_items(scalar)
 
             # Only states can change their id
             if self.sls_type == 'state':
-                state_id = state.get('__id__', state_id)
+                state_id = scalar.get('__id__', state_id)
+
             data.setdefault(state_id, {}).setdefault(state_name, {})
-            data[state_id][state_name] = state
+            data[state_id][state_name] = scalar
             self.data.add(data, state_id, state_name)
 
-            # Pillar handling
-            if self.sls_type == 'pillar':
-                # We can overwite state_id everytime since
-                # self.data._states[state_id] will always have the most upto
-                # data values
-                __pillar__[state_id] = self.data._states[state_id].get('pillar', {})
-            else:
-                # Create the real final state
+            # State handling
+            if self.sls_type == 'state':
+                # Create the real final salt_data state
                 state_object = self.add_smart_state(data, state_id, state_name)
                 return state_object
+
+            # Pillar handling
+            # TODO: Combine with template
+            # XXX: - Really should not be writing directly to __pillar__.  Its being written
+            #        to so evaluate function can pick up on any changes.
+            #      - Could make a deep copy of original to use
+            elif self.sls_type == 'pillar':
+                # We can overwite state_id everytime since
+                # self.data._states[state_id] will always have the most upto
+                # date values
+                self._globals['__pillar__'][state_id] = self.data._states[state_id].get('pillar', {})
+                self.salt_data[state_id] = self.data._states[state_id].get('pillar', {})
+
+            # Template handling
+            elif self.sls_type == 'template':
+                self.salt_data[state_id] = self.data._states[state_id].get('template', {})
+
         except KeyError as error:
             # Most likely a state was removed with inline python
             msg = 'Can not access state values [{0}][{1}]: KeyError: {2}'.format(state_id, state_name, str(error))
@@ -817,16 +874,25 @@ def render(template, saltenv='base', sls='', **kwargs):
     yamlscript_utils.Cache.set(sls, sls)
 
     # Set some global builtins in yamlscript_utils
-    yamlscript_utils.__opts__ = globals().get('__opts__', {})
-    yamlscript_utils.__states__ = globals().get('__states__', {})
-    yamlscript_utils.__pillar__ = globals().get('__pillar__', {})
+    def getvar(var):
+        return kwargs.get(var, globals().get(var, {}))
 
-    # Detect if we are running a pillar or state
-    if globals().get('__states__', None) is None:
-        sls_type = 'pillar'
-    else:
-        sls_type = 'state'
-    kwargs['sls_type'] = sls_type
+    salt = getvar('__salt__')
+    states = getvar('__states__')
+    pillar = getvar('__pillar__')
+    grains = getvar('__grains__')
+    opts = getvar('__opts__')
+
+    yamlscript_utils.__opts__ = opts
+    yamlscript_utils.__states__ = states
+    yamlscript_utils.__pillar__ = pillar
+
+    # Detect if we are running a template, pillar or state
+    if 'sls_type' not in kwargs.keys():
+        if states:
+            kwargs['sls_type'] = 'state'
+        else:
+            kwargs['sls_type'] = 'pillar'
 
     # Convert yaml to ordered dictionary
     deserialize = yamlscript_utils.Deserialize(
@@ -842,7 +908,7 @@ def render(template, saltenv='base', sls='', **kwargs):
     yamlscript_utils.Cache.set(sls, deserialize)
 
     # Set _globals; used for evaluation of code
-    if sls_type == 'state':
+    if kwargs['sls_type'] == 'state':
         # Call pyobjects to build globals and provide functions to create states
         pyobjects = kwargs['renderers']['pyobjects']
         _globals = pyobjects(template, saltenv, sls, salt_data=False, **kwargs)
@@ -851,19 +917,25 @@ def render(template, saltenv='base', sls='', **kwargs):
         # format of all of the salt objects
         try:
             _globals = {
-                # salt, pillar & grains all provide shortcuts or object interfaces
-                'pillar': __salt__['pillar.get'],
-                'grains': __salt__['grains.get'],
-                'mine': __salt__['mine.get'],
-                'config': __salt__['config.get'],
-
                 # the "dunder" formats are still available for direct use
-                '__salt__': __salt__,
-                '__pillar__': __pillar__,
-                '__grains__': __grains__
+                '__salt__': salt,
+                '__pillar__': pillar,
+                '__grains__': grains,
+
+                'pillar': pillar.get,
             }
+            if salt:
+                # salt, pillar & grains all provide shortcuts or object interfaces
+                _globals['grains'] = salt['grains.get']
+                _globals['mine'] = salt['mine.get']
+                _globals['config'] = salt['config.get']
         except NameError:
             raise
+
+    # Use copy of __pillar__ and __grains__ dictionaries
+    salt_vars = ['__pillar__', '__grains__']
+    for var in salt_vars:
+        _globals[var] = copy.deepcopy(_globals[var])
 
     # Additional globals
     _globals['__context__'] = dict(state_list=deserialize.state_list)
@@ -873,11 +945,11 @@ def render(template, saltenv='base', sls='', **kwargs):
     _globals.pop('salt', None)
 
     # Render the script data that was de-serialized into salt_data
-    Render(script_data, sls_type, _globals=_globals)
+    rendered = Render(script_data, kwargs['sls_type'], _globals=_globals)
 
-    # If its a pillar, return it now
-    if sls_type == 'pillar':
-        return __pillar__
+    # If its a pillar or template, return it now
+    if kwargs['sls_type'] in ['pillar', 'template']:
+        return rendered.salt_data
 
     salt_data = Registry.salt_data()
 
@@ -890,3 +962,133 @@ def render(template, saltenv='base', sls='', **kwargs):
         yamlscript_utils.Cache.pop(sls)
 
     return salt_data
+
+#def render(template, saltenv='base', sls='', **kwargs):
+def render_yamlscript_tmpl(tmplstr, context, tmplpath=None):
+    '''
+    Parses a yaml formatted template and replaces values with pillar data or
+    user provided script data, using any defaults within.
+
+    Yamlscript is a mix of python and yaml using yamls structured human readable
+    format.
+    '''
+    kwargs = {}
+    sls_type = 'template'
+    kwargs['sls_type'] = sls_type
+    kwargs['__opts__'] = context['opts']
+    kwargs['__pillar__'] = context['pillar']
+
+    # Render the templae
+    salt_data = render(StringIO.StringIO(tmplstr),
+                       saltenv=context['saltenv'],
+                       sls=context['source'],
+                       **kwargs
+                       )
+
+    outputters = salt.loader.outputters(context['opts'])
+    out = outputters['yaml']
+
+    # Convert from YSOrderedDict to a salt OrderDict
+    # Then format as YAML
+    salt_data = out(convert(salt_data))
+
+    # Indent by 2 spaces
+    salt_data = salt_data.replace('- ', '  - ')
+
+    return salt_data
+
+'''
+TESTS:
+======
+states:
+--local --out=yaml state.show_sls tests_yamlscript test
+
+pillars:
+Same as above; but add #!yamscript shebang to user.sls pillar file
+
+tempaltes:
+--local state.highstate -l debug
+
+TODO:
+=====
+
+- Ability to set pillar base.  Not sure how we doing it now for users, but I think
+  the proper term would be pillar_base not alias or such
+
+FOR TEMPLATES
+-------------
+- Re-work aliases.  Implement base as well?
+  - Should we get rid of automatic detection?  Like pass what we want, and allow it to be over written
+    - set_alias(state_id, state_name, alias)
+      - where alias is:
+        - string to locate it keynode=user alias=user_names, or user_name:machine1
+        - False -- disabled
+        - None -- base; so pillar would be user
+      - then, set_alias function will see if a rule already exists, and use it if it does, so
+        if auto was set to False or its listed in disabled, it will be disabled
+      - same for enabled, it will be enabled even if we say False
+    - get_pillar_data(state_id)
+      - now an alias has been set it, pillar data will attempt to be located and returned
+    - so, thats basicly how it already works, but there is not way to set easy while taking into
+      consideration rules set by user
+  - If aliases are written in self.pillars, we can use that instead of writing to __pillar_data__??
+    - Considerations would be duplicate keys?  Should not happen though
+  - Can we get rid of update and merge then?  Or greatly simplify them.  piller.get will return
+    default values if pillar does not exist
+
+- Add salt logging as well as comments in state output that pillar was automatically used, or denied
+  by rule, etc
+
+- Test various types of pillar replacements (dict, list, nested dict).  Maybe just set up
+  an alias in advance
+
+- Pre-parse and convert # comments into $comment blocks blank lines into $blank ans spaces into $space
+
+- Post parse to convert back to be able to retain comments, etc in yaml scripts
+  - Don't support inline comments since it could break flow?
+
+- Create a YSOrderedDict dumper so I don't need to convert to OrderedDict
+
+FOR PILLARS
+-----------
+- Seems like yamlscript in pillars work, but then salt can not find the SLS state files, so it exits;
+  something about statefile can't be found
+
+- Combine template and pillar code where possible
+
+- Consider not writing to __pillar__ directly!  What happens if it fails, then partial pillar in memory.
+
+GENERAL
+-------
+- Try to seperate out core so it can be used for other projects.  Use an adapter for pillar or similar
+  types of machinery
+
+- modules, outputters, utils, renderers  -- separate into those sections
+
+VALIDATION
+----------
+- Plug in voluptuous as an adapter to be able to validate
+  - right now state validation happens at the end; make that a plugin so other things can be
+    validated, so in other word we would not have to 'contine' pillars and templates, let it
+    go to see if there is an adapter, and if not continue!
+    - that would allow templates to be futher parsed which would allow loops, etc?
+
+'''
+
+# XXX: Template
+import collections
+import salt.utils.odict
+def convert(dict_):
+    'converts any dictionary and nested dictionaries to a dict'
+    for key, value in dict_.iteritems():
+        if isinstance(value, collections.Mapping):
+            dict_[key] = convert(dict_[key])
+        elif isinstance(value, list):
+            for element in value:
+                if isinstance(element, collections.Mapping):
+                    value[value.index(element)] = convert(element)
+    return salt.utils.odict.OrderedDict(dict_)
+
+from salt.utils.templates import TEMPLATE_REGISTRY, wrap_tmpl_func
+YAMLSCRIPT = wrap_tmpl_func(render_yamlscript_tmpl)
+TEMPLATE_REGISTRY['yamlscript'] = YAMLSCRIPT

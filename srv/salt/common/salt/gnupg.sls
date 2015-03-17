@@ -14,7 +14,7 @@ gnupg:
     #  - pkg: salt
 
   gpg.import_key:
-    - source: salt://dom0/nrgaway-qubes-signing-key.asc
+    - source: salt://keys/nrgaway-qubes-signing-key.asc
     - order: 1
     # homedir: /etc/salt/gpgkeys
 

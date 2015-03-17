@@ -26,7 +26,7 @@ base:
     - salt.halite_absent
 
     # --- system configurations ---
-    - users
+    # users
 
     # --- utilities ---
     - vim
@@ -48,10 +48,11 @@ base:
     - python_pip  # Not needed if salt installed via repo (yum, apt-get)
 
     # --- appearance ---
+    - locale
     - theme
     - theme.fonts_ubuntu
     - theme.fonts_source_code_pro
 
-dev:
-  # === Common ================================================================
-  '*': []
+#dev:
+#  # === Common ================================================================
+#  '*': []

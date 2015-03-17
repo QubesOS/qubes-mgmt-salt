@@ -13,6 +13,6 @@
 #    mode and may apply state anyway.  Needs more testing to confirm or not!
 # --> salt-call --local state.highstate test=True
 
-base:
-  '*': []
-    # --- salt applications ---
+#base:
+#  '*': []
+#    # --- salt applications ---
