@@ -100,7 +100,8 @@ def get_locale():
     elif 'RedHat' in __grains__['os_family']:
         return _localectl_get()
     elif 'Debian' in __grains__['os_family']:
-        cmd = 'grep "^LANG=" /etc/default/locale'
+        return _localectl_get()
+        #cmd = 'grep "^LANG=" /etc/default/locale'
     elif 'Gentoo' in __grains__['os_family']:
         cmd = 'eselect --brief locale show'
         return __salt__['cmd.run'](cmd).strip()
@@ -126,12 +127,13 @@ def set_locale(locale):
     elif 'RedHat' in __grains__['os_family']:
         return _localectl_set(locale)
     elif 'Debian' in __grains__['os_family']:
-        __salt__['file.sed'](
-            '/etc/default/locale', '^LANG=.*', 'LANG="{0}"'.format(locale)
-        )
-        if __salt__['cmd.retcode']('grep "^LANG=" /etc/default/locale') != 0:
-            __salt__['file.append']('/etc/default/locale',
-                                    '"\nLANG={0}"'.format(locale))
+        return _localectl_set(locale)
+        #__salt__['file.sed'](
+        #    '/etc/default/locale', '^LANG=.*', 'LANG="{0}"'.format(locale)
+        #)
+        #if __salt__['cmd.retcode']('grep "^LANG=" /etc/default/locale') != 0:
+        #    __salt__['file.append']('/etc/default/locale',
+        #                            '"\nLANG={0}"'.format(locale))
     elif 'Gentoo' in __grains__['os_family']:
         cmd = 'eselect --brief locale set {0}'.format(locale)
         return __salt__['cmd.retcode'](cmd, python_shell=False) == 0
