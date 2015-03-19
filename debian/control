@@ -1,0 +1,24 @@
+Source: qubes-salt-config
+Section: admin
+Priority: extra
+Maintainer: Jason Mehring <nrgaway@gmail.com>
+Build-Depends: debhelper (>= 9~), quilt
+Standards-Version: 3.9.5
+Homepage: http://www.qubes-os.org
+
+Package: qubes-salt-config
+Section: admin
+Architecture: all
+Depends: 
+    salt-common (>= 2014.7.2), 
+    salt-minion (>= 2014.7.2),
+    vim,
+    git,
+    ca-certificates,
+    lsb-release,
+    rsync,
+    python-dulwich,
+    python-pip,
+    python-gnupg,
+    ${misc:Depends}
+Description: Configuration files for SaltStack's Salt Infrastructure automation and management system  
