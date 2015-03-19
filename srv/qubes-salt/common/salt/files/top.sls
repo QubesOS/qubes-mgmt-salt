@@ -25,8 +25,11 @@ base:
     - salt.syndic_absent
     - salt.halite_absent
 
+    # --- install user salt directories and sample locale states ---
+    - salt-user
+
     # --- system configurations ---
-    - users
+    # users
 
     # --- utilities ---
     - vim
@@ -52,6 +55,6 @@ base:
     - theme.fonts_ubuntu
     - theme.fonts_source_code_pro
 
-dev:
-  # === Common ================================================================
-  '*': []
+#dev:
+#  # === Common ================================================================
+#  '*': []

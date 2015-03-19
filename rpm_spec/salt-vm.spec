@@ -54,14 +54,14 @@ systemctl stop salt-minion.service > /dev/null 2>&1 || true
 
 %files
 %defattr(-,root,root)
-%attr(750, root, root) %dir /srv/salt
-%attr(750, root, root) %dir /srv/salt-servers
-%attr(750, root, root) %dir /srv/pillar
 %attr(750, root, root) %dir /etc/salt/minion.d
+%attr(750, root, root) %dir /srv/salt-servers
+%attr(750, root, root) %dir /srv/qubes-pillar
+%attr(750, root, root) %dir /srv/qubes-salt
 %{_bindir}/qubesctl
 %{_sysconfdir}/salt/minion.d/*
-/srv/salt/*
-/srv/pillar/*
+/srv/qubes-salt/*
+/srv/qubes-pillar/*
 /srv/salt-servers/*
 
 %changelog

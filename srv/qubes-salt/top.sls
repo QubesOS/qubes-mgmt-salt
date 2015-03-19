@@ -25,6 +25,9 @@ base:
     - salt.syndic_absent
     - salt.halite_absent
 
+    # --- install user salt directories and sample locale states ---
+    - salt-user
+
     # --- system configurations ---
     # users
 
@@ -48,7 +51,6 @@ base:
     - python_pip  # Not needed if salt installed via repo (yum, apt-get)
 
     # --- appearance ---
-    - locale
     - theme
     - theme.fonts_ubuntu
     - theme.fonts_source_code_pro
