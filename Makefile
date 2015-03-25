@@ -34,9 +34,11 @@ help:
 
 rpms: SALT = salt-vm
 rpms: rpms-vm
+	@true
 
-rpms: SALT = salt-dom0
+rpms-dom0: SALT = salt-dom0
 rpms-dom0: rpms-vm
+	@true
 
 rpms-vm:
 	rpmbuild --define "_rpmdir rpm/" -bb rpm_spec/$(SALT).spec
