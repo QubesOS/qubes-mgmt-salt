@@ -1,5 +1,5 @@
 ifeq ($(PACKAGE_SET),dom0)
-  RPM_SPEC_FILES := rpm_spec/salt-dom0.spec
+  RPM_SPEC_FILES := rpm_spec/qubes-salt.spec
 
 else ifeq ($(PACKAGE_SET),vm)
   ifneq ($(filter $(DISTRIBUTION), debian qubuntu),)
@@ -7,7 +7,7 @@ else ifeq ($(PACKAGE_SET),vm)
     SOURCE_COPY_IN := source-debian-quilt-copy-in
   endif
 
-  RPM_SPEC_FILES := rpm_spec/salt-vm.spec
+  RPM_SPEC_FILES := rpm_spec/qubes-salt.spec
 endif
 
 source-debian-quilt-copy-in: VERSION = $(shell $(DEBIAN_PARSER) changelog --package-version $(ORIG_SRC)/$(DEBIAN_BUILD_DIRS)/changelog)
