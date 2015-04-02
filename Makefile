@@ -19,8 +19,15 @@
 #
 #
 
+# Salt branch to use
+BRANCH_app_salt = 2014.7.2
+
+ifndef INCLUDED
 RPMS_DIR=rpm/
 VERSION := $(shell cat version)
+
+all:
+	@true
 
 help:
 	@echo "Qubes addons main Makefile:" ;\
@@ -79,3 +86,22 @@ install:
 	        install -p -m 0640 "$${file}" "$(DESTDIR)/$${file}" ;\
 	    fi \
 	done
+
+.PHONY: get-sources
+get-sources: GIT_REPOS := $(addprefix $(SRC_DIR)/,app-salt)
+get-sources:
+	@set -a; \
+	pushd $(BUILDER_DIR) &> /dev/null; \
+	SCRIPT_DIR=$(BUILDER_DIR)/scripts; \
+	SRC_ROOT=$(BUILDER_DIR)/$(SRC_DIR); \
+	for REPO in $(GIT_REPOS); do \
+		if [ ! -d $$REPO ]; then \
+			$$SCRIPT_DIR/get-sources || exit 1; \
+		fi; \
+	done; \
+	popd &> /dev/null
+
+.PHONY: verify-sources
+verify-sources:
+	@true
+endif
