@@ -22,7 +22,6 @@
 # Salt branch to use
 BRANCH_app_salt = 2014.7.2
 
-ifndef INCLUDED
 RPMS_DIR=rpm/
 VERSION := $(shell cat version)
 
@@ -104,4 +103,3 @@ get-sources:
 .PHONY: verify-sources
 verify-sources:
 	@true
-endif
