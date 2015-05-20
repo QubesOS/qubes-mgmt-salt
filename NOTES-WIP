@@ -1,0 +1,58 @@
+=======================================================================================================================
+Qubes Installer Configuration
+=======================================================================================================================
+installer-qubes-os/firstboot/modules/qubes_setup.py
+
+create sys-net
+create sys-firewall
+create work, banking, personal, untrusted vms
+swiotlb option from default of 4096 to 8192
+timezone?
+
+        self.show_stage(_("Creating default NetworkVM"))
+        self.show_stage(_("Creating default FirewallVM"))
+        self.show_stage(_("Creating default DisposableVM"))
+            self.show_stage(_("Setting FirewallVM + NetworkVM networking"))
+            self.show_stage(_("Setting Dom0 networking"))
+        self.show_stage(_("Starting Qubes networking"))
+        self.show_stage(_("Creating handy AppVMs"))
+
+
+=======================================================================================================================
+Some apps that can be removed?
+=======================================================================================================================
+> Even using torvm as gateway, I still see outbound traffic to
+> fedora servers - from netvm I guess. Havent yet figured out what's
+> going on there.
+
+That's probably the Fedora connectivity / captive portal check. You
+can remove it in the NetVM('s template):
+
+sudo yum remove NetworkManager-config-connectivity-fedora
+
+
+=======================================================================================================================
+Sync grains, modules first
+gpg second
+http://docs.saltstack.com/en/latest/topics/reactor/index.html#minion-start-reactor
+=======================================================================================================================
+NOTE: - Does not seem to work without a salt-master as the configuration was supposed to go in master conf file
+      - Check into it more
+
+Salt will sync all custom types (by running a saltutil.sync_all) on every highstate. However, there is a chicken-and-egg issue where, on the initial highstate, a minion will not yet have these custom types synced when the top file is first compiled. This can be worked around with a simple reactor which watches for minion_start events, which each minion fires when it first starts up and connects to the master.
+
+On the master, create /srv/reactor/sync_grains.sls with the following contents:
+
+sync_grains:
+  local.saltutil.sync_grains:
+    - tgt: {{ data['id'] }}
+
+And in the master config file, add the following reactor configuration:
+
+reactor:
+  - 'minion_start':
+    - /srv/reactor/sync_grains.sls
+
+This will cause the master to instruct each minion to sync its custom grains when it starts, making these grains available when the initial highstate is executed.
+
+Other types can be synced by replacing local.saltutil.sync_grains with local.saltutil.sync_modules, local.saltutil.sync_all, or whatever else suits the intended use case.
