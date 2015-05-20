@@ -1,108 +1,408 @@
+#!yamlscript
+#
 # vim: set syntax=yaml ts=2 sw=2 sts=2 et :
 
-# Test qubes-dom0-update
-git:
-  pkg.installed:
-    - name: git
+##
+# Qubes state, and module tests
+##
 
-#salt-testvm:
-#  qvm.create:
-#    - template: fedora-20-x64
-#    - label: red
-#    - mem: 3000
-#    - vcpus: 4
 
-#salt-testvm-remove:
-#  qvm.remove:
-#    - name: salt-testvm
+#===============================================================================
+#
+# CURRENT ISSUES:
+# ---------------
+# - qvm-run is not working in dom0 highstate, but it is via WingIDE
+# - qvm-service is showing as being modified on each highstate
+#
+# TODO:
+# -----
+# - Complete all individual tests
+# - Make sure all individual test have 'all' possible options (can comment out)
+# - Complete qvm-all
+# - Create non yamlscript test state file with same tests
+# - Create a bash script file that will test each qvm-* using commandline
+#   salt-call
+# - run TEST mode on everything to confirm no states run; only test mode results
+#
+# - Convert remainder of _modules to classes
+# - Research if we can remove code duplication in _states; maybe combine
+#   _call_function AND _vm_action for standardized result comments / output
+#
+# - ONLY when all the above is complete should I consider cleaning codebase
+#   as some things may need to be switched around again to allow easy
+#   commandline access (IE: service uses varags; not kwargs)
+# - Make sure commandline usage goes in modual docstrings
+#
+# - rename options to optional / varargs ?
+#
+#===============================================================================
 
-#fedora-20-x64:
-#  qvm.clone:
-#    - target: fedora-clone
-#fedora-clone:
-#  qvm.remove: []
 
-# Test prefs
-#fc21:
-#  qvm.prefs:
-#    # label: oranges  # Deliberate error
-#    - label: orange
-#    - template: debian-jessie
-#    - memory: 400
-#    - maxmem: 4000
-#    - include_in_backups: False
-#  qvm.check: []
+$python: |
+    test_vm_name = 'salt-testvm'
 
-fc21-prefs:
-  qvm.prefs:
-    - name: fc21
-    - label: green
-    - template: debian-jessie
-    - memory: 400
-    - maxmem: 4000
-    - include_in_backups: True
+    tests = [
+        'qvm-kill',
+        'qvm-dead',
+        'qvm-remove',
+        'qvm-missing',
+        'qvm-create',
+        'qvm-check',
+        'qvm-prefs',
+        'qvm-service',
+        'qvm-start',
+        'qvm-running',
+        'qvm-pause',
+        'qvm-unpause',
+        'qvm-shutdown',
+        'qvm-run',
+      # 'qvm-clone',
 
-fc21-check:
-  qvm.check:
-    - name: fc21
+      # 'qvm-vm',
+      # 'qubes-dom0-update',
 
-fc211-missing:
-  qvm.missing:
-    - name: fc211
+      # 'fail-qvm-running',
+      # 'gpg-verify',
+      # 'gpg-import_key',
+      # 'gpg-renderer',
+    ]
 
-#fc21-running:
-#  qvm.running:
-#    - name: fc21
+#===============================================================================
+# Test qubes-dom0-update                                       qubes-dom0-update
+#===============================================================================
+$if 'qubes-dom0-update' in tests:
+  git:
+    pkg.installed:
+      - name: git
 
-fc21-dead:
-  qvm.dead:
-    - name: fc21
+#===============================================================================
+# Kill VM                                                               qvm-kill
+#===============================================================================
+$if 'qvm-kill' in tests:
+  qvm-kill-id:
+    qvm.kill:
+      - name: $test_vm_name
 
-# Deliberate Fail
-#fc211-running:
-#  qvm.running:
-#    - name: fc211
+#===============================================================================
+# Confirm VM is dead (halted)                                           qvm-dead
+#===============================================================================
+$if 'qvm-dead' in tests:
+  qvm-dead-id:
+    qvm.dead:
+      - name: $test_vm_name
 
-netvm-running:
-  qvm.running:
-    - name: netvm
+#===============================================================================
+# Remove VM                                                           qvm-remove
+#===============================================================================
+$if 'qvm-remove' in tests:
+  qvm-remove-id:
+    qvm.remove:
+      - name: $test_vm_name
+      # just_db: true|(false)
+      # options:
+        # force-root
+        # quiet
 
-fc21-service-test:
-  qvm.service:
-    - name: fc21
-    - enable:
-      - test
-      - another_test
-    - disable: meminfo-writer
+#===============================================================================
+# Confirm VM does not exist                                          qvm-missing
+#===============================================================================
+$if 'qvm-missing' in tests:
+  qvm-missing-id:
+    qvm.missing:
+      - name: $test_vm_name
 
-fc21-start:
-  qvm.start:
-    - name: fc21
-    # options:
-    # - tray
-    # - no-guid
-    # - dvm
-    # - debug
-    # - install-windows-tools
-    # - drive: DRIVE
-    # - hddisk: DRIVE_HD
-    # - cdrom: DRIVE_CDROM
-    # - custom-config: CUSTOM_CONFIG
+#===============================================================================
+# Create VM                                                           qvm-create
+#===============================================================================
+$if 'qvm-create' in tests:
+  qvm-create-id:
+    qvm.create:
+      - name: $test_vm_name
+      - template: fedora-21
+      - label: red
+      - mem: 3000
+      - vcpus: 4
+      # root-move-from: </path/xxx>
+      # root-copy-from: </path/xxx>
+      - options:
+        - proxy
+        # quiet  # *** salt default ***
+        # hvm
+        # hvm-template
+        # net
+        # standalone
+        # internal
+        # force-root
 
-# Test new state and module to verify detached signed file
-#test-file:
-#  gpg.verify:
-#    - source: salt://vim/init.sls.asc
-#    # homedir: /etc/salt/gpgkeys
-#    - require:
-#      - pkg: gnupg
+#===============================================================================
+# Confirm vm exists                                                    qvm-check
+#===============================================================================
+$if 'qvm-check' in tests:
+  qvm-check-id:
+    qvm.check:
+      - name: $test_vm_name
 
-# Test new state and module to import gpg key
+#===============================================================================
+# Modify VM preferences                                                qvm-prefs
+#===============================================================================
+$if 'qvm-prefs' in tests:
+  qvm-prefs-id:
+    qvm.prefs:
+      - name: $test_vm_name
+      - label: green  # red|yellow|green|blue|purple|orange|gray|black
+      - template: debian-jessie
+      - memory: 400
+      - maxmem: 4000
+      - include_in_backups: false  # true|false
+      # pcidevs:              [string,]
+      # netvm:                <string>
+      # kernel:               <string>
+      # vcpus:                <int>
+      # kernelopts:           <string>
+      # drive:                <string>
+      # mac:                  <string> (auto)
+      # debug:                true|(false)
+      # default_user:         <string>
+      # qrexec_installed:     true|false
+      # guiagent_installed:   true|false
+      # seamless_gui_mode:    true|false
+      # qrexec_timeout:       <int> (60)
+      # timezone:             <string>
+      # internal:             true|(false)
+      # autostart:            true|(false)
+      # options:
+        # list
+        # set
+        # gry
+        # force-root
+
+#===============================================================================
+# Modify VM services                                                 qvm-service
+#===============================================================================
+$if 'qvm-service' in tests:
+  qvm-service-id:
+    qvm.service:
+      - name: $test_vm_name
+      - enable:
+        - test
+        - test2
+        - another_test
+        - another_test2
+        - another_test3
+      - disable:
+        - meminfo-writer
+        - test3
+        - test4
+        - another_test4
+        - another_test5
+      # default: [string,]
+      # list: [string,]
+
+#===============================================================================
+# Start VM                                                             qvm-start
+#===============================================================================
+$if 'qvm-start' in tests:
+  qvm-start-id:
+    qvm.start:
+      - name: $test_vm_name
+      # drive: <string>
+      # hddisk: <string>
+      # cdrom: <string>
+      # custom-config: <string>
+      # options:
+        # quiet  # *** salt default ***
+        # no-guid  # *** salt default ***
+        # tray
+        # dvm
+        # debug
+        # install-windows-tools
+
+#===============================================================================
+# Confirm VM is running                                              qvm-running
+#===============================================================================
+$if 'qvm-running' in tests:
+  qvm-running-id:
+    qvm.running:
+      - name: $test_vm_name
+
+#===============================================================================
+# Pause VM                                                             qvm-pause
+#===============================================================================
+$if 'qvm-pause' in tests:
+  qvm-pause-id:
+    qvm.pause:
+      - name: $test_vm_name
+
+#===============================================================================
+# Unpause VM                                                         qvm-unpause
+#===============================================================================
+$if 'qvm-unpause' in tests:
+  qvm-unpause-id:
+    qvm.unpause:
+      - name: $test_vm_name
+
+#===============================================================================
+# Shutdown VM                                                       qvm-shutdown
+#===============================================================================
+$if 'qvm-shutdown' in tests:
+  qvm-shutdown-id:
+    qvm.shutdown:
+      - name: $test_vm_name
+      # exclude: [exclude_list,]
+      # options:
+        # quiet
+        # force
+        # wait
+        # all
+        # kill
+
+#===============================================================================
+# Run 'gnome-terminal' in VM                                             qvm-run
+#
+# TODO: Test auto-start
+#===============================================================================
+$if 'qvm-run' in tests:
+  qvm-run-id:
+    qvm.run:
+      - name: $test_vm_name
+      - cmd: gnome-terminal
+      # user: <string>
+      # exclude: [sys-net, sys-firewall]
+      # localcmd: </dev/null>
+      # color-output: 31
+      - options:
+        # quiet
+        - auto
+        # tray
+        # all
+        # pause
+        # unpause
+        # pass-io
+        # nogui
+        # filter-escape-chars
+        # no-filter-escape-chars
+        # no-color-output
+
+#===============================================================================
+# Clone VM                                                             qvm-clone
+#===============================================================================
+$if 'qvm-clone' in tests:
+  qvm-clone-id:
+    qvm.clone:
+      - name: $test_vm_name
+      - target: $'{0}-clone'.format(test_vm_name)
+      # path:                 </path/xxx>
+      # options:
+        # quiet
+        # force-root
+
+  qvm-clone-remove-id:
+    qvm.remove:
+      - name: $'{0}-clone'.format(test_vm_name)
+
+#===============================================================================
+# Combined states (all qvm-* commands available within one id)           qvm-all
+#===============================================================================
+$if 'qvm-vm' in tests:
+  qvm-vm-id:
+    qvm.vm:
+      - name: $test_vm_name
+      - remove: []
+      - create:
+        - template: fedora-21
+        - label: red
+        - mem: 3000
+        - vcpus: 4
+        - options:
+          - proxy
+      # prefs:
+        # label: green
+        # template: debian-jessie
+        # memory: 400
+        # maxmem: 4000
+        # include_in_backups: False
+      # service:
+        # disable:
+          # test
+          # test2
+          # another_test
+          # another_test2
+          # another_test3
+        # enable:
+          # meminfo-writer
+          # test3
+          # test4
+          # another_test4
+          # another_test5
+      - start: []
+        # options:
+          # tray
+          # no-guid
+          # dvm
+          # debug
+          # install-windows-tools
+          # drive: DRIVE
+          # hddisk: DRIVE_HD
+          # cdrom: DRIVE_CDROM
+          # custom-config: CUSTOM_CONFIG
+      # TODO: TEST AUTO-START
+      - run:
+        - cmd: gnome-terminal
+        - options:
+          # user: user
+          # exclude: [sys-net, sys-firewall]
+          # localcmd: /dev/null
+          # color-output: '31'
+          # quiet
+          # auto
+          # tray
+          - all
+          # pause
+          # unpause
+          # pass-io
+          # nogui
+          # filter-escape-chars
+          # no-filter-escape-chars
+          # no-color-output
+
+#===============================================================================
+# Deliberate Fail                                               FAIL qvm-running
+#===============================================================================
+$if 'fail-qvm-running' in tests:
+  fail-qvm-running-id:
+    qvm.vm:
+      - name: $test_vm_name
+      - shutdown: []
+      - running: []
+
+#===============================================================================
+# Test new state and module to verify detached signed file            gpg-verify
+#===============================================================================
+$if 'gpg-verify' in tests:
+  gpg-verify-id:
+    gpg.verify:
+      - source: salt://vim/init.sls.asc
+      # homedir: /etc/salt/gpgkeys
+      - require:
+        - pkg: gnupg
+
+#===============================================================================
+# Test new state and module to import gpg key                     gpg-import_key
+#
 # (moved to salt/gnupg.sls)
-#nrgaway_key:
-#  gpg.import_key:
-#    - source: salt://dom0/nrgaway-qubes-signing-key.asc
-#    # homedir: /etc/salt/gpgkeys
+#===============================================================================
+$if 'gpg-import_key' in tests:
+  gpg-import_key-id:
+    gpg.import_key:
+      - source: salt://dom0/nrgaway-qubes-signing-key.asc
+      # homedir: /etc/salt/gpgkeys
 
-# Test new renderer that automatically verifies signed state files
-# (vim/init.sls{.asc} is the test file for this)
+#===============================================================================
+# Test gpgrenderer that automatically verifies signed state         gpg-renderer
+# state files (vim/init.sls{.asc} is the test file for this)
+#===============================================================================
+#$if 'gpg-renderer' in tests:
+#  gpg-renderer-id:
+#    pkg.installed:
+#      - name: vim
+
