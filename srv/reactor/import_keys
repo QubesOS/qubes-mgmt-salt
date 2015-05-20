@@ -1,0 +1,9 @@
+# Import Qubes gnupg keys
+
+import_keys:
+  local.state.sls:
+    - tgt: {{ data['id'] }}
+    - kwarg:
+        mods:
+          salt.gnupg:
+        test: False
