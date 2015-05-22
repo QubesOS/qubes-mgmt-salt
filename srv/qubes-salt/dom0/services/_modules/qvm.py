@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 '''
-Manage Qubes settings
+:maintainer:    Jason Mehring <nrgaway@gmail.com>
+:maturity:      new
+:platform:      all
+
+============================
+Qubes qvm-* modules for salt
+============================        
 '''
 
 # Import python libs
@@ -22,6 +28,7 @@ from salt.exceptions import (
 )
 
 from differ import DictDiffer, ListDiffer
+from qubes_utils import _update
 
 # Import Qubes libs
 from qubes.qubes import QubesVmCollection
@@ -74,17 +81,19 @@ def _tostring(value):
     return value
 
 
-def tolist(value):
+def _tolist(value):
     '''Converts value to a list.
     '''
     if not value:
         value = []
     elif isinstance(value, str):
         value = [value,]
+    elif isinstance(value, tuple):
+        value = list(value)
     return value
 
 
-def arginfo(kwargs_list=None, argv_format=[], skip=[]):
+def arginfo(kwargs_list=None, argv_ordering=[], skip=[]):
     '''
     Returns dictionary of calling function's named arguments and values as well
     as option to put values from kwargs on argv stack to allow processing as
@@ -93,14 +102,14 @@ def arginfo(kwargs_list=None, argv_format=[], skip=[]):
     kwargs_list: Provide a keys in list that are available in kwargs to place
                  treat those values as varargs
                  example:
-                 ['options'] - Any vaules contained in kwargs['options'], will
+                 ['flags'] - Any vaules contained in kwargs['flags'], will
                  be handled as varargs
 
-    argv_format: Create alternate `argv` format
+    argv_ordering: Create alternate `argv` format
                  default:
-                    ['_argparse_varargs', '_argparse_keywords', '_argparse_args']
+                    ['varargs', 'keywords', 'args']
                  example:
-                    ['_argparse_varargs', '_argparse_keywords', '_argparse_args', 'cmd']
+                    ['varargs', 'keywords', 'args', 'cmd']
 
     skip:        Skip formatting for giving arg type;
                  example: ['varargs']
@@ -115,34 +124,49 @@ def arginfo(kwargs_list=None, argv_format=[], skip=[]):
     info['_argparse_args'] = []
     info['_argparse_varargs'] = []
     info['_argparse_keywords'] = []
+    info['_argparse_flags'] = []
     info['__argv'] = []
+
+    # Convert varargs to a list if it exists so it can be appened to
+    if info['__varargs'] in locals_:
+        locals_[info['__varargs']] = _tolist(locals_[info['__varargs']])
 
     if kwargs_list and isinstance(kwargs_list, list) and info['__keywords'] and info['__keywords'] in locals_:
         for arg in kwargs_list:
             if arg not in locals_[info['__keywords']]:
                 continue
 
-            if not isinstance(locals_[info['__keywords']][arg],  list):
-                continue
+            #if not isinstance(locals_[info['__keywords']][arg],  list):
+            #    continue
 
             # Remove from locals_ stack and reference to kwarg_item
-            kwargs_items = locals_[info['__keywords']].pop(arg)
+            kwargs_items = _tolist(locals_[info['__keywords']].pop(arg))
 
             # Make sure varargs objects exist
-            if not info['__varargs']:
-                info['__varargs'] = ('varargs')
-                locals_[info['__varargs']] = []
+            #if not info['__varargs']:
+            #    info['__varargs'] = ('varargs')
+            #    locals_[info['__varargs']] = []
 
             # Make sure varargs is not a tuple
-            if isinstance(locals_[info['__varargs']], tuple):
-                locals_[info['__varargs']] = list(locals_[info['__varargs']])
+            #if isinstance(locals_[info['__varargs']], tuple):
+            #    locals_[info['__varargs']] = list(locals_[info['__varargs']])
 
+            # In salt, it in not possible to list a single keyword within the
+            # root state, so module option flags need to be included in a list
+            # and these values will then be placed on varargs stack so they
+            # can be positioned and escaped
             for item in kwargs_items:
                 if isinstance(item, str):
-                    if 'varargs' in skip:
-                        locals_[info['__varargs']].append(item)
+                    # Since these are not 'provided' varargs, they are treated
+                    # as keywords for the purposes of skipping argparse
+                    # formatting
+                    #if 'keywords' in skip:
+                    if 'flags' in skip:
+                        #locals_[info['__varargs']].append(item)
+                        info['_argparse_flags'].append(item)
                     else:
-                        locals_[info['__varargs']].append('--{0}'.format(item))
+                        #locals_[info['__varargs']].append('--{0}'.format(item))
+                        info['_argparse_flags'].append('--{0}'.format(item))
                 elif isinstance(item, collections.Mapping):
                     for key, value in item.items():
                         locals_[key] = _tostring(value)
@@ -151,7 +175,6 @@ def arginfo(kwargs_list=None, argv_format=[], skip=[]):
     # Populate info with values from arginfo
     for arg_name in info['__args'] + [info['__varargs']] + [info['__keywords']]:
         if arg_name:
-            #info[arg_name] = _tostring(locals_[arg_name])
             info[arg_name] = locals_[arg_name]
 
     # args - positional argv
@@ -160,23 +183,19 @@ def arginfo(kwargs_list=None, argv_format=[], skip=[]):
             # Get rid of any references to self
             if name ==  'self':
                 continue
-            #info['__argv'].append(_tostring(info[name]))
             info['_argparse_args'].append(_tostring(info[name]))
 
     # *varargs - positional argv
     if info['__varargs']:
-        #info['__argv'].extend(tolist(info[info['__varargs']]))
-        for name in tolist(info[info['__varargs']]):
+        for name in _tolist(info[info['__varargs']]):
             # Ignore 'private' keywords
             if not name.startswith('__'):
                 # Make keyword optional
                 if 'varargs' in skip:
                     info['_argparse_varargs'].append(name)
                 elif name.startswith('--'):
-                    #info['__argv'].append(name)
                     info['_argparse_varargs'].append(name)
                 else:
-                    #info['__argv'].append('--{0}'.format(name))
                     info['_argparse_varargs'].append('--{0}'.format(name))
 
     # **kwargs = optional argv
@@ -186,21 +205,20 @@ def arginfo(kwargs_list=None, argv_format=[], skip=[]):
             if not name.startswith('__'):
                 # Make keyword optional
                 if 'keywords' in skip or name.startswith('--'):
-                    #info['__argv'].append(name)
                     info['_argparse_keywords'].append(name)
                 else:
-                    #info['__argv'].append('--{0}'.format(name))
                     info['_argparse_keywords'].append('--{0}'.format(name))
 
                 if isinstance(value, list):
                     value = ' '.join(value)
-                #info['__argv'].append(_tostring(value))
                 info['_argparse_keywords'].append(_tostring(value))
 
-    if not argv_format:
-        argv_format = ['_argparse_varargs', '_argparse_keywords', '_argparse_args']
-    for section in argv_format:
+    if not argv_ordering:
+        #argv_ordering = ['varargs', 'keywords', 'args']
+        argv_ordering = ['flags', 'keywords', 'args', 'varargs']
+    for section in argv_ordering:
         # '_argparse_keywords', 'vmname'
+        section = '_argparse_{0}'.format(section)
         if section in info:
             if isinstance(info[section], list):
                 info['__argv'].extend(info[section])
@@ -330,22 +348,11 @@ class _VMAction(argparse.Action):
             return None
 
         vm = self.get_vm(values)
-        if not vm:
-            raise CommandExecutionError('Error! No VM found with the name of: {0}'.format(values))
+        #if not vm:
+        #    raise SaltInvocationError('Error! No VM found with the name of: {0}'.format(values))
 
         setattr(namespace, self.dest, values)
         setattr(namespace, 'vm', vm)
-
-
-#class ToStringAction(argparse.Action):
-#    '''Custom action to convert value into a string.
-#    '''
-#    def __call__(self, parser, namespace, values, options_string=None):
-#        '''
-#        '''
-#        if not values:
-#            values = ''
-#        setattr(namespace, self.dest, str(values))
 
 
 class _ModuleHelper(object):
@@ -354,19 +361,29 @@ class _ModuleHelper(object):
     '''
     def __init__(self, arginfo, *varargs, **kwargs):
         self.arginfo = arginfo
-        self.ret = {'retcode': 0, 'changes': {}, 'cmd': '',}
+        self.ret = {'result': None,
+                    'retcode': 0,
+                    'stdout': '',
+                    'stderr': '',
+                    'changes': {},
+                    }
         self.stdout = ''
         self.stderr = ''
+        #self.cmd = ''
+        self.post_run_hook = None
 
     @classmethod
     def _parser(cls):
-        '''
+        '''Argparse definitions.
+
         Implement in sub-class.
         '''
         return None
 
     @classmethod
     def usage(cls):
+        '''Help docs and usage info for when salt-call -doc module.func called.
+        '''
         parser = cls._parser()
         if not parser:
             return cls.__doc__
@@ -375,38 +392,127 @@ class _ModuleHelper(object):
             doc_header = '=== DOCS ' + '='*71 + '\n'
             return '{0}{1}\n{2}{3}'.format(doc_header, cls.__doc__, usage_header, parser.format_help())
 
-    def run(self, cmd, **options):
+    def update(self, result, create=True, append=[]):
+        '''Updates object infomation from passed result.
+        '''
+        _update(self.ret, result, create=create, append=append)
+
+    def run(self, cmd, ignore_test=False, post_hook=None, **options):
         '''Executes cmd using salt.utils run_all function.
 
         Fake results are returned instead of executing the command if test
         mode is enabled.
         '''
-        self.ret['cmd'] += 'cmd: {0}'.format(cmd)
-        if options:
-            self.ret['cmd'] += ' options: {0}'.format(options)
-        self.ret['cmd'] += '\n'
+        # XXX: Reset result in case of multiple calls to run
+        self.ret['result'] = None
 
-        if __opts__['test']:
-            self.ret['retcode'] = None
+        cmd_string = 'cmd: {0}'.format(cmd)
+        if options:
+            cmd_string += ' options: {0}'.format(options)
+
+        #linefeed = '\n' if self.cmd else ''
+        #self.cmd += linefeed + cmd_string
+
+        if __opts__['test'] and not ignore_test:
+            # XXX: TODO: Remove any TEST code from here; add to sub-class
+            #      test() and maybe have sub-class call this super()
+            self.test()
             result = self.ret
         else:
             result = _run_all(cmd, **options)
+
+            # Post-run hooks
+            self.run_post(cmd, result)
+            if post_hook:
+                post_hook(cmd, result)
+            if self.post_run_hook:
+                self.post_run_hook(cmd, result)
+
             if result['retcode']:
-                self.stderr += '{0}:\n{1}\n'.format(result['stderr'], cmd)
                 self.ret['retcode'] = result['retcode']
+
+        linefeed = '\n' if self.stdout else ''
+        if __opts__['test']:
+            status = 'failed' if result['retcode'] else 'passed'
+            self.stdout += 'Test {0}: {1}'.format(status, cmd_string)
+        else:
+            self.stdout += linefeed + cmd_string
+
+        linefeed = '\n' if self.stdout else ''
+        if result['stdout']:
+            self.stdout += linefeed + result['stdout']
+
+        linefeed = '\n' if self.stderr and result['stderr'] else ''
+        self.stderr += linefeed + result['stderr']
 
         result.setdefault('changes', {})
         return result
 
-    def results(self):
-        '''Returns the 'ret' (results) dictionary.
+    def run_post(self, cmd, result):
+        '''Called by run to allow additional post-processing of results before
+        the results get stored to self.stdout, etc
+
+        Implement in sub-class.
         '''
-        self.ret['stdout'] = self.stdout
-        self.ret['stderr'] = self.stderr
+        return None
+
+    def test(self):
+        '''Called by run if test mode enabled.
+
+        Implement in sub-class.
+        '''
+        return None
+
+    def vm(self, fail=True):
+        '''Returns VM object if it exists.
+
+        Will raise a SaltInvocationError if fail=True and no VM exists
+        '''
+        if hasattr(self, 'args') and hasattr(self.args, 'vm'):
+            if self.args.vm:
+                return self.args.vm
+        if fail:
+            raise SaltInvocationError(message='Virtual Machine does not exist!')
+        else:
+            return None
+
+    def results(self, msg_all='', msg_passed='', msg_failed=''):
+        '''Returns the 'ret' (results) dictionary.
+
+        Additional messages may be appended to stdout
+
+        msg_all:
+            Append message for passed and failed result
+
+        msg_passed:
+            Only append message if result passed
+
+        msg_failed:
+            Only append message if result failed
+        '''
+
+        self.ret.setdefault('stdout', '')
+        self.ret.setdefault('stderr', '')
+
+        linefeed = '\n' if self.stdout else ''
+        if msg_all:
+            self.stdout += linefeed + msg_all
+        elif msg_passed:
+            self.stdout += linefeed + msg_passed
+        elif msg_failed:
+            self.stdout += linefeed + msg_failed
+
+        linefeed = '\n' if self.stdout and self.ret['stdout'] else ''
+        self.ret['stdout'] += linefeed + self.stdout
+
+        linefeed = '\n' if self.stderr and self.ret['stderr'] else ''
+        self.ret['stderr'] += linefeed + self.stderr
+
         return self.ret
 
 
-def check(vmname, *varargs, **kwargs):
+@_function_alias('check')
+class _Check(_ModuleHelper):
     '''
     Check if a virtual machine exists::
 
@@ -414,13 +520,78 @@ def check(vmname, *varargs, **kwargs):
 
     .. code-block:: bash
 
-        salt '*' qvm.check <vm-name>
+        salt '*' qvm.check <vmname> exists flags=[quiet]
+
+    Valid actions:
+
+    .. code-block:: yaml
+
+        # Required Positional
+        - name:                 <vmname>
+
+        # Optional Positional
+        - check:                (exists)|absent
+
+        # Optional Flags
+        - flags:
+          - quiet
     '''
-    cmd = "/usr/bin/qvm-check {0}".format(vmname)
-    return _run_all(cmd)
+    def __init__(self, vmname, *varargs, **kwargs):
+        '''
+        '''
+        self.post_run_hook = kwargs.pop('post-run-hook', None)
+
+        super(_Check, self).__init__(arginfo(['flags'], skip=['varargs']))
+        self.parser = self._parser()
+        self.args = self.parser.parse_args(args=self.arginfo['__argv'])
+
+        # Remove 'check' variable from varargs since qvm-check does not support it
+        try:
+            self.arginfo['__argv'].remove(self.args.check)
+        except ValueError:
+            pass
+
+    @classmethod
+    def _parser(cls):
+        parser = _ArgumentParser(prog='qvm.check')
+
+        # Optional Flags
+        parser.add_argument('--quiet', action='store_true', help='Quiet')
+
+        # Required Positional
+        parser.add_argument('vmname', action=_VMAction, help='Virtual machine name')
+
+        # Optional Positional
+        parser.add_argument('check', nargs='?', default='exists', choices=('exists', 'absent'), help='Check if virtual machine exists or not')
+        return parser
+
+    def run_post(self, cmd, result):
+        '''Called by run to allow additional post-processing of results before
+        the results get stored to self.stdout, etc
+        '''
+        if self.args.check.lower() == 'absent':
+            result['retcode'] = not result['retcode']
+
+    def __call__(self):
+        args = self.args
+
+        #def post_hook(cmd, result):
+        #    if self.args.check.lower() == 'absent':
+        #        result['retcode'] = not result['retcode']
+        #    if self.post_run_hook:
+        #        self.post_run_hook(cmd, result)
+
+        # Execute command (will not execute in test mode)
+        cmd = '/usr/bin/qvm-check {0}'.format(' '.join(self.arginfo['__argv']))
+        result = self.run(cmd, ignore_test=True)
+        #result = self.run(cmd, ignore_test=True, post_hook=post_hook)
+
+        # Returns the 'ret' dictionary
+        return self.results()
 
 
-def state(vmname, *varargs, **kwargs):
+@_function_alias('state')
+class _State(_ModuleHelper):
     '''
     Return virtual machine state::
 
@@ -428,17 +599,61 @@ def state(vmname, *varargs, **kwargs):
 
     .. code-block:: bash
 
-        salt '*' qvm.state <vm-name>
+        salt '*' qvm.state <vmname> running
+
+    Valid actions:
+
+    .. code-block:: yaml
+
+        # Required Positional
+        - name:                 <vmname>
+
+        # Optional Positional
+        - state:                (status)|running|dead|transient|paused
     '''
-    ret = {}
+    def __init__(self, vmname, *varargs, **kwargs):
+        '''
+        '''
+        argv_ordering = ['args', 'varargs', 'argparse_keywords']
+        super(_State, self).__init__(arginfo(argv_ordering=argv_ordering, skip=['varargs']))
+        self.parser = self._parser()
+        self.args = self.parser.parse_args(args=self.arginfo['__argv'])
 
-    vm = _get_vm(vmname)
-    if not vm:
-        return check(vmname)
+    @classmethod
+    def _parser(cls):
+        parser = _ArgumentParser(prog='qvm.state')
 
-    ret['stdout'] = vm.get_power_state()
-    ret['retcode'] = not vm.is_guid_running()
-    return ret
+        # Required Positional
+        parser.add_argument('vmname', action=_VMAction, help='Virtual machine name')
+
+        # Optional Positional
+        parser.add_argument('state', nargs='?', default='status', choices=('status', 'running', 'dead', 'transient', 'paused'), help='Check power state of virtual machine')
+        return parser
+
+    def __call__(self):
+        args = self.args
+
+        # Check VM power state
+        self.stdout = self.vm().get_power_state()
+        power_state = self.stdout.strip().lower()
+
+        if args.state.lower() == 'running':
+            if power_state not in ['running']:
+                self.ret['retcode'] = 1
+        elif args.state.lower() == 'dead':
+            if power_state not in ['halted']:
+                self.ret['retcode'] = 1
+        elif args.state.lower() == 'transient':
+            if power_state not in ['transient']:
+                self.ret['retcode'] = 1
+        elif args.state.lower() == 'paused':
+            if power_state not in ['paused']:
+                self.ret['retcode'] = 1
+        #else:
+        #    self.ret['retcode'] = not self.vm().is_guid_running()
+
+        # Returns the 'ret' dictionary
+        return self.results()
 
 
 @_function_alias('create')
@@ -450,18 +665,25 @@ class _Create(_ModuleHelper):
 
     .. code-block:: bash
 
-        salt '*' qvm.create <vm-name> label=red template=fedora-20-x64
+        salt '*' qvm.create <vmname> label=red template=fedora-21 flags=[proxy]
+
+    Valid actions:
 
     .. code-block:: yaml
 
+        # Required Positional
         - name:                 <vmname>
+
+        # Optional
         - template:             <template>
         - label:                <label>
-        - root-move-from:       <root_move>
-        - root-copy-from:       <root_copy>
         - mem:                  <mem>
         - vcpus:                <vcpus>
-        - options:
+        - root-move-from:       <root_move>
+        - root-copy-from:       <root_copy>
+
+        # Optional Flags
+        - flags:
           - proxy
           - hvm
           - hvm-template
@@ -474,19 +696,15 @@ class _Create(_ModuleHelper):
     def __init__(self, vmname, *varargs, **kwargs):
         '''
         '''
-        # Tell arginfo to also add options values to argv; will remove options
-        # from argv, only converting the values
-        super(_Create, self).__init__(arginfo(['options']))
+        super(_Create, self).__init__(arginfo(['flags']))
         self.parser = self._parser()
         self.args = self.parser.parse_args(args=self.arginfo['__argv'])
-
-        # vmname should go last; will be added later
-        #self.arginfo['__argv'].remove(vmname)
 
     @classmethod
     def _parser(cls):
         parser = _ArgumentParser(prog='qvm.create')
-        parser.add_argument('vmname', help='Virtual machine name')
+
+        # Optional Flags
         parser.add_argument('--quiet', action='store_true', help='Quiet')
         parser.add_argument('--proxy', action='store_true', help='Create ProxyVM')
         parser.add_argument('--hvm', action='store_true', help='Create HVM (standalone unless --template option used)')
@@ -496,31 +714,37 @@ class _Create(_ModuleHelper):
         parser.add_argument('--internal', action='store_true', help='Create VM for internal use only (hidden in qubes- manager, no appmenus)')
         parser.add_argument('--force-root', action='store_true', help='Force to run, even with root privileges')
 
+        # Optional
         parser.add_argument('--template', nargs=1, help='Specify the TemplateVM to use')
         parser.add_argument('--label', nargs=1, help='Specify the label to use for the new VM (e.g. red, yellow, green, ...)')
         parser.add_argument('--root-move-from', nargs=1, help='Use provided root.img instead of default/empty one (file will be MOVED)')
         parser.add_argument('--root-copy-from', nargs=1, help='Use provided root.img instead of default/empty one (file will be COPIED)')
         parser.add_argument('--mem', nargs=1, help='Initial memory size (in MB)')
         parser.add_argument('--vcpus', nargs=1, help='VCPUs count')
+
+        # Required Positional
+        parser.add_argument('vmname', help='Virtual machine name')
         return parser
 
     def __call__(self):
         args = self.args
 
-        # Check if VM exists; pass even if it does not exist and return
-        current_check_result = check(args.vmname)
-        if not current_check_result['retcode']:
+        def post_hook(cmd, result):
+            if result['retcode']:
+                result['result'] = result['retcode']
+                result['retcode'] = 0
+
+        # Check if VM exists; always indicate pass
+        #current_check_result = check(args.vmname)
+        current_check_result = check(args.vmname, **{'post-run-hook': post_hook})
+
+        self.update(current_check_result, create=True, append=['stderr', 'stdout'])
+        #if not current_check_result['retcode']:
+        #    current_check_result['retcode'] = 0
+        #    return current_check_result
+        if current_check_result['result']:
             current_check_result['retcode'] = 0
             return current_check_result
-
-        #cmd = ['/usr/bin/qvm-create']
-        #args, fnargs = salt.utils.arg_lookup(create).values()
-        #for arg in fnargs:
-        #    value = locals().get(arg, None)
-        #    if value:
-        #        arg = '--' + arg.replace('_', '-')
-        #        cmd.extend([arg, str(value)])
-        #cmd.append(vmname)
 
         # Execute command (will not execute in test mode)
         cmd = '/usr/bin/qvm-create {0}'.format(' '.join(self.arginfo['__argv']))
@@ -530,8 +754,8 @@ class _Create(_ModuleHelper):
         return self.results()
 
 
-#def remove(vmname, just_db=None):
-def remove(vmname, *varargs, **kwargs):
+@_function_alias('remove')
+class _Remove(_ModuleHelper):
     '''
     Remove an existing virtual machine::
 
@@ -539,50 +763,62 @@ def remove(vmname, *varargs, **kwargs):
 
     .. code-block:: bash
 
-        salt '*' qvm.remove <vm-name> [just_db=True]
+        salt '*' qvm.remove <vmname> flags=[just-db]
+
+    Valid actions:
 
     .. code-block:: yaml
 
+        # Required Positional
         - name:                 <vmname>
-        - just_db:              True | False
-        - options:
+
+        # Optional Flags
+        - flags:
+          - just-db:
           - force-root
           - quiet
     '''
-    # XXX: Convert to argparse
-    just_db = kwargs.pop('just_db', None)
+    def __init__(self, vmname, *varargs, **kwargs):
+        '''
+        '''
+        super(_Remove, self).__init__(arginfo(['flags']))
+        self.parser = self._parser()
+        self.args = self.parser.parse_args(args=self.arginfo['__argv'])
 
-    # Check if VM exists; pass even if it does not exist and return
-    current_check_result = check(vmname)
-    if current_check_result['retcode']:
-        current_check_result['retcode'] = 0
-        return current_check_result
+    @classmethod
+    def _parser(cls):
+        parser = _ArgumentParser(prog='qvm.remove')
 
-    # Check VM power state
-    current_state_result = state(vmname)
-    power_state = current_state_result['stdout'].strip().lower()
-    if power_state not in ['halted']:
-        cmd = '/usr/bin/qvm-kill {0}'.format(vmname)
-        result = _run_all(cmd)
+        # Optional Flags
+        parser.add_argument('--just-db', action='store_true', help='Remove only from the Qubes Xen DB, do not remove any files')
+        parser.add_argument('--quiet', action='store_true', help='Quiet')
+        parser.add_argument('--force-root', action='store_true', help='Force to run, even with root privileges')
 
-    cmd = ['/usr/bin/qvm-remove']
-    args, fnargs = salt.utils.arg_lookup(remove).values()
-    for arg in fnargs:
-        value = locals().get(arg, None)
-        if value:
-            arg = '--' + arg.replace('_', '-')
-            cmd.extend([arg, str(value)])
-    cmd.append(vmname)
+        # Required Positional
+        parser.add_argument('vmname', action=_VMAction, help='Virtual machine name')
+        return parser
 
-    ret = _run_all(cmd)
-    return ret
+    def __call__(self):
+        args = self.args
+
+        # Check VM power state
+        current_state_result = state(args.vmname)
+        power_state = current_state_result['stdout'].strip().lower()
+        if power_state not in ['halted']:
+            result = kill(args.vmname)
+            if result['retcode']:
+                return result
+
+        # Execute command (will not execute in test mode)
+        cmd = '/usr/bin/qvm-remove {0}'.format(' '.join(self.arginfo['__argv']))
+        result = self.run(cmd)
+
+        # Returns the 'ret' dictionary and adds comments in 'test' mode
+        return self.results()
 
 
-#def clone(vmname,
-#          target,
-#          label=None,
-#          path=None):
-def clone(vmname, *varargs, **kwargs):
+@_function_alias('clone')
+class _Clone(_ModuleHelper):
     '''
     Clone a new virtual machine::
 
@@ -590,45 +826,82 @@ def clone(vmname, *varargs, **kwargs):
 
     .. code-block:: bash
 
-        salt '*' qvm.clone <vm-name> <target_name> [label=] [path=]
+        salt '*' qvm.clone <vm-name> <target_name> [shutdown=true|false] [path=]
 
     .. code-block:: yaml
 
+        # Required Positional
         - name:                 <vmname>
-        - target:               <target vmname>
+        - target:               <target clone name>
+
+        # Optional
         - path:                 </path/xxx>
-        - options:
+
+        # Optional Flags
+        - flags:
+          - shutdown
           - force-root
           - quiet
     '''
-    # XXX: Convert to argparse
-    target = kwargs.pop('target', None)
-    if not target:
-        ret = {}
-        ret['stdout'] = 'ERROR: No target selected!'
-        ret['retcode'] = 1
-        return ret
-    label = kwargs.pop('label', None)
-    path = kwargs.pop('path', None)
+    def __init__(self, vmname, *varargs, **kwargs):
+        '''
+        '''
+        # XXX: add flags
+        argv_ordering = ['keywords', 'args', 'varargs']
+        super(_Clone, self).__init__(arginfo(['flags'], argv_ordering=argv_ordering, skip=['varargs']))
+        self.parser = self._parser()
+        self.args = self.parser.parse_args(args=self.arginfo['__argv'])
 
-    # Check if 'target' VM exists; fail if it does and return
-    current_check_result = check(target)
-    if current_check_result['retcode']:
-        current_check_result['retcode'] = 1
-        return current_check_result
+        # Remove 'shutdown' flag from argv as its not a valid qvm.clone option
+        if '--shutdown' in self.arginfo['__argv']:
+            self.arginfo['__argv'].remove('--shutdown')
 
-    cmd = ['/usr/bin/qvm-clone']
-    args, fnargs = salt.utils.arg_lookup(create).values()
-    for arg in fnargs:
-        value = locals().get(arg, None)
-        if value:
-            arg = '--' + arg.replace('_', '-')
-            cmd.extend([arg, str(value)])
-    cmd.append(vmname)
-    cmd.append(target)
+    @classmethod
+    def _parser(cls):
+        parser = _ArgumentParser(prog='qvm.clone')
 
-    ret = _run_all(cmd)
-    return ret
+        # Optional Flags
+        parser.add_argument('--shutdown', action='store_true', help='Will shutdown a running or paused VM to allow cloning')
+        parser.add_argument('--quiet', action='store_true', help='Quiet')
+        parser.add_argument('--force-root', action='store_true', help='Force to run, even with root privileges')
+
+        # Optional
+        parser.add_argument('--path', nargs=1, help='Specify path to the template directory')
+
+        # Required Positional
+        parser.add_argument('vmname', action=_VMAction, help='Virtual machine name')
+        parser.add_argument('target', nargs=1, help='New clone VM name')
+        return parser
+
+    def __call__(self):
+        args = self.args
+
+        # Check if 'target' VM exists; fail if it does and return
+        target_check_result = check(args.target)
+        if not target_check_result['retcode']:
+            target_check_result['retcode'] = 1
+            return target_check_result
+
+        # Attempt to predict result in test mode
+        #if __opts__['test']:
+        #    self.stdout = 'Command to run: {0}'.format(cmd)
+        #    return self.results()
+
+        # Check VM power state and shutdown vm if 'shutdown' is enabled
+        if args.shutdown:
+            current_state_result = state(args.vmname)
+            power_state = current_state_result['stdout'].strip().lower()
+            if power_state not in ['halted']:
+                shutdown_result = shutdown(args.vmname, *['wait'])
+                if shutdown_result['retcode']:
+                    return shutdown_result
+
+        # Execute command (will not execute in test mode)
+        cmd = '/usr/bin/qvm-clone {0}'.format(' '.join(self.arginfo['__argv']))
+        result = self.run(cmd)
+
+        # Returns the 'ret' dictionary
+        return self.results()
 
 
 def get_prefs(vmname, *vars, **kwargs):
@@ -714,7 +987,7 @@ def prefs(vmname, *varargs, **kwargs):
         - timezone:             <string>
         - internal:             true|(false)
         - autostart:            true|(false)
-        - options:
+        - flags:
           - list
           - set
           - gry
@@ -810,8 +1083,9 @@ class _Service(_ModuleHelper):
 
         arginfo is also not needed for argparse.
         '''
-        argv_format = ['_argparse_args', '_argparse_varargs']
-        super(_Service, self).__init__(arginfo(argv_format=argv_format, skip=['varargs']))
+        # XXX: add flags
+        argv_ordering = ['args', 'varargs']
+        super(_Service, self).__init__(arginfo(argv_ordering=argv_ordering, skip=['varargs']))
         self.parser = self._parser()
         self.args = self.parser.parse_args(args=self.arginfo['__argv'])
 
@@ -825,7 +1099,7 @@ class _Service(_ModuleHelper):
 
     def __call__(self):
         args = self.args
-        current_services = args.vm.services
+        current_services = self.vm().services
 
         # Return all current services if a 'list' only was selected
         if args.action in ['list']:
@@ -859,7 +1133,7 @@ class _Service(_ModuleHelper):
                     if 'stdout' in result and result['stdout'].strip():
                         self.stdout += result['stdout'] + '\n'
                 else:
-                    self.stdout += '{0} "{1}" service is already in desired state: {2}\n'.format(args.vmname, service_name, updated_services.get(service_name, 'missing'))
+                    self.stdout += '{0} "{1}": Service is already in desired state: {2}\n'.format(args.action, service_name, updated_services.get(service_name, 'missing'))
 
         # Returns the 'ret' dictionary
         return self.results()
@@ -885,7 +1159,7 @@ class _Run(_ModuleHelper):
         - exclude:              <exclude_list>
         - localcmd:             <localcmd>
         - color-output:         <color_output>
-        - options:
+        - flags:
           - quiet
           - auto
           - tray
@@ -906,10 +1180,11 @@ class _Run(_ModuleHelper):
         #self.cmd = kwargs.pop('cmd', '')
         cmd = kwargs.pop('cmd', '')
 
-        # XXX if we are successful using args and kwargs; will not need options?
-        # XXX Test using argv_format
-        argv_format = ['_argparse_varargs', '_argparse_keywords', '_argparse_args', 'cmd']
-        super(_Run, self).__init__(arginfo(['options'], argv_format=argv_format))
+        # XXX if we are successful using args and kwargs; will not need flags?
+        # XXX Test using argv_ordering
+        # XXX: add flags
+        argv_ordering = ['varargs', 'keywords', 'args', 'cmd']
+        super(_Run, self).__init__(arginfo(['flags'], argv_ordering=argv_ordering))
         self.parser = self._parser()
         self.args = self.parser.parse_args(args=self.arginfo['__argv'])
 
@@ -944,11 +1219,6 @@ class _Run(_ModuleHelper):
     def __call__(self):
         args = self.args
 
-        # Check if VM exists
-        current_check_result = check(args.vmname)
-        if current_check_result['retcode']:
-            return current_check_result
-
         # Check VM power state and start if 'auto' is enabled
         if args.auto:
             current_state_result = state(args.vmname)
@@ -964,7 +1234,7 @@ class _Run(_ModuleHelper):
         #    return self.results()
 
         # Execute command (will not execute in test mode)
-        # XXX: Test using new argv_format
+        # XXX: Test using new argv_ordering
         #cmd = '/usr/bin/qvm-run {0} {1} {2}'.format(' '.join(self.arginfo['__argv']), args.vmname, self.cmd)
         cmd = '/usr/bin/qvm-run {0}'.format(' '.join(self.arginfo['__argv']))
         result = self.run(cmd)
@@ -993,7 +1263,7 @@ class _Start(_ModuleHelper):
         - hddisk:               <drive_hd>
         - cdrom:                <drive_cdrom>
         - custom-config:        <custom_config>
-        - options:
+        - flags:
           - quiet
           - tray
           - no-guid
@@ -1004,9 +1274,9 @@ class _Start(_ModuleHelper):
     def __init__(self, vmname, *varargs, **kwargs):
         '''
         '''
-        # Tell arginfo to also add options values to argv; will remove options
+        # Tell arginfo to also add flags values to argv; will remove flags
         # from argv, only converting the values
-        super(_Start, self).__init__(arginfo(['options']))
+        super(_Start, self).__init__(arginfo(['flags']))
         self.parser = self._parser()
         self.args = self.parser.parse_args(args=self.arginfo['__argv'])
 
@@ -1033,16 +1303,11 @@ class _Start(_ModuleHelper):
     def __call__(self):
         args = self.args
 
-        # Check if VM exists
-        current_check_result = check(args.vmname)
-        if current_check_result['retcode']:
-            return current_check_result
-
         # Check VM power state
         current_state_result = state(args.vmname)
         power_state = current_state_result['stdout'].strip().lower()
         if power_state in ['paused']:
-            self.args.vm.unpause()
+            self.vm().unpause()
         elif power_state not in ['halted']:
             current_state_result['retcode'] = 0 if power_state in ['running', 'transient'] else 1
             return current_state_result
@@ -1058,8 +1323,8 @@ class _Start(_ModuleHelper):
 
         # XXX: Temp hack to prevent startup status showing as Transient
         try:
-            if not self.args.vm.is_guid_running():
-                self.args.vm.start_guid()
+            if not self.vm().is_guid_running():
+                self.vm().start_guid()
         except AttributeError:
             # AttributeError: CEncodingAwareStringIO instance has no attribute 'fileno'
             pass
@@ -1085,7 +1350,7 @@ class _Shutdown(_ModuleHelper):
 
         - name:                 <vmname>
         - exclude:              [exclude_list]
-        - options:
+        - flags:
           - quiet
           - force
           - wait
@@ -1095,9 +1360,9 @@ class _Shutdown(_ModuleHelper):
     def __init__(self, vmname, *varargs, **kwargs):
         '''
         '''
-        # Tell arginfo to also add options values to argv; will remove options
+        # Tell arginfo to also add flags values to argv; will remove flags
         # from argv, only converting the values
-        super(_Shutdown, self).__init__(arginfo(['options']))
+        super(_Shutdown, self).__init__(arginfo(['flags']))
         self.parser = self._parser()
         self.args = self.parser.parse_args(args=self.arginfo['__argv'])
 
@@ -1121,11 +1386,6 @@ class _Shutdown(_ModuleHelper):
     def __call__(self):
         args = self.args
 
-        # Check if VM exists
-        current_check_result = check(args.vmname)
-        if current_check_result['retcode']:
-            return current_check_result
-
         # Check VM power state
         current_state_result = state(args.vmname)
         power_state = current_state_result['stdout'].strip().lower()
@@ -1133,7 +1393,7 @@ class _Shutdown(_ModuleHelper):
             current_state_result['retcode'] = 0
             return current_state_result
         elif power_state in ['paused']:
-            self.args.vm.unpause()
+            self.vm().unpause()
 
         # Attempt to predict result in test mode
         #if __opts__['test']:
@@ -1146,6 +1406,57 @@ class _Shutdown(_ModuleHelper):
         else:
             cmd = '/usr/bin/qvm-shutdown {0}'.format(' '.join(self.arginfo['__argv']))
         result = self.run(cmd)
+
+        # Kill if 'Transient'
+        current_state_result = state(args.vmname)
+        power_state = current_state_result['stdout'].strip().lower()
+        if power_state not in ['halted']:
+            cmd = '/usr/bin/qvm-kill {0}'.format(args.vmname)
+            result = self.run(cmd)
+
+        # Returns the 'ret' dictionary
+        return self.results()
+
+
+@_function_alias('kill')
+class _Kill(_ModuleHelper):
+    '''
+    Kills a virtual machine domain::
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' qvm.kill <vmname>
+
+    Valid actions:
+
+    .. code-block:: yaml
+
+        # Required Positional
+        - name:                 <vmname>
+    '''
+    def __init__(self, vmname, *varargs, **kwargs):
+        '''
+        '''
+        super(_Kill, self).__init__(arginfo())
+        self.parser = self._parser()
+        self.args = self.parser.parse_args(args=self.arginfo['__argv'])
+
+    @classmethod
+    def _parser(cls):
+        parser = _ArgumentParser(prog='qvm.kill')
+
+        # Required Positional
+        parser.add_argument('vmname', action=_VMAction, help='Virtual machine name')
+        return parser
+
+    def __call__(self):
+        args = self.args
+        self.arginfo['varargs'].append('kill')
+
+        # Set self.ret since 'shutdown' module was called and not run()
+        self.ret = shutdown(args.vmname, *self.arginfo['varargs'], **self.arginfo['kwargs'])
 
         # Returns the 'ret' dictionary
         return self.results()
@@ -1165,9 +1476,9 @@ class _Pause(_ModuleHelper):
     def __init__(self, vmname, *varargs, **kwargs):
         '''
         '''
-        # Tell arginfo to also add options values to argv; will remove options
+        # Tell arginfo to also add flags values to argv; will remove flags
         # from argv, only converting the values
-        super(_Pause, self).__init__(arginfo(['options']))
+        super(_Pause, self).__init__(arginfo(['flags']))
         self.parser = self._parser()
         self.args = self.parser.parse_args(args=self.arginfo['__argv'])
 
@@ -1179,11 +1490,6 @@ class _Pause(_ModuleHelper):
 
     def __call__(self):
         args = self.args
-
-        # Check if VM exists
-        current_check_result = check(args.vmname)
-        if current_check_result['retcode']:
-            return current_check_result
 
         # Check VM power state
         current_state_result = state(args.vmname)
@@ -1198,7 +1504,7 @@ class _Pause(_ModuleHelper):
         #    return self.results()
 
         # Execute command (will not execute in test mode)
-        self.args.vm.pause()
+        self.vm().pause()
 
         # Returns the 'ret' dictionary
         return self.results()
@@ -1218,9 +1524,9 @@ class _Unpause(_ModuleHelper):
     def __init__(self, vmname, *varargs, **kwargs):
         '''
         '''
-        # Tell arginfo to also add options values to argv; will remove options
+        # Tell arginfo to also add flags values to argv; will remove flags
         # from argv, only converting the values
-        super(_Unpause, self).__init__(arginfo(['options']))
+        super(_Unpause, self).__init__(arginfo(['flags']))
         self.parser = self._parser()
         self.args = self.parser.parse_args(args=self.arginfo['__argv'])
 
@@ -1232,11 +1538,6 @@ class _Unpause(_ModuleHelper):
 
     def __call__(self):
         args = self.args
-
-        # Check if VM exists
-        current_check_result = check(args.vmname)
-        if current_check_result['retcode']:
-            return current_check_result
 
         # Check VM power state
         current_state_result = state(args.vmname)
@@ -1251,7 +1552,7 @@ class _Unpause(_ModuleHelper):
         #    return self.results()
 
         # Execute command (will not execute in test mode)
-        self.args.vm.unpause()
+        self.vm().unpause()
 
         # Returns the 'ret' dictionary
         return self.results()
