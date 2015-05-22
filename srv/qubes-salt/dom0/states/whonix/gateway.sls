@@ -13,7 +13,7 @@ sys-whonix-test:
   qvm.vm:
     - remove: []
     - create:
-      # options:
+      # flags:
         # template: whonix-gw-experimental
         # label: purple
         # mem: 400
