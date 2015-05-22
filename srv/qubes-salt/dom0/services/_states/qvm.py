@@ -2,11 +2,11 @@
 '''
 :maintainer:    Jason Mehring <nrgaway@gmail.com>
 :maturity:      new
-:depends:       qubes
 :platform:      all
 
-Implementation of Qubes qvm utilities
-=====================================
+===========================
+Qubes qvm-* state functions
+===========================
 
 Salt can manage many Qubes settings via the qvm state module.
 
@@ -35,6 +35,8 @@ from salt.exceptions import (
     CommandExecutionError, MinionError, SaltInvocationError
 )
 
+from qubes_utils import _update
+
 log = logging.getLogger(__name__)
 
 
@@ -62,7 +64,7 @@ TODO:
   [ ] qvm-backup          [ ] qvm-firewall            [X] qvm-prefs                    [ ] qvm-sync-appmenus
   [ ] qvm-backup-restore  [ ] qvm-grow-private        [X] qvm-remove                   [ ] qvm-sync-clock
   [ ] qvm-block           [ ] qvm-grow-root           [ ] qvm-revert-template-changes  [ ] qvm-template-commit
-  [X] qvm-check           [ ] qvm-init-storage        [3] qvm-run                      [ ] qvm-trim-template
+  [X] qvm-check           [ ] qvm-init-storage        [X] qvm-run                      [ ] qvm-trim-template
   [X] qvm-clone           [X] qvm-kill                [X] qvm-service                  [ ] qvm-usb
 
   [X] qvm-pause
@@ -94,147 +96,15 @@ def _call_function(name, function, *varargs, **kwargs):
     ret['comment'] = ret['stdout']
 
     if __opts__['test']:
-        ret['result'] = None
+        #ret['result'] = None
+        ret['result'] = None if not ret['retcode'] else False
     else:
         ret['result'] = True if not ret['retcode'] else False
     return ret
 
 
-def _update(target, source, create=False, allowed=None, append=False):
-    '''
-    Updates the values of a nested dictionary of varying depth without over-
-    writing the targets root nodes.
-
-    target
-        Target dictionary to update
-
-    source
-        Source dictionary that will be used to update `target`
-
-    create
-        if True then new keys can be created during update, otherwise they will be tossed
-        if they do not exist in `target`.
-
-    allowed
-        list of allowed keys that can be created even if create is False
-
-    append [True] or ['list_of_keys', 'key4']
-        appends to strings or lists if append is True or key in list
-    '''
-    if not allowed:
-        allowed = []
-
-    for key, value in source.items():
-        if isinstance(value, collections.Mapping):
-            if key in target.keys() or create or key in allowed:
-                replace = _update(target.get(key, {}), value, create=create)
-                target[key] = replace
-        else:
-            if key in target.keys() or create or key in allowed:
-                if append and (append is True or key in append):
-                    if isinstance(source[key], str) and isinstance(target.get(key, ''), str):
-                        target.setdefault(key, '')
-                        target[key] += source[key]
-                    elif isinstance(source[key], list) and isinstance(target.get(key, []), list):
-                        target.setdefault(key, [])
-                        target[key].extend(source[key])
-                    else:
-                        target[key] = source[key]
-                else:
-                    target[key] = source[key]
-    return target
-
-
-def check(name, *varargs, **kwargs):
-    '''
-    Returns True is vmname exists
-    '''
-    ret = _call_function(name, 'qvm.check', *varargs, **kwargs)
-    return ret
-
-
-def missing(name, *varargs, **kwargs):
-    '''
-    Returns True is vmname does not exist
-    '''
-    ret = _call_function(name, 'qvm.check', *varargs, **kwargs)
-    ret['result'] = not ret['result']
-    return ret
-
-
-def running(name, *varargs, **kwargs):
-    '''
-    Returns True is vmname is running, False if not
-    '''
-    ret = _call_function(name, 'qvm.state', *varargs, **kwargs)
-    return ret
-
-
-def dead(name, *varargs, **kwargs):
-    '''
-    Returns True is vmname is halted
-    '''
-    ret = _call_function(name, 'qvm.state', *varargs, **kwargs)
-    ret['result'] = not ret['result']
-    return ret
-
-
-#def OLDcreate(name, **kwargs):
-#    '''
-#    '''
-#    ret = {'name': name,
-#           'changes': {},
-#           'result': False,
-#           'comment': ''}
-#
-#    args, fnargs = salt.utils.arg_lookup(__salt__['qvm.create']).values()
-#    for key, value in kwargs.items():
-#        if key in fnargs:
-#            fnargs[key] = value
-#
-#    # Support test mode only
-#    if __opts__['test'] == True:
-#        # Pre-check if create should succeed
-#        ret = _call_function(name, 'qvm.check')
-#        ret['result'] = not ret['result']
-#        if not ret['result']:
-#            return ret
-#        ret['result'] = None
-#        ret['comment'] = 'VM {0} will be created\n{1}'.format(name, _nested_output(fnargs))
-#        return ret
-#
-#    ret = _call_function(name, 'qvm.create', **fnargs)
-#    return ret
-
-
-def remove(name, *varargs, **kwargs):
-    '''
-    '''
-    ret = {'name': name,
-           'changes': {},
-           'result': False,
-           'comment': ''}
-
-    args, fnargs = salt.utils.arg_lookup(__salt__['qvm.remove']).values()
-    for key, value in kwargs.items():
-        if key in fnargs:
-            fnargs[key] = value
-
-    # Support test mode only
-    if __opts__['test'] == True:
-        # Pre-check if create should succeed
-        ret = _call_function(name, 'qvm.check')
-        if not ret['result']:
-            return ret
-        ret['result'] = None
-        ret['comment'] = 'VM {0} will be removed\n{1}'.format(name, _nested_output(fnargs))
-        return ret
-
-    ret = _call_function(name, 'qvm.remove', *varargs, **fnargs)
-    return ret
-
-
-def clone(name, target, *varargs, **kwargs):
+#def clone(name, clone_name, *varargs, **kwargs):
+def OLDclone(name, *varargs, **kwargs):
     '''
     '''
     ret = {'name': name,
@@ -258,7 +128,7 @@ def clone(name, target, *varargs, **kwargs):
         ret['comment'] = 'VM {0} will be cloned\n{1}'.format(name, _nested_output(fnargs))
         return ret
 
-    fnargs['target'] = target
+    #fnargs['clone_name'] = clone_name
     ret = _call_function(name, 'qvm.clone', *varargs, **fnargs)
     return ret
 
@@ -284,7 +154,8 @@ def service(name, *varargs, **kwargs):
             result = _call_function(name, 'qvm.service', *qvm_service, **kwargs)
             # XXX: Don't send kwargs since varargs are being used instead -- handled in module now
             #result = _call_function(name, 'qvm.service', *qvm_service)
-        except CommandExecutionError, e:
+        #except CommandExecutionError, e:
+        except (SaltInvocationError, CommandExecutionError), e:
             stderr += e.message + '\n'
             continue
         stderr += result['stderr']
@@ -314,7 +185,8 @@ def service(name, *varargs, **kwargs):
     #    try:
     #        Send kwargs...
     #        result = _call_function(name, 'qvm.service', **qvm_service)
-    #    except CommandExecutionError, e:
+    ##    except CommandExecutionError, e:
+    #    except (SaltInvocationError, CommandExecutionError), e:
     #        stderr += e.message + '\n'
     #        continue
     #    stderr += result['stderr']
@@ -346,7 +218,7 @@ def _vm_action(name, action, *varargs, **kwargs):
         stderr += result['stderr']
         stdout += result['stdout']
         _update(ret, result, create=True)
-    except CommandExecutionError, e:
+    except (SaltInvocationError, CommandExecutionError), e:
         stderr += e.message + '\n'
 
     if stderr:
@@ -358,66 +230,64 @@ def _vm_action(name, action, *varargs, **kwargs):
     return ret
 
 # ==============================================================================
-# ==============================================================================
-# ==============================================================================
-#
-# TODO:
-# -----
-# - Seperate out varargs, like proxy; send them as varargs; kwargs as keywords
-# - Test with command line salt-call to make sure we can also send varargs
-# - How can we enter these varargs in sls state with WITHOUT creating 'options'
-#
-#    - Seems like I can't with standalone sls; but can with qvm.vm.
-#    - May be able to modify yamlscript to allow syntax and not be confused
-#      with salt thinking multiple functions are defined
-#    - IS THERE A BETTER TERM THAN 'OPTIONS' for the OPTIONAL args?
-#
-# ==============================================================================
-# ==============================================================================
-# ==============================================================================
-#def create(name, **kwargs):
+
+def exists(name, *varargs, **kwargs):
+    '''
+    Returns True is vmname exists
+    '''
+    varargs = list(varargs)
+    varargs.append('exists')
+    return _vm_action(name, 'qvm.check', *varargs, **kwargs)
+
+def absent(name, *varargs, **kwargs):
+    '''
+    Returns True is vmname is absent (does not exist)
+    '''
+    varargs = list(varargs)
+    varargs.append('absent')
+    return _vm_action(name, 'qvm.check', *varargs, **kwargs)
+
+def running(name, *varargs, **kwargs):
+    '''
+    Returns True is vmname is running
+    '''
+    varargs = list(varargs)
+    varargs.append('running')
+    return _vm_action(name, 'qvm.state', *varargs, **kwargs)
+
+def dead(name, *varargs, **kwargs):
+    '''
+    Returns True is vmname is halted
+    '''
+    varargs = list(varargs)
+    varargs.append('dead')
+    return _vm_action(name, 'qvm.state', *varargs, **kwargs)
+
 def create(name, *varargs, **kwargs):
     '''
     Create vmname (qvm-create)
     '''
-    ##kwargs['options'] = ['quiet']
-    #return _vm_action(name, **kwargs)
+    #kwargs['flags'] = ['quiet']
     return _vm_action(name, 'qvm.create', *varargs, **kwargs)
 
-def OLDcreate_maybe(name, *varargs, **kwargs):
-    #ret = {'name': name,
-    #       'changes': {},
-    #       'result': False,
-    #       'comment': ''}
+def remove(name, *varargs, **kwargs):
+    '''
+    Remove vmname (qvm-remove)
+    '''
+    return _vm_action(name, 'qvm.remove', *varargs, **kwargs)
 
-    #args, fnargs = salt.utils.arg_lookup(__salt__['qvm.create']).values()
-    #for key, value in kwargs.items():
-    #    if key in fnargs:
-    #        fnargs[key] = value
-
-    # Support test mode only
-    #if __opts__['test'] == True:
-    #    # Pre-check if create should succeed
-    #    ret = _call_function(name, 'qvm.check')
-    #    ret['result'] = not ret['result']
-    #    if not ret['result']:
-    #        return ret
-    #    ret['result'] = None
-    #    ret['comment'] = 'VM {0} will be created\n{1}'.format(name, _nested_output(fnargs))
-    #    return ret
-
-    # XXX: CONFIRM test mode is actually supported!
-    # qvm.create supports test mode within function module
-    result = _call_function(name, 'qvm.create', *varargs, **kwargs)
-    return result
-
+def clone(name, target, *varargs, **kwargs):
+    '''
+    Clone a VM (qvm-clone)
+    '''
+    return _vm_action(name, 'qvm.clone', target, *varargs, **kwargs)
 
 def start(name, *varargs, **kwargs):
     '''
     Start vmname (qvm-start)
     '''
-    kwargs['options'] = ['quiet']
-    kwargs['options'] = ['no-guid']
+    kwargs['flags'] = ['quiet']
+    kwargs['flags'] = ['no-guid']
     return _vm_action(name, 'qvm.start', *varargs, **kwargs)
 
 
@@ -425,6 +295,7 @@ def shutdown(name, *varargs, **kwargs):
     '''
     Shutdown vmname (qvm-shutdown)
     '''
+    kwargs['flags'] = ['wait']
     return _vm_action(name, 'qvm.shutdown', *varargs, **kwargs)
 
 
@@ -432,8 +303,7 @@ def kill(name, *varargs, **kwargs):
     '''
     Kill vmname (qvm-kill)
     '''
-    kwargs['options'] = ['kill']
-    return _vm_action(name, 'qvm.shutdown', *varargs, **kwargs)
+    return _vm_action(name, 'qvm.kill', *varargs, **kwargs)
 
 
 def pause(name, *varargs, **kwargs):
@@ -498,13 +368,13 @@ def vm(name, *varargs, **kwargs):
 
     create, remove, clone
     prefs, service
-    check, running, missing, dead
+    exists, running, absent, dead
     start, stop, pause, unpause
     '''
     actions = [
-        'check',
+        'exists',
         'running',
-        'missing',
+        'absent',
         'dead',
         'remove',
         'create',
