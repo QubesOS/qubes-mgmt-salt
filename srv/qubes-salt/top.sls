@@ -42,19 +42,4 @@ base:
 
     # --- dom0 configurations ---
     - tests
-
-  # === DomU ==================================================================
-  'virtual_subtype:Xen PV DomU':
-    - match: grain
-
-    # --- salt applications ---
-    - python_pip  # Not needed if salt installed via repo (yum, apt-get)
-
-    # --- appearance ---
-    - theme
-    - theme.fonts_ubuntu
-    - theme.fonts_source_code_pro
-
-#dev:
-#  # === Common ================================================================
-#  '*': []
+    # whonix.gateway
