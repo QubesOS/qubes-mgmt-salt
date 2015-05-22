@@ -4,6 +4,12 @@
 
 ##
 # Qubes state, and module tests
+#
+# Debug Environment:
+#   --local state.highstate
+#   --local state.highstate -l debug
+#   --local state.highstate test=true
+#   --local state.single test=true qvm.remove salt-testvm just-db
 ##
 
 
@@ -11,8 +17,6 @@
 #
 # CURRENT ISSUES:
 # ---------------
-# - qvm-run is not working in dom0 highstate, but it is via WingIDE
-# - qvm-service is showing as being modified on each highstate
 #
 # TODO:
 # -----
@@ -33,8 +37,6 @@
 #   commandline access (IE: service uses varags; not kwargs)
 # - Make sure commandline usage goes in modual docstrings
 #
-# - rename options to optional / varargs ?
-#
 #===============================================================================
 
 
@@ -45,9 +47,9 @@ $python: |
         'qvm-kill',
         'qvm-dead',
         'qvm-remove',
-        'qvm-missing',
+        'qvm-absent',
         'qvm-create',
-        'qvm-check',
+        'qvm-exists',
         'qvm-prefs',
         'qvm-service',
         'qvm-start',
@@ -56,16 +58,19 @@ $python: |
         'qvm-unpause',
         'qvm-shutdown',
         'qvm-run',
-      # 'qvm-clone',
+        'qvm-clone',
 
+      # - REDO qvm-vm state data to include above syntax
+      #   - CONFIRM it supports all states above too (action list)
       # 'qvm-vm',
-      # 'qubes-dom0-update',
+        'qubes-dom0-update',
 
       # 'fail-qvm-running',
       # 'gpg-verify',
       # 'gpg-import_key',
       # 'gpg-renderer',
     ]
+
 
 #===============================================================================
 # Test qubes-dom0-update                                       qubes-dom0-update
@@ -98,18 +103,20 @@ $if 'qvm-remove' in tests:
   qvm-remove-id:
     qvm.remove:
       - name: $test_vm_name
-      # just_db: true|(false)
-      # options:
+      # flags:
+        # just-db
         # force-root
         # quiet
 
 #===============================================================================
-# Confirm VM does not exist                                          qvm-missing
+# Confirm VM does not exist                                           qvm-absent
 #===============================================================================
-$if 'qvm-missing' in tests:
-  qvm-missing-id:
-    qvm.missing:
+$if 'qvm-absent' in tests:
+  qvm-absent-id:
+    qvm.absent:
       - name: $test_vm_name
+      # flags:
+        # quiet
 
 #===============================================================================
 # Create VM                                                           qvm-create
@@ -124,23 +131,25 @@ $if 'qvm-create' in tests:
       - vcpus: 4
       # root-move-from: </path/xxx>
       # root-copy-from: </path/xxx>
-      - options:
+      - flags:
         - proxy
-        # quiet  # *** salt default ***
         # hvm
         # hvm-template
         # net
         # standalone
         # internal
         # force-root
+        # quiet
 
 #===============================================================================
-# Confirm vm exists                                                    qvm-check
+# Confirm vm exists                                                   qvm-exists
 #===============================================================================
-$if 'qvm-check' in tests:
-  qvm-check-id:
-    qvm.check:
+$if 'qvm-exists' in tests:
+  qvm-exists-id:
+    qvm.exists:
       - name: $test_vm_name
+      # flags:
+        # quiet
 
 #===============================================================================
 # Modify VM preferences                                                qvm-prefs
@@ -170,7 +179,7 @@ $if 'qvm-prefs' in tests:
       # timezone:             <string>
       # internal:             true|(false)
       # autostart:            true|(false)
-      # options:
+      # flags:
         # list
         # set
         # gry
@@ -209,7 +218,7 @@ $if 'qvm-start' in tests:
       # hddisk: <string>
       # cdrom: <string>
       # custom-config: <string>
-      # options:
+      # flags:
         # quiet  # *** salt default ***
         # no-guid  # *** salt default ***
         # tray
@@ -249,7 +258,7 @@ $if 'qvm-shutdown' in tests:
     qvm.shutdown:
       - name: $test_vm_name
       # exclude: [exclude_list,]
-      # options:
+      # flags:
         # quiet
         # force
         # wait
@@ -270,7 +279,7 @@ $if 'qvm-run' in tests:
       # exclude: [sys-net, sys-firewall]
       # localcmd: </dev/null>
       # color-output: 31
-      - options:
+      - flags:
         # quiet
         - auto
         # tray
@@ -292,7 +301,8 @@ $if 'qvm-clone' in tests:
       - name: $test_vm_name
       - target: $'{0}-clone'.format(test_vm_name)
       # path:                 </path/xxx>
-      # options:
+      - flags:
+        - shutdown
         # quiet
         # force-root
 
@@ -313,7 +323,7 @@ $if 'qvm-vm' in tests:
         - label: red
         - mem: 3000
         - vcpus: 4
-        - options:
+        - flags:
           - proxy
       # prefs:
         # label: green
@@ -335,7 +345,7 @@ $if 'qvm-vm' in tests:
           # another_test4
           # another_test5
       - start: []
-        # options:
+        # flags:
           # tray
           # no-guid
           # dvm
@@ -348,7 +358,7 @@ $if 'qvm-vm' in tests:
       # TODO: TEST AUTO-START
       - run:
         - cmd: gnome-terminal
-        - options:
+        - flags:
           # user: user
           # exclude: [sys-net, sys-firewall]
           # localcmd: /dev/null
