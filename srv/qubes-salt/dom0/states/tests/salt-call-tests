@@ -358,32 +358,31 @@ fi
 #  qvm-prefs-id:
 #    qvm.prefs:
 #      - name: $test_vm_name
+#      - action: set
 #      - label: green  # red|yellow|green|blue|purple|orange|gray|black
 #      - template: debian-jessie
 #      - memory: 400
 #      - maxmem: 4000
-#      - include_in_backups: false  # true|false
+#      - include-in-backups: false  # true|false
 #      # pcidevs:              [string,]
 #      # netvm:                <string>
 #      # kernel:               <string>
 #      # vcpus:                <int>
 #      # kernelopts:           <string>
-#      # drive:                <string>
 #      # mac:                  <string> (auto)
 #      # debug:                true|(false)
-#      # default_user:         <string>
-#      # qrexec_installed:     true|false
-#      # guiagent_installed:   true|false
-#      # seamless_gui_mode:    true|false
-#      # qrexec_timeout:       <int> (60)
-#      # timezone:             <string>
+#      # default-user:         <string>
+#      # qrexec-timeout:       <int> (60)
 #      # internal:             true|(false)
 #      # autostart:            true|(false)
 #      # flags:
-#        # list
-#        # set
-#        # gry
 #        # force-root
+#      # The following keys do not seem to exist in Qubes prefs DB
+#      # drive:              ''
+#      # timezone:           UTC
+#      # qrexec-installed:   true
+#      # guiagent-installed:  true
+#      # seamless-gui-mode:  false
 module='qvm-prefs'
 if elementIn "${module}" in "${TESTS[@]}"; then
   args=(
@@ -590,7 +589,7 @@ fi
 #        # template: debian-jessie
 #        # memory: 400
 #        # maxmem: 4000
-#        # include_in_backups: False
+#        # include-in-backups: False
 #      # service:
 #        # disable:
 #          # test
