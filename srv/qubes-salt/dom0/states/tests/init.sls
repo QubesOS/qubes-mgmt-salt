@@ -17,6 +17,32 @@
 #
 # CURRENT ISSUES:
 # ---------------
+# - comments when TEST mode enabled incorrect
+# - test with strict as well
+#   - NOTE: Addedd manual debug code for strict in state module
+#
+# - can we merge start, shutdown, kill, pause, unpause into State?
+#   - Then just have 'start', etc sub-class --or-- would it become too messy?
+#   - maybe state call; would call start(), shutdown()
+#   - subparsers or seperate classes?
+#   - help doc considerations as well
+#
+#   - module output is quite verbose.  Need to implement different filters
+#     to allow different type of output (for CLI; web interface?)
+#
+# TEST PROCEDURES
+# ----------------
+# - All highstate and state test should produce similar output
+# - module mode does not have TEST mode
+#   - Test init.sls highstate (WingIDE)
+#   - Test init.sls highstate (command line)
+#   - Test init.sls highstate test=true (WingIDE)
+#   - Test init.sls highstate test=true (command line)
+#   - Test salt-call-tests - documentation (commandline)
+#   - Test salt-call-tests - state mode (commandline)
+#   - Test salt-call-tests - state mode TEST=1 (commandline)
+#   - Test salt-call-tests - module mode (commandline)
+#   + Run all above again with strict mode enabled
 #
 # TODO:
 # -----
@@ -39,9 +65,38 @@
 #
 #===============================================================================
 
+# Global modes
+# ============
+# strict:
+# -------
+# Strict mode toggles how certain states are passed or failed. The following
+# table will list the effect of enabled.  Further setting the strict to fail
+# will then prevent any further taks within the state id or anything that
+# requires it.
+#
+# Strict mode is mostly useful to confirm  absolute state.
+#
+# Vaild Actions: [ (false) | true | fail ]
+#
+#       qvm.kill: Fail on halted, absent
+#       qvm.dead: Fail on absent
+#     qvm.remove: Fail on absent
+#     qvm.absent: Fail on exists
+#     qvm.create: Fail on exists
+#     qvm.exists: Fail on absent
+#      qvm.prefs: No effect
+#    qvm.service: No effect
+#      qvm.start: Fail on any mode other than halted
+#    qvm.running: Fail on any mode other than running
+#      qvm.pause: Fail on any mode other than running
+#    qvm.unpause: Fail on any mode other that paused
+#   qvm.shutdown: Fail on halted, absent
+#        qvm.run: Fail on running - Error on pause or transient if 'auto' not set
+#      qvm.clone: No effect
+#         qvm.vm: All of above, but will abort any futher actions
 
 $python: |
-    test_vm_name = 'salt-testvm'
+    test_vm_name = 'salt-testvm6'
 
     tests = [
         'qvm-kill',
@@ -50,20 +105,20 @@ $python: |
         'qvm-absent',
         'qvm-create',
         'qvm-exists',
+        'qvm-prefs-list',
+        'qvm-prefs-get',
         'qvm-prefs',
         'qvm-service',
         'qvm-start',
         'qvm-running',
-        'qvm-pause',
-        'qvm-unpause',
-        'qvm-shutdown',
+      # 'qvm-pause',
+      # 'qvm-unpause',
+      # 'qvm-shutdown',
         'qvm-run',
-        'qvm-clone',
+      # 'qvm-clone',
 
-      # - REDO qvm-vm state data to include above syntax
-      #   - CONFIRM it supports all states above too (action list)
       # 'qvm-vm',
-        'qubes-dom0-update',
+      # 'qubes-dom0-update',
 
       # 'fail-qvm-running',
       # 'gpg-verify',
@@ -152,38 +207,63 @@ $if 'qvm-exists' in tests:
         # quiet
 
 #===============================================================================
+# List VM preferences                                             qvm-prefs-list
+#===============================================================================
+$if 'qvm-prefs-list' in tests:
+  qvm-prefs-list1-id:
+    qvm.prefs:
+      - name: $test_vm_name
+      - action: list
+  qvm-prefs-list2-id:
+    qvm.prefs:
+      - name: $test_vm_name
+
+#===============================================================================
+# Get VM preferences                                               qvm-prefs-get
+#===============================================================================
+$if 'qvm-prefs-get' in tests:
+  qvm-prefs-get-id:
+    qvm.prefs:
+      - name: $test_vm_name
+      - action: get
+      - label:              green
+      - template:           debian-jessie
+      - memory:             400
+      - maxmem:             4000
+      - include-in-backups: false
+
+#===============================================================================
 # Modify VM preferences                                                qvm-prefs
 #===============================================================================
 $if 'qvm-prefs' in tests:
   qvm-prefs-id:
     qvm.prefs:
       - name: $test_vm_name
-      - label: green  # red|yellow|green|blue|purple|orange|gray|black
-      - template: debian-jessie
-      - memory: 400
-      - maxmem: 4000
-      - include_in_backups: false  # true|false
-      # pcidevs:              [string,]
-      # netvm:                <string>
-      # kernel:               <string>
-      # vcpus:                <int>
-      # kernelopts:           <string>
-      # drive:                <string>
-      # mac:                  <string> (auto)
-      # debug:                true|(false)
-      # default_user:         <string>
-      # qrexec_installed:     true|false
-      # guiagent_installed:   true|false
-      # seamless_gui_mode:    true|false
-      # qrexec_timeout:       <int> (60)
-      # timezone:             <string>
-      # internal:             true|(false)
-      # autostart:            true|(false)
+      - action: set
+      - label:              green
+      - template:           debian-jessie
+      - memory:             400
+      - maxmem:             4000
+      - include-in-backups: false
+      # pcidevs:            ['04:00.0']
+      # netvm:              sys-firewall
+      # kernel:             default
+      # vcpus:              2
+      # kernelopts:         nopat iommu=soft swiotlb=8192
+      # mac:                auto
+      # debug:              true
+      # default-user:       tester
+      # qrexec-timeout:     120
+      # internal:           true
+      # autostart:          true
       # flags:
-        # list
-        # set
-        # gry
         # force-root
+      # The following keys do not seem to exist in Qubes prefs DB
+      # drive:              ''
+      # timezone:           UTC
+      # qrexec-installed:   true
+      # guiagent-installed: true
+      # seamless-gui-mode:  false
 
 #===============================================================================
 # Modify VM services                                                 qvm-service
@@ -317,56 +397,127 @@ $if 'qvm-vm' in tests:
   qvm-vm-id:
     qvm.vm:
       - name: $test_vm_name
+      - strict: false
+      - actions:
+        - kill
+        - dead
+        - remove
+        - absent
+        - create
+        - exists
+        - prefs
+        - service
+        - start
+        - running
+        - pause
+        - unpause
+        - shutdown
+        - run
+        - clone
+      - kill: []
+      - dead: []
       - remove: []
+        # flags:
+          # just-db
+          # force-root
+          # quiet
+      - absent: []
+        # flags:
+          # quiet
       - create:
         - template: fedora-21
         - label: red
         - mem: 3000
         - vcpus: 4
+        # root-move-from: </path/xxx>
+        # root-copy-from: </path/xxx>
         - flags:
           - proxy
-      # prefs:
-        # label: green
-        # template: debian-jessie
-        # memory: 400
-        # maxmem: 4000
-        # include_in_backups: False
-      # service:
-        # disable:
-          # test
-          # test2
-          # another_test
-          # another_test2
-          # another_test3
-        # enable:
-          # meminfo-writer
-          # test3
-          # test4
-          # another_test4
-          # another_test5
-      - start: []
+          # hvm
+          # hvm-template
+          # net
+          # standalone
+          # internal
+          # force-root
+          # quiet
+      - exists: []
         # flags:
+          # quiet
+      - prefs:
+        - action: set
+        - label: green  # red|yellow|green|blue|purple|orange|gray|black
+        - template: debian-jessie
+        - memory: 400
+        - maxmem: 4000
+        - include-in-backups: false  # true|false
+        # pcidevs:              [string,]
+        # netvm:                <string>
+        # kernel:               <string>
+        # vcpus:                <int>
+        # kernelopts:           <string>
+        # mac:                  <string> (auto)
+        # debug:                true|(false)
+        # default-user:         <string>
+        # qrexec-timeout:       <int> (60)
+        # internal:             true|(false)
+        # autostart:            true|(false)
+        # flags:
+          # force-root
+        # The following keys do not seem to exist in Qubes prefs DB
+        # drive:              ''
+        # timezone:           UTC
+        # qrexec-installed:   true
+        # guiagent-installed:  true
+        # seamless-gui-mode:  false
+      - service:
+        - enable:
+          - test
+          - test2
+          - another_test
+          - another_test2
+          - another_test3
+        - disable:
+          - meminfo-writer
+          - test3
+          - test4
+          - another_test4
+          - another_test5
+        # default: [string,]
+        # list: [string,]
+      - start: []
+        # drive: <string>
+        # hddisk: <string>
+        # cdrom: <string>
+        # custom-config: <string>
+        # flags:
+          # quiet  # *** salt default ***
+          # no-guid  # *** salt default ***
           # tray
-          # no-guid
           # dvm
           # debug
           # install-windows-tools
-          # drive: DRIVE
-          # hddisk: DRIVE_HD
-          # cdrom: DRIVE_CDROM
-          # custom-config: CUSTOM_CONFIG
-      # TODO: TEST AUTO-START
+      - running: []
+      - pause: []
+      - unpause: []
+      - shutdown: []
+        # exclude: [exclude_list,]
+        # flags:
+          # quiet
+          # force
+          # wait
+          # all
+          # kill
       - run:
         - cmd: gnome-terminal
+        # user: <string>
+        # exclude: [sys-net, sys-firewall]
+        # localcmd: </dev/null>
+        # color-output: 31
         - flags:
-          # user: user
-          # exclude: [sys-net, sys-firewall]
-          # localcmd: /dev/null
-          # color-output: '31'
           # quiet
-          # auto
+          - auto
           # tray
-          - all
+          # all
           # pause
           # unpause
           # pass-io
