@@ -25,7 +25,7 @@ import logging
 #import re
 import collections
 
-# Import salt libs
+# Salt libs
 import salt.utils
 from salt.output import nested
 #from salt.utils import namespaced_function as _namespaced_function
@@ -35,7 +35,9 @@ from salt.exceptions import (
     CommandExecutionError, MinionError, SaltInvocationError
 )
 
-from qubes_utils import _update
+# Other salt related utilities
+from qubes_utils import tolist as _tolist
+from qubes_utils import update as _update
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +47,7 @@ def __virtual__():
     Only make these states available if a qvm provider has been detected or
     assigned for this minion
     '''
-    return 'qvm.get_prefs' in __salt__
+    return 'qvm.prefs' in __salt__
 
 '''
 TODO:
@@ -96,7 +98,6 @@ def _call_function(name, function, *varargs, **kwargs):
     ret['comment'] = ret['stdout']
 
     if __opts__['test']:
-        #ret['result'] = None
         ret['result'] = None if not ret['retcode'] else False
     else:
         ret['result'] = True if not ret['retcode'] else False
@@ -150,7 +151,7 @@ def service(name, *varargs, **kwargs):
     for key, value in kwargs.items():
         try:
             qvm_service = [key]
-            qvm_service.extend(__salt__['qvm.tolist'](value))
+            qvm_service.extend(_tolist(value))
             result = _call_function(name, 'qvm.service', *qvm_service, **kwargs)
             # XXX: Don't send kwargs since varargs are being used instead -- handled in module now
             #result = _call_function(name, 'qvm.service', *qvm_service)
@@ -162,37 +163,6 @@ def service(name, *varargs, **kwargs):
         stdout += result['stdout']
         _update(ret, result, create=True, append=['cmd', 'stderr', 'stdout'])
 
-    #===========================================================================
-    # XXX:
-    #
-    # DO NOT DELETE KWARGS LOGIC BELOW UNTIL ALL TESTS WRITTEN AND COMMANDLINE
-    # SALT-CALL MODE IS TESTED.  NEED TO MAKE SURE BEST WAY FOR BOTH YAML
-    # AND SALT-CALL IS BEING USED.
-    #
-    # VARARGS ALLOWS SALT-CALL QVM.SERVICE <ACTION> <VALUE>
-    #
-    # -- INSTEAD OF -- (something like this?)
-    #
-    # SALT-CALL QVM.SERVICE ACTION=<ACTION> VALUE=<VALUE>
-    #===========================================================================
-    #
-    # Send as **kwargs...
-    # ===================
-    #for key, value in kwargs.items():
-    #     Send kwargs...
-    #     services.append({'action' : key, 'service_names': value})
-    #for qvm_service in services:
-    #    try:
-    #        Send kwargs...
-    #        result = _call_function(name, 'qvm.service', **qvm_service)
-    ##    except CommandExecutionError, e:
-    #    except (SaltInvocationError, CommandExecutionError), e:
-    #        stderr += e.message + '\n'
-    #        continue
-    #    stderr += result['stderr']
-    #    stdout += result['stdout']
-    #    _update(ret, result, create=True)
-
     if stderr:
         ret['result'] = False
         stderr = 'stderr:\n{0}'.format(stderr)
@@ -202,19 +172,26 @@ def service(name, *varargs, **kwargs):
     return ret
 
 
-def _vm_action(name, action, *varargs, **kwargs):
+def _vm_action(name, _action, *varargs, **kwargs):
     '''
     Start, shutdown, kill, pause, unpause, etc
     '''
+    # ==========================================================================
+    # XXX: DEBUG ONLY
+    strict = False
+    if strict:
+        kwargs.setdefault('flags', [])
+        kwargs['flags'].append('strict')
+    # ==========================================================================
+
+    stdout = stderr = ''
     ret = {'name': name,
            'changes': {},
            'result': False,
            'comment': ''}
 
-    stdout = stderr = ''
-
     try:
-        result = _call_function(name, action, *varargs, **kwargs)
+        result = _call_function(name, _action, *varargs, **kwargs)
         stderr += result['stderr']
         stdout += result['stdout']
         _update(ret, result, create=True)
@@ -223,13 +200,14 @@ def _vm_action(name, action, *varargs, **kwargs):
 
     if stderr:
         ret['result'] = False
-        stderr = 'stderr:\n{0}'.format(stderr)
         if stdout:
-            stderr += 'stdout:\n'
-    ret['comment'] = stderr + stdout
+            stdout = '====== stdout ======\n{0}\n\n'.format(stdout)
+        stderr = '====== stderr ======\n{0}'.format(stderr)
+    ret['comment'] = stdout + stderr
     return ret
 
 # ==============================================================================
+
 
 def exists(name, *varargs, **kwargs):
     '''
@@ -239,6 +217,7 @@ def exists(name, *varargs, **kwargs):
     varargs.append('exists')
     return _vm_action(name, 'qvm.check', *varargs, **kwargs)
 
+
 def absent(name, *varargs, **kwargs):
     '''
     Returns True is vmname is absent (does not exist)
@@ -246,6 +225,7 @@ def absent(name, *varargs, **kwargs):
     varargs = list(varargs)
     varargs.append('absent')
     return _vm_action(name, 'qvm.check', *varargs, **kwargs)
+
 
 def running(name, *varargs, **kwargs):
     '''
@@ -255,6 +235,7 @@ def running(name, *varargs, **kwargs):
     varargs.append('running')
     return _vm_action(name, 'qvm.state', *varargs, **kwargs)
 
+
 def dead(name, *varargs, **kwargs):
     '''
     Returns True is vmname is halted
@@ -263,12 +244,15 @@ def dead(name, *varargs, **kwargs):
     varargs.append('dead')
     return _vm_action(name, 'qvm.state', *varargs, **kwargs)
 
+
 def create(name, *varargs, **kwargs):
     '''
     Create vmname (qvm-create)
     '''
-    #kwargs['flags'] = ['quiet']
+    #kwargs.setdefault('flags', [])
+    #kwargs['flags'].append('quiet')
     return _vm_action(name, 'qvm.create', *varargs, **kwargs)
+
 
 def remove(name, *varargs, **kwargs):
     '''
@@ -276,18 +260,20 @@ def remove(name, *varargs, **kwargs):
     '''
     return _vm_action(name, 'qvm.remove', *varargs, **kwargs)
 
+
 def clone(name, target, *varargs, **kwargs):
     '''
     Clone a VM (qvm-clone)
     '''
     return _vm_action(name, 'qvm.clone', target, *varargs, **kwargs)
 
+
 def start(name, *varargs, **kwargs):
     '''
     Start vmname (qvm-start)
     '''
-    kwargs['flags'] = ['quiet']
-    kwargs['flags'] = ['no-guid']
+    kwargs.setdefault('flags', [])
+    kwargs['flags'].extend(['quiet', 'no-guid'])
     return _vm_action(name, 'qvm.start', *varargs, **kwargs)
 
 
@@ -295,7 +281,8 @@ def shutdown(name, *varargs, **kwargs):
     '''
     Shutdown vmname (qvm-shutdown)
     '''
-    kwargs['flags'] = ['wait']
+    kwargs.setdefault('flags', [])
+    kwargs['flags'].append('wait')
     return _vm_action(name, 'qvm.shutdown', *varargs, **kwargs)
 
 
@@ -324,44 +311,17 @@ def prefs(name, *varargs, **kwargs):
     '''
     Sets vmname preferences (qvm-prefs)
     '''
-    ret = {'name': name,
-           'changes': {},
-           'result': False,
-           'comment': ''}
-
-    # Support test mode only
-    if __opts__['test'] == True:
-        current_state = __salt__['qvm.get_prefs'](name)
-        data = dict([(key, value) for key, value in kwargs.items() if value != current_state.get(key, object)])
-        ret['result'] = None
-        ret['comment'] = 'The following preferences will be changed:\n{0}'.format(_nested_output(data))
-        return ret
-
-    ret = _call_function(name, 'qvm.prefs', *varargs, **kwargs)
-    return ret
+    return _vm_action(name, 'qvm.prefs', *varargs, **kwargs)
 
 
 def run(name, *varargs, **kwargs):
     '''
     Run command in virtual machine domain (qvm-run)
     '''
-    ret = {'name': name,
-           'changes': {},
-           'result': False,
-           'comment': ''}
-
-    # Support test mode only
-    #if __opts__['test'] == True:
-    #    current_state = __salt__['qvm.get_prefs'](name)
-    #    data = dict([(key, value) for key, value in kwargs.items() if value != current_state[key]])
-    #    ret['result'] = None
-    #    ret['comment'] = 'The following preferences will be changed:\n{0}'.format(_nested_output(data))
-    #    return ret
-
-    ret = _call_function(name, 'qvm.run', *varargs, **kwargs)
-    return ret
+    return _vm_action(name, 'qvm.run', *varargs, **kwargs)
 
 
+# XXX: Convert to _vm_action ???
 def vm(name, *varargs, **kwargs):
     '''
     Wrapper to contain all VM state functions
@@ -397,6 +357,12 @@ def vm(name, *varargs, **kwargs):
     stdout = stderr = ''
     test = __opts__['test']
 
+    # Action ordering from state file
+    actions = kwargs.pop('actions', actions)
+
+    # Global Strict mode from state file
+    strict = kwargs.pop('strict', False)
+
     #def to_dict(alist):
     #    return reduce(lambda r, d: r.update(d) or r, alist, {})
 
@@ -416,12 +382,20 @@ def vm(name, *varargs, **kwargs):
             if ret['result'] is None:
                 ret['result'] = True
 
-            ##result = globals()[action](name, **to_dict(kwargs[action]))
+            # Parse kwargs and create varargs + keywords
             _varargs, keywords = parse_options(kwargs[action])
+
+            # Apply global strict mode
+            if strict:
+                keywords.setdefault('flags', [])
+                keywords['flags'].append('strict')
+
+            # Execute action
             result = globals()[action](name, *_varargs, **keywords)
 
             if 'changes' in result and result['changes']:
-                ret['changes'].update(result['changes'])
+                #ret['changes'].update(result['changes'])
+                ret['changes']['qvm.' + action] = result['changes']
 
             if 'result' in result and not result['result'] and result['result'] is not None:
                 # Record failure
@@ -432,24 +406,28 @@ def vm(name, *varargs, **kwargs):
                 except KeyError:
                     stderr += '=== \'{0}\' {1} ===\n'.format(action, result['result'])
 
+                # XXX: This may not enable TEST mode
                 # Switch to test mode for remainder of action items since we do
                 # not want them to execute but may find the results useful
-                __opts__['test'] =  True
+                __opts__['test'] = True
+
+                # XXX: Consider breaking out of loop on error...
+                #      CREATE a YAML option to allow user to decide
 
             message = None
             if 'stderr' in result and result['stderr'].strip():
-                stderr += '=== \'{0}\' stderr ===\n'.format(action)
+                stderr += '====== stderr \'{0}\' ======\n'.format(action)
                 stderr += result['stderr'] + '\n'
                 message = True
 
             if 'stdout' in result and result['stdout'].strip():
-                stdout += '=== \'{0}\' stdout ===\n'.format(action)
+                stdout += '====== stdout \'{0}\' ======\n'.format(action)
                 stdout += result['stdout'] + '\n'
                 message = True
 
             if not message:
                 if 'cmd' in result and result['cmd']:
-                    stdout += '=== \'{0}\' {1} ===\n{2}\n'.format(action, result['result'], result['cmd'])
+                    stdout += '====== \'{0}\' {1} ======\n{2}\n'.format(action, result['result'], result['cmd'])
 
             if stdout and index < len(actions):
                 stdout += '\n'
