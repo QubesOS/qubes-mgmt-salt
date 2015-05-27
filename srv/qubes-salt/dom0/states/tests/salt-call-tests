@@ -79,25 +79,25 @@ AUTO_TEST_MODE=1  # Runs first without TEST_MODE and then with TEST_MODE
 # WARNING: this VM will be destroyed and manipulated so DO NOT use an existing
 #          virtual machine name
 #-------------------------------------------------------------------------------
-TEST_VM_NAME='salt-testvm2'
+TEST_VM_NAME='salt-testvm6'
 
 #-------------------------------------------------------------------------------
 # List of tests to run.  Comment out any that you wish not to run.
 #-------------------------------------------------------------------------------
 TESTS=(
-  # 'qvm-kill'
-  # 'qvm-dead'
+    'qvm-kill'              # COMPLETE
+  # 'qvm-halted'
   # 'qvm-remove'
-    'qvm-absent'
+  # 'qvm-absent'
   # 'qvm-create'
-    'qvm-exists'
+  # 'qvm-exists'
   # 'qvm-prefs'
   # 'qvm-service'
   # 'qvm-start'
   # 'qvm-running'
   # 'qvm-pause'
   # 'qvm-unpause'
-  # 'qvm-shutdown'
+    'qvm-shutdown'
   # 'qvm-run'
   # 'qvm-clone'
 
@@ -270,14 +270,14 @@ if elementIn "${module}" in "${TESTS[@]}"; then
 fi
 
 #===============================================================================
-# Confirm VM is dead (halted)                                           qvm-dead
+# Confirm VM is halted (halted)                                       qvm-halted
 #===============================================================================
-module='qvm-dead'
+module='qvm-halted'
 if elementIn "${module}" in "${TESTS[@]}"; then
     args=(
         "${TEST_VM_NAME}"
     )
-    run_module qvm.state "${args[@]}" dead
+    run_module qvm.state "${args[@]}" halted
     run_state "${module/-/.}" "${args[@]}"
 fi
 
@@ -288,7 +288,7 @@ module='qvm-remove'
 if elementIn "${module}" in "${TESTS[@]}"; then
     args=(
         "${TEST_VM_NAME}"
-        #"flags=[just-db, force-root, quiet]"
+        #"flags=[just-db, shutdown, force-root, quiet]"
     )
     # Not running module as well as state since we can only remove once
     run_docs "${module/-/.}" "${args[@]}"
@@ -410,7 +410,9 @@ fi
 #        - test4
 #        - another_test4
 #        - another_test5
-#      # default: [string,]
+#        - default:
+#          - another_test5
+#          - does_not_exist
 #      # list: [string,]
 module='qvm-service'
 if elementIn "${module}" in "${TESTS[@]}"; then
@@ -502,12 +504,16 @@ fi
 #        # wait
 #        # all
 #        # kill
+
 module='qvm-shutdown'
 if elementIn "${module}" in "${TESTS[@]}"; then
-  args=(
-      "${TEST_VM_NAME}"
-  )
-  run "${module/-/.}" "${args[@]}"
+    args=(
+        "${TEST_VM_NAME}"
+        "exclude=sys-net"
+        "flags=[quiet, force, wait, all, kill]"
+        #"flags=[quiet, force, wait, all, kill]"
+    )
+    run "${module/-/.}" "${args[@]}"
 fi
 
 #===============================================================================
@@ -576,7 +582,9 @@ fi
 #  qvm-vm-id:
 #    qvm.vm:
 #      - name: $test_vm_name
-#      - remove: []
+#      - remove:
+#        - flags:
+#          - shutdown
 #      - create:
 #        - template: fedora-21
 #        - label: red

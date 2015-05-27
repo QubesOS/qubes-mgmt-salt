@@ -17,18 +17,8 @@
 #
 # CURRENT ISSUES:
 # ---------------
-# - comments when TEST mode enabled incorrect
-# - test with strict as well
-#   - NOTE: Addedd manual debug code for strict in state module
-#
-# - can we merge start, shutdown, kill, pause, unpause into State?
-#   - Then just have 'start', etc sub-class --or-- would it become too messy?
-#   - maybe state call; would call start(), shutdown()
-#   - subparsers or seperate classes?
-#   - help doc considerations as well
-#
-#   - module output is quite verbose.  Need to implement different filters
-#     to allow different type of output (for CLI; web interface?)
+# - might not need or use strict mode anymoe; since it may only be needed in
+#   test mode??
 #
 # TEST PROCEDURES
 # ----------------
@@ -52,15 +42,6 @@
 # - Create non yamlscript test state file with same tests
 # - Create a bash script file that will test each qvm-* using commandline
 #   salt-call
-# - run TEST mode on everything to confirm no states run; only test mode results
-#
-# - Convert remainder of _modules to classes
-# - Research if we can remove code duplication in _states; maybe combine
-#   _call_function AND _vm_action for standardized result comments / output
-#
-# - ONLY when all the above is complete should I consider cleaning codebase
-#   as some things may need to be switched around again to allow easy
-#   commandline access (IE: service uses varags; not kwargs)
 # - Make sure commandline usage goes in modual docstrings
 #
 #===============================================================================
@@ -79,7 +60,7 @@
 # Vaild Actions: [ (false) | true | fail ]
 #
 #       qvm.kill: Fail on halted, absent
-#       qvm.dead: Fail on absent
+#       qvm.halted: Fail on absent
 #     qvm.remove: Fail on absent
 #     qvm.absent: Fail on exists
 #     qvm.create: Fail on exists
@@ -96,11 +77,11 @@
 #         qvm.vm: All of above, but will abort any futher actions
 
 $python: |
-    test_vm_name = 'salt-testvm6'
+    test_vm_name = 'salt-testvm'
 
     tests = [
         'qvm-kill',
-        'qvm-dead',
+        'qvm-halted',
         'qvm-remove',
         'qvm-absent',
         'qvm-create',
@@ -111,11 +92,11 @@ $python: |
         'qvm-service',
         'qvm-start',
         'qvm-running',
-      # 'qvm-pause',
-      # 'qvm-unpause',
-      # 'qvm-shutdown',
+        'qvm-pause',
+        'qvm-unpause',
+        'qvm-shutdown',
         'qvm-run',
-      # 'qvm-clone',
+        'qvm-clone',
 
       # 'qvm-vm',
       # 'qubes-dom0-update',
@@ -144,11 +125,11 @@ $if 'qvm-kill' in tests:
       - name: $test_vm_name
 
 #===============================================================================
-# Confirm VM is dead (halted)                                           qvm-dead
+# Confirm VM is halted (halted)                                       qvm-halted
 #===============================================================================
-$if 'qvm-dead' in tests:
-  qvm-dead-id:
-    qvm.dead:
+$if 'qvm-halted' in tests:
+  qvm-halted-id:
+    qvm.halted:
       - name: $test_vm_name
 
 #===============================================================================
@@ -158,8 +139,9 @@ $if 'qvm-remove' in tests:
   qvm-remove-id:
     qvm.remove:
       - name: $test_vm_name
-      # flags:
+      - flags:
         # just-db
+        - shutdown
         # force-root
         # quiet
 
@@ -245,8 +227,8 @@ $if 'qvm-prefs' in tests:
       - memory:             400
       - maxmem:             4000
       - include-in-backups: false
+      - netvm:              sys-firewall
       # pcidevs:            ['04:00.0']
-      # netvm:              sys-firewall
       # kernel:             default
       # vcpus:              2
       # kernelopts:         nopat iommu=soft swiotlb=8192
@@ -284,7 +266,10 @@ $if 'qvm-service' in tests:
         - test4
         - another_test4
         - another_test5
-      # default: [string,]
+      - default:
+        - another_test5
+        - does_not_exist
+      # list: []
       # list: [string,]
 
 #===============================================================================
@@ -338,10 +323,10 @@ $if 'qvm-shutdown' in tests:
     qvm.shutdown:
       - name: $test_vm_name
       # exclude: [exclude_list,]
-      # flags:
+      - flags:
         # quiet
-        # force
-        # wait
+        - force
+        - wait
         # all
         # kill
 
@@ -389,6 +374,8 @@ $if 'qvm-clone' in tests:
   qvm-clone-remove-id:
     qvm.remove:
       - name: $'{0}-clone'.format(test_vm_name)
+      - flags:
+        - shutdown
 
 #===============================================================================
 # Combined states (all qvm-* commands available within one id)           qvm-all
@@ -400,7 +387,7 @@ $if 'qvm-vm' in tests:
       - strict: false
       - actions:
         - kill
-        - dead
+        - halted
         - remove
         - absent
         - create
@@ -415,10 +402,11 @@ $if 'qvm-vm' in tests:
         - run
         - clone
       - kill: []
-      - dead: []
+      - halted: []
       - remove: []
         # flags:
           # just-db
+          # shutdown
           # force-root
           # quiet
       - absent: []
@@ -449,9 +437,9 @@ $if 'qvm-vm' in tests:
         - template: debian-jessie
         - memory: 400
         - maxmem: 4000
-        - include-in-backups: false  # true|false
+        - include-in-backups: false
+        - netvm: sys-firewall
         # pcidevs:              [string,]
-        # netvm:                <string>
         # kernel:               <string>
         # vcpus:                <int>
         # kernelopts:           <string>
@@ -482,7 +470,9 @@ $if 'qvm-vm' in tests:
           - test4
           - another_test4
           - another_test5
-        # default: [string,]
+        - default:
+          - another_test5
+          - does_not_exist
         # list: [string,]
       - start: []
         # drive: <string>
