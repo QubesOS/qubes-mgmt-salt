@@ -54,6 +54,22 @@ def tolist(value):
     return value
 
 
+class ArgparseFunctionWrapper(object):
+    '''Wraps functions to appear as string.
+
+    Argparse only alllows file, str or int types so to be able to use argparse
+    to parse other types, they can be wrapped and will appear as 'None'
+
+    Function is still callable
+    '''
+    def __init__(self, func):
+        self.func = func
+    def __len__(self):
+        return 0
+    def __call__(self, *varargs, **kwargs):
+        self.func(*varargs, **kwargs)
+
+
 def arg_info(keyword_flag_keys=None, argv_ordering=[], skip=[]):
     '''
     Returns dictionary of calling function's named arguments and values as well
@@ -87,6 +103,7 @@ def arg_info(keyword_flag_keys=None, argv_ordering=[], skip=[]):
     info['_argparse_varargs'] = []
     info['_argparse_keywords'] = []
     info['_argparse_flags'] = []
+    info['_argparse_skipped'] = []
     info['__argv'] = []
 
     # Convert varargs to a list if it exists so it can be appened to
@@ -104,10 +121,6 @@ def arg_info(keyword_flag_keys=None, argv_ordering=[], skip=[]):
         if key in keyword_flag_keys:
             info['__flags'].extend(tolist(value))
         elif key in argv_ordering:
-            #info.setdefault(key, [])
-            #if isinstance(value, list):
-            #    value = ' '.join(value)
-            #info[key].append(tostring(value))
             info[key] = tostring(value)
         else:
             info[info['__keywords']][key] = value
@@ -154,17 +167,27 @@ def arg_info(keyword_flag_keys=None, argv_ordering=[], skip=[]):
     # **kwargs = optional argv
     if info['__keywords']:
         for key, value in info[info['__keywords']].items():
-            if key in keyword_flag_keys + skip:
+            if key in keyword_flag_keys:
                 continue
+
+            section = '_argparse_keywords'
+            if key in skip:
+                info[info['__keywords']].pop(key, None)
+                section = '_argparse_skipped'
+
             # Ignore 'private' keywords
             if not key.startswith('__'):
                 if 'keywords' in skip or key.startswith('--'):
-                    info['_argparse_keywords'].append(key)
+                    info[section].append(key)
                 else:
-                    info['_argparse_keywords'].append('--{0}'.format(key))
-                if isinstance(value, list):
-                    value = ' '.join(value)
-                info['_argparse_keywords'].append(tostring(value))
+                    info[section].append('--{0}'.format(key))
+
+                if isinstance(value, list) and value:
+                    info[section].extend(value)
+                elif isinstance(value, types.FunctionType):
+                    info[section].append(ArgparseFunctionWrapper(value))
+                else:
+                    info[section].append(tostring(value))
 
     if not argv_ordering:
         argv_ordering = ['flags', 'keywords', 'args', 'varargs']
@@ -172,9 +195,12 @@ def arg_info(keyword_flag_keys=None, argv_ordering=[], skip=[]):
         # '_argparse_keywords', 'vmname'
         if '_argparse_{0}'.format(section) in info:
             section = '_argparse_{0}'.format(section)
+
         if section in info:
             if isinstance(info[section], list):
                 info['__argv'].extend(info[section])
+            elif isinstance(info[section], types.FunctionType):
+                info['__argv'].append(info[section])
             else:
                 info['__argv'].append(tostring(info[section]))
 
