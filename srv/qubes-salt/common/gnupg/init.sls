@@ -1,3 +1,4 @@
+#!yamlscript
 # vim: set syntax=yaml ts=2 sw=2 sts=2 et :
 #
 # Initially, everything will break without a public key being set
@@ -13,25 +14,33 @@ gnupg:
     #- require:
     #  - pkg: salt
 
-  gpg.import_key:
-    - source: salt://keys/nrgaway-qubes-signing-key.asc
-    - order: 1
-    # homedir: /etc/salt/gpgkeys
+  #gpg.import_key:
+  #  # source: salt://keys/nrgaway-qubes-signing-key.asc
+  #  # source: salt://gnupg/keys/nrgaway-qubes-signing-key.asc
+  #  # source: {{ pillar['gnupg-key'] }}
+  #  # source: $pillar('key')
+  #  - contents_pillar: $pillar('gnupg-key')
+  #  - order: 1
+  #  # gpg-keydir: /etc/salt/gpgkeys
 
-  file.directory:
-    - name: /etc/salt/gpgkeys
-    - source: salt://salt/files/gpgkeys
-    - makedirs: True
-    - user: root
-    - group: root
-    - dir_mode: 700
-    - file_mode: 600
-    - recurse:
-      - user
-      - group
-      - mode
-    # require:
-    # - pkg: gnupg
+  #file.directory:
+  #  - name: /etc/salt/gpgkeys
+  #  - source: salt://salt/files/gpgkeys
+  #  - makedirs: True
+  #  - user: root
+  #  - group: root
+  #  - dir_mode: 700
+  #  - file_mode: 600
+  #  - recurse:
+  #    - user
+  #    - group
+  #    - mode
+  #  # require:
+  #  # - pkg: gnupg
+
+# ==============================================================================
+# OLD State Code
+# ==============================================================================
 
 # gpgkeys
 #/etc/salt/gpgkeys/pubring.gpg:

@@ -30,6 +30,7 @@ base:
 
     # --- system configurations ---
     # users
+    - gnupg
 
     # --- utilities ---
     - vim
