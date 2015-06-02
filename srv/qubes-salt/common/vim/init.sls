@@ -8,9 +8,6 @@
 # gpg --armor --detach-sig init.sls
 # gpg --import --homedir /etc/salt/gpgkeys nrgaway-qubes-signing-key.asc
 
-include:
-  - salt.gnupg
-
 vim:
   pkg:
     {% if grains['os_family'] == 'RedHat' %}
@@ -22,7 +19,7 @@ vim:
     {% endif %}
     - installed
     - require:
-      - sls: salt.gnupg
+      - pkg: gnupg
 
 /etc/vim/vimrc:
   file:
