@@ -17,8 +17,6 @@
 #
 # CURRENT ISSUES:
 # ---------------
-# - might not need or use strict mode anymoe; since it may only be needed in
-#   test mode??
 #
 # TEST PROCEDURES
 # ----------------
@@ -32,7 +30,6 @@
 #   - Test salt-call-tests - state mode (commandline)
 #   - Test salt-call-tests - state mode TEST=1 (commandline)
 #   - Test salt-call-tests - module mode (commandline)
-#   + Run all above again with strict mode enabled
 #
 # TODO:
 # -----
@@ -45,41 +42,17 @@
 # - Make sure commandline usage goes in modual docstrings
 #
 #===============================================================================
-
+#
 # Global modes
 # ============
-# strict:
-# -------
-# Strict mode toggles how certain states are passed or failed. The following
-# table will list the effect of enabled.  Further setting the strict to fail
-# will then prevent any further taks within the state id or anything that
-# requires it.
 #
-# Strict mode is mostly useful to confirm  absolute state.
-#
-# Vaild Actions: [ (false) | true | fail ]
-#
-#       qvm.kill: Fail on halted, absent
-#       qvm.halted: Fail on absent
-#     qvm.remove: Fail on absent
-#     qvm.absent: Fail on exists
-#     qvm.create: Fail on exists
-#     qvm.exists: Fail on absent
-#      qvm.prefs: No effect
-#    qvm.service: No effect
-#      qvm.start: Fail on any mode other than halted
-#    qvm.running: Fail on any mode other than running
-#      qvm.pause: Fail on any mode other than running
-#    qvm.unpause: Fail on any mode other that paused
-#   qvm.shutdown: Fail on halted, absent
-#        qvm.run: Fail on running - Error on pause or transient if 'auto' not set
-#      qvm.clone: No effect
-#         qvm.vm: All of above, but will abort any futher actions
+#===============================================================================
 
 $python: |
-    test_vm_name = 'salt-testvm'
+    test_vm_name = 'salt-testvm6'
 
     tests = [
+        'test-debug',
         'qvm-kill',
         'qvm-halted',
         'qvm-remove',
@@ -98,13 +71,13 @@ $python: |
         'qvm-run',
         'qvm-clone',
 
-      # 'qvm-vm',
-      # 'qubes-dom0-update',
+        'qvm-vm',
+        'qubes-dom0-update',
 
       # 'fail-qvm-running',
-      # 'gpg-verify',
-      # 'gpg-import_key',
-      # 'gpg-renderer',
+        'gpg-import_key',
+        'gpg-verify',
+        'gpg-renderer',
     ]
 
 
@@ -115,6 +88,17 @@ $if 'qubes-dom0-update' in tests:
   git:
     pkg.installed:
       - name: git
+
+#===============================================================================
+# Set salt state result debug mode (enable/disable)                   test-debug
+#===============================================================================
+$if 'test-debug' in tests:
+  test-debug-id:
+    test.debug:
+      - enable-all: true
+      # enable: [qvm.remove, qvm.start]
+      # disable: [qvm.remove]
+      # disable-all: true
 
 #===============================================================================
 # Kill VM                                                               qvm-kill
@@ -194,11 +178,11 @@ $if 'qvm-exists' in tests:
 $if 'qvm-prefs-list' in tests:
   qvm-prefs-list1-id:
     qvm.prefs:
-      - name: $test_vm_name
-      - action: list
+      - name:               $test_vm_name
+      - action:             list
   qvm-prefs-list2-id:
     qvm.prefs:
-      - name: $test_vm_name
+      - name:               $test_vm_name
 
 #===============================================================================
 # Get VM preferences                                               qvm-prefs-get
@@ -206,8 +190,8 @@ $if 'qvm-prefs-list' in tests:
 $if 'qvm-prefs-get' in tests:
   qvm-prefs-get-id:
     qvm.prefs:
-      - name: $test_vm_name
-      - action: get
+      - name:               $test_vm_name
+      - action:             get
       - label:              green
       - template:           debian-jessie
       - memory:             400
@@ -220,8 +204,8 @@ $if 'qvm-prefs-get' in tests:
 $if 'qvm-prefs' in tests:
   qvm-prefs-id:
     qvm.prefs:
-      - name: $test_vm_name
-      - action: set
+      - name:               $test_vm_name
+      - action:             set
       - label:              green
       - template:           debian-jessie
       - memory:             400
@@ -363,8 +347,8 @@ $if 'qvm-run' in tests:
 $if 'qvm-clone' in tests:
   qvm-clone-id:
     qvm.clone:
-      - name: $test_vm_name
-      - target: $'{0}-clone'.format(test_vm_name)
+      - name: $'{0}-clone'.format(test_vm_name)
+      - source: $test_vm_name
       # path:                 </path/xxx>
       - flags:
         - shutdown
@@ -384,11 +368,10 @@ $if 'qvm-vm' in tests:
   qvm-vm-id:
     qvm.vm:
       - name: $test_vm_name
-      - strict: false
       - actions:
-        - kill
-        - halted
-        - remove
+        - kill: pass
+        - halted: pass
+        - remove: pass
         - absent
         - create
         - exists
@@ -523,19 +506,17 @@ $if 'fail-qvm-running' in tests:
   fail-qvm-running-id:
     qvm.vm:
       - name: $test_vm_name
+      - actions:
+        - create: pass
+        - shutdown
+        - running
+      - create:
+        - template: fedora-21
+        - label: red
+        - mem: 3000
+        - vcpus: 4
       - shutdown: []
       - running: []
-
-#===============================================================================
-# Test new state and module to verify detached signed file            gpg-verify
-#===============================================================================
-$if 'gpg-verify' in tests:
-  gpg-verify-id:
-    gpg.verify:
-      - source: salt://vim/init.sls.asc
-      # homedir: /etc/salt/gpgkeys
-      - require:
-        - pkg: gnupg
 
 #===============================================================================
 # Test new state and module to import gpg key                     gpg-import_key
@@ -545,15 +526,28 @@ $if 'gpg-verify' in tests:
 $if 'gpg-import_key' in tests:
   gpg-import_key-id:
     gpg.import_key:
-      - source: salt://dom0/nrgaway-qubes-signing-key.asc
-      # homedir: /etc/salt/gpgkeys
+      # source: salt://keys/nrgaway-qubes-signing-key.asc
+      # source: /srv/pillar/gnupg/keys/nrgaway-qubes-signing-key.asc
+      - contents-pillar: gnupg-nrgaway-key
+      # contents_pillar: gnupg-nrgaway-key
+      # user: salt
+
+#===============================================================================
+# Test new state and module to verify detached signed file            gpg-verify
+#===============================================================================
+$if 'gpg-verify' in tests:
+  gpg-verify-id:
+    gpg.verify:
+      - source: salt://vim/init.sls.asc
+      # key-data: salt://vim/init.sls
+      # user: salt
+      # require:
+      # - pkg: gnupg
 
 #===============================================================================
 # Test gpgrenderer that automatically verifies signed state         gpg-renderer
 # state files (vim/init.sls{.asc} is the test file for this)
 #===============================================================================
-#$if 'gpg-renderer' in tests:
-#  gpg-renderer-id:
-#    pkg.installed:
-#      - name: vim
+$if 'gpg-renderer' in tests:
+  $include: vim
 
