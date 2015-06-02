@@ -1,5 +1,46 @@
 =======================================================================================================================
-Qubes Installer Configuration
+                                                 DEBUG ENVIRONMENT
+=======================================================================================================================
+--local gpg.import_key contents-pillar=gnupg-nrgaway-key
+--local state.highstate
+--local state.highstate debug=true
+
+
+=======================================================================================================================
+                                                      ISSUES
+=======================================================================================================================
+cli:
+  - Need to create custom outputters for CLI, etc
+
+- qubes-pillar not being imported?  Moved all pillar data to pillar.  Better to
+  have one pillar directory anyway
+
+- debian and rpm using data in apps-salt-config/etc for salt, but
+  ...common/salt/files/minion.d contain same info for updating AND they may
+  become out of sync... try linking etc -> salt/files
+
+
+=======================================================================================================================
+                                                      NOTES
+=======================================================================================================================
+- Make sure pillar directory is marked as a configuraion dir for debian and rpm
+  install so user settings do not get modified
+
+
+=======================================================================================================================
+                                                       TIPS
+=======================================================================================================================
+- to indicate a source within specific environment:
+    - source: salt://for.config?env=dev
+
+- fallback for source
+    - source: salt://for.config.{{ grains['fqdn'] }}
+    - source: salt://for.config.fallback
+
+
+
+=======================================================================================================================
+                                             Qubes Installer Configuration
 =======================================================================================================================
 installer-qubes-os/firstboot/modules/qubes_setup.py
 
@@ -19,7 +60,7 @@ timezone?
 
 
 =======================================================================================================================
-Some apps that can be removed?
+                                        Some apps that can be removed?
 =======================================================================================================================
 > Even using torvm as gateway, I still see outbound traffic to
 > fedora servers - from netvm I guess. Havent yet figured out what's
