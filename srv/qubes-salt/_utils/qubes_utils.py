@@ -6,27 +6,44 @@
 :platform:      all
 
 ======================
-Misc utility functions
+Misc Utility Functions
 ======================
-
-from qubes_utils import tostring as _tostring
-from qubes_utils import tolist as _tolist
-from qubes_utils import arg_info as _arg_info
-from qubes_utils import get_fnargs as _get_fnargs
-from qubes_utils import alias as _alias
-from qubes_utils import function_alias as _function_alias
-from qubes_utils import update as _update
 '''
 
 # Import python libs
+import sys
 import types
-#import copy
 import collections
+import logging
 
-from inspect import getargvalues, stack
+from inspect import stack
 
 # Salt libs
+import salt.config
+import salt.loader
+import salt.pillar
 import salt.utils
+from salt.exceptions import (
+    CommandExecutionError, SaltInvocationError
+)
+
+# Enable logging
+log = logging.getLogger(__name__)
+
+## Set salt pillar, grains and opts settings so they can be applied to modules
+##
+##__opts__ = salt.config.minion_config('/etc/salt/minion')
+##__opts__['grains'] = salt.loader.grains(__opts__)
+##pillar = salt.pillar.get_pillar(
+##    __opts__,
+##    __opts__['grains'],
+##    __opts__['id'],
+##    __opts__['environment'],
+##)
+##__opts__['pillar'] = pillar.compile_pillar()
+##__salt__ = salt.loader.minion_mods(__opts__)
+##__grains__ = __opts__['grains']
+##__pillar__ = __opts__['pillar']
 
 
 def tostring(value):
@@ -54,159 +71,6 @@ def tolist(value):
     return value
 
 
-class ArgparseFunctionWrapper(object):
-    '''Wraps functions to appear as string.
-
-    Argparse only alllows file, str or int types so to be able to use argparse
-    to parse other types, they can be wrapped and will appear as 'None'
-
-    Function is still callable
-    '''
-    def __init__(self, func):
-        self.func = func
-    def __len__(self):
-        return 0
-    def __call__(self, *varargs, **kwargs):
-        self.func(*varargs, **kwargs)
-
-
-def arg_info(keyword_flag_keys=None, argv_ordering=[], skip=[]):
-    '''
-    Returns dictionary of calling function's named arguments and values as well
-    as option to put values from kwargs on argv stack to allow processing as
-    optional vars. (add --before the values) and formats in requested ordering.
-
-    keyword_flag_keys: Provide a keys in list that are available in kwargs to place
-                 treat those values as varargs
-                 example:
-                 ['flags'] - Any vaules contained in kwargs['flags'], will
-                 be handled as varargs
-
-    argv_ordering: Create alternate `argv` format
-                 default:
-                    ['varargs', 'keywords', 'args']
-                 example:
-                    ['varargs', 'keywords', 'args', 'cmd']
-
-    skip:        Skip formatting for giving arg type;
-                 example: ['varargs']
-    '''
-    frame = stack()[1][0]
-    info = getargvalues(frame)._asdict()
-
-    locals_ = info.pop('locals', {})
-    info['__args'] = info.pop('args', None)
-    info['__varargs'] = info.pop('varargs', None)
-    info['__keywords'] = info.pop('keywords', None)
-    info['__flags'] = []
-    info['_argparse_args'] = []
-    info['_argparse_varargs'] = []
-    info['_argparse_keywords'] = []
-    info['_argparse_flags'] = []
-    info['_argparse_skipped'] = []
-    info['__argv'] = []
-
-    # Convert varargs to a list if it exists so it can be appened to
-    if info['__varargs'] in locals_:
-        locals_[info['__varargs']] = tolist(locals_[info['__varargs']])
-
-    # Populate info with values from arg_info
-    for arg_name in info['__args'] + [info['__varargs']]:
-        if arg_name:
-            info[arg_name] = locals_[arg_name]
-
-    # Populate info keyword dictionary to proper locations
-    info.setdefault(info['__keywords'], {})
-    for key, value in locals_[info['__keywords']].items():
-        if key in keyword_flag_keys:
-            info['__flags'].extend(tolist(value))
-        elif key in argv_ordering:
-            info[key] = tostring(value)
-        else:
-            info[info['__keywords']][key] = value
-
-    # argv_ordering processing
-    for section in argv_ordering:
-        pass
-
-    # flags = optional argv flags
-    for flag in info['__flags']:
-        if isinstance(flag, str):
-            if flag in skip:
-                continue
-            if 'flags' in skip:
-                info['_argparse_flags'].append(flag)
-            else:
-                info['_argparse_flags'].append('--{0}'.format(flag))
-        #elif isinstance(flag, collections.Mapping):
-        #    for key, value in flag.items():
-        #        locals_[key] = tostring(value)
-        #        locals_[info['__keywords']][key] = tostring(value)
-
-    # args - positional argv
-    if info['__args']:
-        for value in info['__args']:
-            # Get rid of any references to self
-            if value ==  'self':
-                continue
-            info['_argparse_args'].append(tostring(info[value]))
-
-    # *varargs - positional argv
-    if info['__varargs']:
-        for value in tolist(info[info['__varargs']]):
-            # Ignore 'private' keywords
-            if not value.startswith('__'):
-                # Make keyword optional
-                if 'varargs' in skip:
-                    info['_argparse_varargs'].append(value)
-                elif value.startswith('--'):
-                    info['_argparse_varargs'].append(value)
-                else:
-                    info['_argparse_varargs'].append('--{0}'.format(value))
-
-    # **kwargs = optional argv
-    if info['__keywords']:
-        for key, value in info[info['__keywords']].items():
-            if key in keyword_flag_keys:
-                continue
-
-            section = '_argparse_keywords'
-            if key in skip:
-                info[info['__keywords']].pop(key, None)
-                section = '_argparse_skipped'
-
-            # Ignore 'private' keywords
-            if not key.startswith('__'):
-                if 'keywords' in skip or key.startswith('--'):
-                    info[section].append(key)
-                else:
-                    info[section].append('--{0}'.format(key))
-
-                if isinstance(value, list) and value:
-                    info[section].extend(value)
-                elif isinstance(value, types.FunctionType):
-                    info[section].append(ArgparseFunctionWrapper(value))
-                else:
-                    info[section].append(tostring(value))
-
-    if not argv_ordering:
-        argv_ordering = ['flags', 'keywords', 'args', 'varargs']
-    for section in argv_ordering:
-        # '_argparse_keywords', 'vmname'
-        if '_argparse_{0}'.format(section) in info:
-            section = '_argparse_{0}'.format(section)
-
-        if section in info:
-            if isinstance(info[section], list):
-                info['__argv'].extend(info[section])
-            elif isinstance(info[section], types.FunctionType):
-                info['__argv'].append(info[section])
-            else:
-                info['__argv'].append(tostring(info[section]))
-
-    return info
-
-
 def get_fnargs(function, **kwargs):
     '''Returns all args that a function uses along with default values.
     '''
@@ -215,29 +79,6 @@ def get_fnargs(function, **kwargs):
         if key in fnargs:
             fnargs[key] = value
     return fnargs
-
-
-def alias(new_name):
-    '''
-    Creates a generated class or function alias.
-
-    Doc strings are also copied to wrapper so they are available to salt command
-    line interface via the --doc option.
-    '''
-    def wrapper(func):
-        # Class objects
-        if hasattr(func, '__class__'):
-            frame = stack()[0][0]
-            func_globals = frame.f_globals
-        # Functions
-        else:
-            func_globals = func.func_globals if hasattr(func, 'func_globals') else func.__globals__
-        setattr(func, '__name__', new_name)
-        setattr(func, '__doc__', func.__doc__)
-        func_globals_save = {new_name: func}
-        func_globals.update(func_globals_save)
-        return func
-    return wrapper
 
 
 def function_alias(new_name):
@@ -249,7 +90,11 @@ def function_alias(new_name):
     line interface via the --doc option.
     '''
     def outer(func):
-        func.__virtualname__ = '{0}.{1}'.format(__virtualname__, new_name)
+        frame = stack()[0][0]
+        func_globals = frame.f_back.f_globals
+
+        if '__virtualname__' in func_globals:
+            func.__virtualname__ = '{0}.{1}'.format(func_globals['__virtualname__'], new_name)
 
         def wrapper(*varargs, **kwargs):
             module = func(*varargs, **kwargs)
@@ -262,8 +107,6 @@ def function_alias(new_name):
             wrapper.__doc__ = func.__doc__
 
         wrapper.__name__ = new_name
-        frame = stack()[0][0]
-        func_globals = frame.f_globals
         func_globals_save = {new_name: wrapper}
         func_globals.update(func_globals_save)
         return func
