@@ -16,59 +16,29 @@ The following erros are used and raised in the circumstances as indicated:
     CommandExecutionError
         raise when error executing command
 
-
 -----
 TODO:
 -----
-
-global:
-    Implement a global `debug` mode; and per module to enable debug output
-
-    Move formatting to results module. Considerations for alternative output
-    formats
 
 prefs:
     Currently using `execfile` to parse `/usr/bin/qvm-prefs` in order to obtain
     the property list of valid fields that can be set.  Find a better
     alternative solution to retreive the property list.
-
------
-TESTS
------
-    Check that argparse only allows what intended (some rules may need to be
-    created to be excusive)
-
 '''
 
 # Import python libs
-import os
-import subprocess
-import copy
-import inspect
 import argparse
 import logging
 
 from inspect import getargvalues, stack
 
-# Salt libs
-import salt.utils
-from salt.utils import which as _which
-from salt.exceptions import (
-    CommandExecutionError, SaltInvocationError
-)
+# Salt + Qubes libs
+import module_utils
 
-# Other salt related utilities
-from differ import DictDiffer, ListDiffer
-from qubes_utils import tostring as _tostring
-from qubes_utils import tolist as _tolist
-from qubes_utils import arg_info as _arg_info
-from qubes_utils import get_fnargs as _get_fnargs
-from qubes_utils import alias as _alias
-from qubes_utils import update as _update
-
-# XXX: TEMP
-from stuf import defaultstuf, stuf
-from options import Options, OptionsClass, OptionsContext, attrs, Unset
+from differ import ListDiffer
+from qubes_utils import function_alias as _function_alias
+from module_utils import ModuleBase as _ModuleBase
+from module_utils import Result
 
 # Qubes libs
 from qubes.qubes import QubesVmCollection
@@ -98,83 +68,6 @@ def __virtual__():
 #__outputter__ = {
 #    'get_prefs': 'txt',
 #}
-
-
-def _function_alias(new_name):
-    '''
-    Creates a generated function alias that initializes decorator class then calls
-    the instance and returns any values.
-
-    Doc strings are also copied to wrapper so they are available to salt command
-    line interface via the --doc option.
-    '''
-    def outer(func):
-        func.__virtualname__ = '{0}.{1}'.format(__virtualname__, new_name)
-
-        def wrapper(*varargs, **kwargs):
-            module = func(*varargs, **kwargs)
-            return module()
-        wrapper.func = func
-
-        if 'usage' in dir(func):
-            wrapper.__doc__ = func.usage()
-        else:
-            wrapper.__doc__ = func.__doc__
-
-        wrapper.__name__ = new_name
-        frame = stack()[0][0]
-        func_globals = frame.f_globals
-        func_globals_save = {new_name: wrapper}
-        func_globals.update(func_globals_save)
-        return func
-    return outer
-
-
-class _ArgumentParser(argparse.ArgumentParser):
-    '''Custom ArgumentParser to raise Salt Exceptions instead of exiting
-       the complete process.
-    '''
-    def error(self, message):
-        """error(message: string)
-
-        Raises a Salt CommandExecutionError.
-
-        If you override this in a subclass, it should not return -- it
-        should either exit or raise an exception.
-        """
-        #self.print_usage(_sys.stderr)
-        raise CommandExecutionError('{0}: error: {1}\n'.format(self.prog, message))
-
-
-class Result(Options):
-    def __init__(self, *args, **kwargs):
-        defaults = {
-            'name':  '',
-            'result':  None,
-            'retcode': 0,
-            'stdout':  '',
-            'stderr':  '',
-            'data':  None,
-            'changes': {},
-            'comment': '',
-        }
-
-        defaults.update(kwargs)
-        super(Result, self).__init__(*args, **defaults)
-
-    def reset(self, key, default=None):
-        value = getattr(self, key, default)
-        self[key] = type(self[key])()
-        return value
-
-    def passed(self, **kwargs):
-        return not bool(self.retcode)
-
-    def failed(self, **kwargs):
-        return bool(self.retcode)
-
-    def __len__(self):
-        return self.passed()
 
 
 class _VMAction(argparse.Action):
@@ -207,318 +100,21 @@ class _VMAction(argparse.Action):
         setattr(namespace, 'vm', vm)
 
 
-class _QVMBase(object):
-    '''QVMBase is a base class which contains base functionality and utility
-       to implement the qvm-* commands
+class _QVMBase(_ModuleBase):
+    '''Overrides.
     '''
-
-    # Used to identify values that have not been passed to functions which allows
-    # the function modules not to have to know anything about the default types
-    # excpected
-    try:
-        if MARKER:
-            pass
-    except NameError:
-        MARKER = object()
-
-    @staticmethod
-    def find_key(adict, text):
-        for key in adict.keys():
-            if key.replace('-', '_') == text:
-                return key
-        return None
-
-    def __init__(self, vmname, *varargs, **kwargs):
-        #internal_options = ['strict', 'result-mode']
-        self._data = []
-        self._linefeed = '\n'
-
-        if not hasattr(self, 'arg_options'):
-            self.arg_options = self.arg_options_create()
-
-        self.parser = self._parser()
-        for group in self.parser._action_groups:
-            if group.title == 'default':
-                for action in group._group_actions:
-                    option = self.find_key(kwargs, action.dest) or action.dest.replace('_', '-')
-                    self.arg_options['skip'].append(option)
-
-        self.arg_info = _arg_info(**self.arg_options)
-        argv = self.arg_info['_argparse_skipped'] + ['--defaults-end'] + self.arg_info['__argv']
-        self.args = self.parser.parse_args(args=argv)
-
-        # Type of result mode to use (default: last)
-        if 'last' not in self.args.result_mode and 'all' not in self.args.result_mode:
-            self.args.result_mode.append('last')
-
-    @classmethod
-    def _parser_arguments_default(cls, parser):
-        '''Default argparse definitions.
+    def __init__(self, *varargs, **kwargs):
         '''
-        parser.add_argument('--result-mode', nargs='*', default=['last'], choices=('last', 'all', 'debug', 'debug-changes'), help='Initial result_mode options')
-        parser.add_argument('--run-post-hook', action='store', help='run command post process hook function')
-        parser.add_argument('--strict', action='store_true', help='Strict results will fail if pre-conditions are not met')
-        parser.add_argument('--defaults-end', action='store_true', default=True, help='Does nothing; signals end of defaults')
-
-    @classmethod
-    def _parser(cls):
-        '''Argparse Parser.
         '''
-        default_parser = _ArgumentParser(add_help=False)
+        frame = stack()[1][0]
+        self.__info__ = getargvalues(frame)._asdict()
 
-        # Add default parser arguments
-        default = default_parser.add_argument_group('default')
-        cls._parser_arguments_default(default)
+        if not hasattr(module_utils, '__opts__'):
+            module_utils.__opts__ = __opts__
+        if not hasattr(module_utils, '__salt__'):
+            module_utils.__salt__ = __salt__
 
-        # Add sub-class parser arguments
-        parser = _ArgumentParser(prog=cls.__virtualname__, parents=[default_parser])
-        qvm = parser.add_argument_group('qvm')
-        cls.parser_arguments(qvm)
-
-        return parser
-
-    @classmethod
-    def parser_arguments(cls, parser):
-        '''Parser arguments.
-
-        Implement in sub-class.
-        '''
-        pass
-
-    @classmethod
-    def usage(cls):
-        '''Help docs and usage info for when salt-call -doc module.func called.
-        '''
-        parser = cls._parser()
-        if not parser:
-            return cls.__doc__
-        else:
-            usage_header = '=== USAGE ' + '='*70 + '\n'
-            doc_header = '=== DOCS ' + '='*71 + '\n'
-            return '{0}{1}\n{2}{3}'.format(doc_header, cls.__doc__, usage_header, parser.format_help())
-
-    def arg_options_create(self, keyword_flag_keys=None, argv_ordering=None, skip=None):
-        '''Default arg_info options.
-        '''
-        data = {}
-        data['keyword_flag_keys'] = keyword_flag_keys or ['flags']
-        data['argv_ordering'] = argv_ordering or ['flags', 'keywords', 'args', 'varargs']
-        data['skip'] = skip or []
-
-        self.arg_options = copy.deepcopy(data)
-        return self.arg_options
-
-    def linefeed(self, text):
-        return self._linefeed if text else ''
-
-    # XXX: Move formatting functions to Result
-    def save_result(self, result=None, retcode=None, data=None, prefix=None, message='', error_message=''):
-        '''Merges data from individual results into master data dictionary
-        which will be returned and includes all changes and comments as well
-        as the overall result status
-        '''
-
-        # Create a default result if one does not exist
-        if result is None:
-            result = Result()
-        else:
-            # Merge result.retcode
-            if retcode is not None:
-                result.retcode = retcode
-
-        # Copy args to result. Passed args override result set args
-        args = ['data', 'prefix', 'message', 'error_message']
-        for arg in args:
-            if arg not in result or locals().get(arg, None):
-                result[arg] = locals()[arg]
-
-        if not result.name:
-            result.name = self.__virtualname__
-
-        if not result.comment:
-            # ------------------------------------------------------------------
-            # Create comment
-            # ------------------------------------------------------------------
-            prefix = result.prefix if 'prefix' in result else ''
-            message = result.message if 'message' in result else ''
-            error_message = result.error_message if 'error_message' in result else ''
-
-            if prefix is None:
-                prefix = '[FAIL] ' if result.retcode else '[PASS] '
-            indent = ' ' * len(prefix)
-
-            # Manage message
-            if result.failed():
-                if error_message:
-                    message = error_message
-            if not message:
-                indent = ''
-
-            stdout = stderr = ''
-            if result.failed() and result.stderr.strip():
-                if message:
-                    stderr += '{0}{1}'.format(prefix, message)
-                if result.stdout.strip():
-                    stderr += '\n{0}{1}'.format(indent, result.stdout.strip().replace('\n', '\n' + indent))
-                if result.stderr.strip():
-                    stderr += '\n{0}{1}'.format(indent, result.stderr.strip().replace('\n', '\n' + indent))
-            else:
-                if message:
-                    stdout += '{0}{1}'.format(prefix, message)
-                if result.stdout.strip():
-                    stdout += '\n{0}{1}'.format(indent, result.stdout.strip().replace('\n', '\n' + indent))
-
-            if stderr:
-                if stdout:
-                    stdout = '====== stdout ======\n{0}\n\n'.format(stdout)
-                stderr = '====== stderr ======\n{0}'.format(stderr)
-            result.comment = stdout + stderr
-
-        self._data.append(result)
-        return result
-
-    def run(self, cmd, test_ignore=False, post_hook=None, data=None, **options):
-        '''Executes cmd using salt.utils run_all function.
-
-        Fake results are returned instead of executing the command if test
-        mode is enabled.
-        '''
-        if __opts__['test'] and not test_ignore:
-            self.test()
-            result = Result()
-        else:
-            if isinstance(cmd, list):
-                cmd = ' '.join(cmd)
-
-            result = Result(**__salt__['cmd.run_all'](cmd, runas='user', output_loglevel='quiet', **options))
-            result.pop('pid', None)
-
-        self._run_post_hook(post_hook, cmd, result, data)
-
-        cmd_options = str(options) if options else ''
-        cmd_string = '{0} {1}'.format(cmd, cmd_options)
-
-        return self.save_result(result, message=cmd_string)
-
-    def _run_post_hook(self, post_hook, cmd, result, data):
-        '''Execute and post hooks if they exist.
-        '''
-        self.run_post(cmd, result, data)
-        if post_hook:
-            post_hook(cmd, result, data)
-        if self.args.run_post_hook:
-            self.args.run_post_hook(cmd, result, data)
-
-    def run_post(self, cmd, result, data):
-        '''Called by run to allow additional post-processing of results before
-        the results get stored to self.stdout, etc
-
-        Implement in sub-class.
-        '''
-        return None
-
-    # XXX: Not used; remove
-    def test(self):
-        '''Called by run if test mode enabled.
-
-        Implement in sub-class.
-        '''
-        return None
-
-    def vm(self, fail=True):
-        '''Returns VM object if it exists.
-
-        Will raise a SaltInvocationError if fail=True and no VM exists
-        '''
-        if hasattr(self, 'args') and hasattr(self.args, 'vm'):
-            if self.args.vm:
-                return self.args.vm
-        if fail:
-            raise SaltInvocationError(message='Virtual Machine does not exist!')
-        else:
-            return None
-
-    # XXX: Move formatting functions to Result
-    def results(self, msg_all='', msg_passed='', msg_failed=''):
-        '''Returns the results 'data' (results) dictionary.
-
-        Additional messages may be appended to stdout
-
-        msg_all:
-            Append message for passed and failed result
-
-        msg_passed:
-            Only append message if result passed
-
-        msg_failed:
-            Only append message if result failed
-        '''
-        comment = ''
-        message = ''
-        changes = {}
-        mode = 'last' if 'last' in self.args.result_mode else 'all'
-        debug = True if 'debug' in self.args.result_mode else False
-        debug_changes = True if 'debug-changes' in self.args.result_mode else False
-
-        index = retcode = 0
-        if mode in ['last']:
-            result = self._data[-1]
-            retcode = result.retcode
-            if result.result is not None:
-                retcode = result.result
-            if result.passed():
-                index = -1
-
-        if debug:
-            index = 0
-
-        # ----------------------------------------------------------------------
-        # Determine 'retcode' and merge 'comments' and 'changes'
-        # ----------------------------------------------------------------------
-        for result in self._data[index:]:
-            # 'comment' - Merge comment
-            if result.comment.strip():
-                comment += self.linefeed(comment) + result.comment
-
-            # 'retcode' - Determine retcode
-            # Use 'result' over 'retcode' if result is not None as 'retcode'
-            # reflects last run state, where 'result' is set explicitly
-            if result.result is not None:
-                retcode = result.result
-            elif result.retcode and mode in ['all']:
-                retcode = result.retcode
-
-            # 'changes' - Merge changes
-            if result.changes and result.passed() and (debug_changes or not __opts__['test']):
-                name = result.get('name', None) or self.__virtualname__
-                changes.setdefault(name, {})
-                for key, value in result.changes.items():
-                    changes[name][key] = value
-
-        # ----------------------------------------------------------------------
-        # Combine 'message' + 'comment'
-        # ----------------------------------------------------------------------
-        if msg_all:
-            message += msg_all
-        elif msg_passed and not retcode:
-            message += self.linefeed(message) + msg_passed
-        elif msg_failed and retcode:
-            message += self.linefeed(message) + msg_failed
-
-        # Only include last comment unless result failed
-        if not debug and mode in ['last'] and not retcode:
-            comment = result.comment
-
-        message += self.linefeed(message) + comment
-
-        return Result(
-            name    = self.__virtualname__,
-            retcode = retcode,
-            comment = message,
-            stdout  = result.stdout,
-            stderr  = result.stdout,
-            changes = changes,
-        )
+        super(_QVMBase, self).__init__(*varargs, **kwargs)
 
 
 @_function_alias('check')
@@ -611,7 +207,6 @@ class _State(_QVMBase):
     def __init__(self, vmname, *varargs, **kwargs):
         '''
         '''
-        self.arg_options_create()['skip'].append('varargs')
         super(_State, self).__init__(vmname, *varargs, **kwargs)
 
     @classmethod
@@ -767,11 +362,12 @@ class _Remove(_QVMBase):
     def __init__(self, vmname, *varargs, **kwargs):
         '''
         '''
+        self.arg_options_create()['skip'].append('shutdown')
         super(_Remove, self).__init__(vmname, *varargs, **kwargs)
 
         # Remove 'shutdown' flag from argv as its not a valid qvm.clone option
-        if '--shutdown' in self.arg_info['__argv']:
-            self.arg_info['__argv'].remove('--shutdown')
+        #if '--shutdown' in self.arg_info['__argv']:
+        #    self.arg_info['__argv'].remove('--shutdown')
 
     @classmethod
     def parser_arguments(cls, parser):
@@ -796,7 +392,7 @@ class _Remove(_QVMBase):
         if not is_halted():
             if args.shutdown:
                 # 'shutdown' VM ('force' mode will kill on failed shutdown)
-                shutdown_result = self.save_result(shutdown(args.vmname, *['wait', 'force']))
+                shutdown_result = self.save_result(shutdown(args.vmname, **{'flags': ['wait', 'force']}))
                 if shutdown_result.failed():
                     return self.results()
 
@@ -821,18 +417,18 @@ class _Clone(_QVMBase):
 
     .. code-block:: bash
 
-        qubesctl qvm.clone <vm-name> <target_name> [shutdown=true|false] [path=]
+        qubesctl qvm.clone <name> <source> [shutdown=true|false] [path=]
 
     Valid actions:
 
     .. code-block:: yaml
 
         # Required Positional
-        - name:                 <vmname>
-        - target:               <target clone name>
+        - clone:                name
+        - source:               vmname
 
         # Optional
-        - path:                 </path/xxx>
+        - path:                 /PATH/xxx
 
         # Optional Flags
         - flags:
@@ -840,11 +436,11 @@ class _Clone(_QVMBase):
           - force-root
           - quiet
     '''
-    def __init__(self, vmname, *varargs, **kwargs):
+    def __init__(self, source, clone, *varargs, **kwargs):
         '''
         '''
         self.arg_options_create()['skip'].append('varargs')
-        super(_Clone, self).__init__(vmname, *varargs, **kwargs)
+        super(_Clone, self).__init__(source, clone, *varargs, **kwargs)
 
         # Remove 'shutdown' flag from argv as its not a valid qvm.clone option
         if '--shutdown' in self.arg_info['__argv']:
@@ -861,27 +457,27 @@ class _Clone(_QVMBase):
         parser.add_argument('--path', nargs=1, help='Specify path to the template directory')
 
         # Required Positional
-        parser.add_argument('vmname', action=_VMAction, help='Virtual machine name')
-        parser.add_argument('target', nargs=1, help='New clone VM name')
+        parser.add_argument('source', nargs=1, help='Source VM name to clone')
+        parser.add_argument('clone', action=_VMAction, help='New clone VM name')
 
     def __call__(self):
         # Check VM power state
         def is_halted():
-            halted_result = state(args.vmname, *['halted'])
+            halted_result = state(args.source, *['halted'])
             self.save_result(result=halted_result)
             return halted_result
 
         args = self.args
 
-        # Check if 'target' VM exists; fail if it does and return
-        target_check_result = self.save_result(check(args.target, *['absent']))
-        if target_check_result.failed():
+        # Check if 'clone' VM exists; fail if it does and return
+        clone_check_result = self.save_result(check(args.clone, *['absent']))
+        if clone_check_result.failed():
             return self.results()
 
         if not is_halted():
             if args.shutdown:
                 # 'shutdown' VM ('force' mode will kill on failed shutdown)
-                shutdown_result = self.save_result(shutdown(args.vmname, *['wait', 'force']))
+                shutdown_result = self.save_result(shutdown(args.source, **{'flags': ['wait', 'force']}))
                 if shutdown_result.failed():
                     return self.results()
 
@@ -891,7 +487,7 @@ class _Clone(_QVMBase):
 
         # Confirm VM has been cloned (don't fail in test mode)
         if not __opts__['test']:
-            self.save_result(check(args.target, *['exists']))
+            self.save_result(check(args.clone, *['exists']))
 
         # Returns the results 'data' dictionary
         return self.results()
@@ -942,24 +538,20 @@ class _Prefs(_QVMBase):
           - force-root
     '''
     def __init__(self, vmname, *varargs, **kwargs):
-        self.arg_options_create(argv_ordering=['flags', 'args', 'action', 'varargs', 'keywords'])['skip'].append('action')
+        self.arg_options_create(argv_ordering=['flags', 'args', 'varargs', 'keywords'])['skip'].append('action')
         super(_Prefs, self).__init__(vmname, *varargs, **kwargs)
-
-        # Use 'all' result-mode to show all results
-        if 'last' in self.args.result_mode:
-            self.args.result_mode.remove('last')
-        self.args.result_mode.append('all')
 
     @classmethod
     def parser_arguments(cls, parser):
+        # Defaults override
+        parser.add_argument('--result-mode', nargs='*', default=['all'], choices=('last', 'all', 'debug', 'debug-changes'), help=argparse.SUPPRESS)
+
+        # ======================================================================
         # XXX:
         # TODO: Need to make sure set contains a keyword AND value
-        #
+        # ======================================================================
 
         # Optional Flags
-        #parser.add_argument('--list', action='store_true')
-        #parser.add_argument('--set', action='store_true')
-        #parser.add_argument('--gry', action='store_true')
         parser.add_argument('--force-root', action='store_true', help='Force to run, even with root privileges')
 
         # Required Positional
@@ -986,16 +578,11 @@ class _Prefs(_QVMBase):
         parser.add_argument('--vcpus', nargs='?', type=int)
 
         ## The following args seem not to exist in the Qubes R3.0 DB
-        # drive:                <string>
-        # qrexec-installed:     true|false
-        # guiagent-installed:   true|false
-        # seamless-gui-mode:    true|false
-        # timezone:             <string>
-        ##parser.add_argument('--timezone', nargs='?')
-        ##parser.add_argument('--drive', nargs='?')
-        ##parser.add_argument('--qrexec-installed', nargs='?', type=bool)
-        ##parser.add_argument('--guiagent-installed', nargs='?', type=bool)
-        ##parser.add_argument('--seamless-gui-mode', nargs='?', type=bool)
+        ## parser.add_argument('--timezone', nargs='?')
+        ## parser.add_argument('--drive', nargs='?')
+        ## parser.add_argument('--qrexec-installed', nargs='?', type=bool)
+        ## parser.add_argument('--guiagent-installed', nargs='?', type=bool)
+        ## parser.add_argument('--seamless-gui-mode', nargs='?', type=bool)
 
     def run_post(self, cmd, result, data):
         '''Called by run to allow additional post-processing of results before
@@ -1026,7 +613,7 @@ class _Prefs(_QVMBase):
                 _locals = dict()
                 _globals = dict()
                 try:
-                    execfile('/usr/bin/qvm-prefs', _globals,_locals)
+                    execfile('/usr/bin/qvm-prefs', _globals, _locals)
                 except NameError:
                     pass
                 properties = _locals.get('properties', []).keys()
@@ -1105,16 +692,15 @@ class _Service(_QVMBase):
         self.arg_options_create(argv_ordering=['flags', 'args', 'varargs', 'keywords'])
         super(_Service, self).__init__(vmname, *varargs, **kwargs)
 
-        # Use 'all' result-mode to show all results
-        if 'last' in self.args.result_mode:
-            self.args.result_mode.remove('last')
-        self.args.result_mode.append('all')
-
     @classmethod
     def parser_arguments(cls, parser):
+        # Defaults override
+        parser.add_argument('--result-mode', nargs='*', default=['all'], choices=('last', 'all', 'debug', 'debug-changes'), help=argparse.SUPPRESS)
+
         # Required Positional
         parser.add_argument('vmname', action=_VMAction, help='Virtual machine name')
 
+        # ======================================================================
         # XXX: Test with CLI interface.
         #
         # Current YAML interface:
@@ -1132,6 +718,7 @@ class _Service(_QVMBase):
         #
         # Additional CLI interface??? (TODO)
         #
+        # ======================================================================
         #parser.add_argument('action', nargs='?', default='list', choices=('list', 'enable', 'disable', 'default'), help='Action to take on service')
         #parser.add_argument('service_names', nargs='*', default=[], help='List of Service names to reset')
 
@@ -1251,7 +838,6 @@ class _Run(_QVMBase):
     def __init__(self, vmname, *varargs, **kwargs):
         '''
         '''
-        self.arg_options_create(argv_ordering=['flags', 'keywords', 'args', 'varargs', 'cmd'])
         super(_Run, self).__init__(vmname, *varargs, **kwargs)
 
     @classmethod
@@ -1284,7 +870,7 @@ class _Run(_QVMBase):
 
         # Check VM power state and start if 'auto' is enabled
         if args.auto:
-            start_result = self.save_result(start(args.vmname, *['quiet', 'no-guid']))
+            start_result = self.save_result(start(args.vmname, **{'flags': ['quiet', 'no-guid']}))
             if start_result.failed():
                 return self.results()
 
@@ -1574,7 +1160,9 @@ class _Kill(_QVMBase):
 
     def __call__(self):
         args = self.args
-        self.arg_info['varargs'].append('kill')
+        #XXX self.arg_info['varargs'].append('kill')
+        self.arg_info['kwargs'].setdefault('flags', [])
+        self.arg_info['kwargs']['flags'].append('kill')
 
         # 'kill' VM
         halted_result = shutdown(args.vmname, *self.arg_info['varargs'], **self.arg_info['kwargs'])
