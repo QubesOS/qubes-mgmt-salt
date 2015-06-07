@@ -58,11 +58,13 @@ systemctl stop salt-minion.service > /dev/null 2>&1 || true
 %attr(750, root, root) %dir /srv/salt-servers
 %attr(750, root, root) %dir /srv/qubes-pillar
 %attr(750, root, root) %dir /srv/qubes-salt
+%attr(750, root, root) %dir /srv/reactor
 %{_bindir}/qubesctl
 %{_sysconfdir}/salt/minion.d/*
 /srv/qubes-salt/*
 /srv/qubes-pillar/*
 /srv/salt-servers/*
+/srv/reactor/*
 
 %changelog
 
