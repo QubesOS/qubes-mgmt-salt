@@ -4,7 +4,7 @@
 # --> qubesctl saltutil.sync_all
 #
 # 2) Initial Key Import:
-# --> qubesctl state.sls salt.gnupg
+# --> qubesctl state.sls gnupg
 #
 # 3) Highstate will execute all states
 # --> qubesctl state.highstate
@@ -18,7 +18,6 @@ base:
   '*':
     # --- salt applications ---
     - salt
-    - salt.gnupg
     - salt.minion_absent
     - salt.master_absent
     - salt.api_absent
@@ -29,6 +28,7 @@ base:
     - salt-user
 
     # --- system configurations ---
+    - gnupg
     # users
 
     # --- utilities ---
