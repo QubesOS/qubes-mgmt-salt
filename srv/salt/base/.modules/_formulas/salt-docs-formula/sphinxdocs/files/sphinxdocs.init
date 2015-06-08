@@ -1,0 +1,132 @@
+#!/bin/sh
+#
+# Sphinxdocs server
+###################################
+
+# LSB header
+
+### BEGIN INIT INFO
+# Provides:          sphinxdocs
+# Required-Start:    $all
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Sphinxdocs control daemon
+# Description:       This is a daemon that starts the sphinxdocs server
+### END INIT INFO
+
+
+# chkconfig header
+
+# chkconfig: 345 96 05
+# description:  This is a daemon that controls the Sphinxdocs server    
+#
+# processname: /srv/salt/saltdocs/sphinxdocs.py
+
+
+DEBIAN_VERSION=/etc/debian_version
+SUSE_RELEASE=/etc/SuSE-release
+# Source function library.
+if [ -f $DEBIAN_VERSION ]; then
+   break   
+elif [ -f $SUSE_RELEASE -a -r /etc/rc.status ]; then
+    . /etc/rc.status
+else
+    . /etc/rc.d/init.d/functions
+fi
+
+# Default values (can be overridden below)
+CHERRYD=/usr/bin/cherryd
+SPHINXDOCS_DIR={{ config.app_dir }}
+SPHINXDOCS_INI=/etc/sphinxdocs.ini
+SPHINXDOCS_PID=/var/run/sphinxdocs.pid
+CHERRYD_ARGS="-d -e production -c ${SPHINXDOCS_INI} -p ${SPHINXDOCS_PID} -P ${SPHINXDOCS_DIR} -i sphinxdocs"
+
+PROCESS=cherryd
+
+RETVAL=0
+
+start() {
+    echo -n $"Starting cherryd daemon: "
+    if [ -f $SUSE_RELEASE ]; then
+        startproc -f -p ${SPHINXDOCS_PID} $CHERRYD $CHERRYD_ARGS
+        rc_status -v
+    elif [ -e $DEBIAN_VERSION ]; then
+        if [ -f $LOCKFILE ]; then
+            echo -n "already started, lock file found" 
+            RETVAL=1
+        elif $CHERRYD $CHERRYD_ARGS >& /dev/null; then
+            echo -n "OK"
+            RETVAL=0
+        fi
+    else
+        daemon --check "$PROCESS" --pidfile $SPHINXDOCS_PID "$CHERRYD $CHERRYD_ARGS"
+    fi
+    RETVAL=$?
+    echo
+    return $RETVAL
+}
+
+stop() {
+    echo -n $"Stopping cherryd daemon: "
+    if [ -f $SUSE_RELEASE ]; then
+        killproc -TERM $CHERRYD
+        rc_status -v
+    elif [ -f $DEBIAN_VERSION ]; then
+        # Added this since Debian's start-stop-daemon doesn't support spawned processes
+        if ps -ef | grep "$CHERRYD" | grep -v grep | awk '{print $2}' | xargs kill &> /dev/null; then
+            echo -n "OK"
+            RETVAL=0
+        else
+            echo -n "Daemon is not started"
+            RETVAL=1
+        fi
+    else
+        killproc $PROCESS
+    fi
+    RETVAL=$?
+    echo
+}
+
+restart() {
+   stop
+   start
+}
+
+# See how we were called.
+case "$1" in
+    start|stop|restart)
+        $1
+        ;;
+    status)
+        if [ -f $SUSE_RELEASE ]; then
+            echo -n "Checking for service cherryd "
+            checkproc $CHERRYD
+            rc_status -v
+        elif [ -f $DEBIAN_VERSION ]; then
+            if [ -f $LOCKFILE ]; then
+                RETVAL=0
+                echo "cherryd is running."
+            else
+                RETVAL=1
+                echo "cherryd is stopped."
+            fi
+        else
+            status $PROCESS
+            RETVAL=$?
+        fi
+        ;;
+    condrestart)
+        [ -f $LOCKFILE ] && restart || :
+        ;;
+    reload)
+        echo "can't reload configuration, you have to restart it"
+        RETVAL=$?
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart|condrestart|reload}"
+        exit 1
+        ;;
+esac
+exit $RETVAL
+

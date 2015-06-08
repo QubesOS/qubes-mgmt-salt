@@ -9,6 +9,12 @@
 =======================================================================================================================
                                                       ISSUES
 =======================================================================================================================
+- Allow gpg to verify key in test mode; it would prevent tests from runnning
+- not getting installed along with Qubes
+- add postinst script to maybe sync-all + gpg import + run states that create user salt directories (locale, etc)
+- allow changed in test mode; since salt expects that
+
+
 cli:
   - Need to create custom outputters for CLI, etc
 

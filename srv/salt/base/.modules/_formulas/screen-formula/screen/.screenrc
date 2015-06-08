@@ -1,0 +1,20 @@
+startup_message off
+defscrollback 20000
+vbell off
+autodetach on
+multiuser on
+bindkey -k k1 prev
+bindkey -k k2 next
+bindkey -k k7 detach
+bindkey -k k8 kill
+bindkey -k k9 screen
+
+hardstatus alwayslastline
+hardstatus string '%{= wk}[%= %{= wk}%?%-Lw%?%{= rk}%n*%f %t%?%?%{= wk}%?%+Lw%?%?%{= wk} %= ][%{r} %d/%m/%y %C %A %{k}]'
+
+screen -t
+screen -t
+screen -t
+screen -t
+
+termcapinfo xterm* ti@:te@

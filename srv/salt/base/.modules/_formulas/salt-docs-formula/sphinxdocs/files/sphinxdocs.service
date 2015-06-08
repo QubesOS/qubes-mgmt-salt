@@ -1,0 +1,10 @@
+[Unit]
+Description=Salt Documentation Server
+After=syslog.target network.target
+
+[Service]
+Type=simple
+ExecStart=cherryd -d -e production -c /etc/sphinxdocs.ini -p /var/run/sphinxdocs.pid -P {{ config.app_dir }} -i sphinxdocs
+
+[Install]
+WantedBy=multi-user.target
