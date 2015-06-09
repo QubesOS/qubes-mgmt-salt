@@ -17,6 +17,6 @@ if __name__ == '__main__':
 
     # Sync renderers first
     if SYNC:
-        call(["salt", "*", "saltutil.sync_all"])
+        call(["salt-call", "--local", "saltutil.sync_all"])
 
     salt_call()
