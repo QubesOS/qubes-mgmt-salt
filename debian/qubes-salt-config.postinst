@@ -49,6 +49,9 @@ case "${1}" in
         disableSystemdUnits \
             salt-minion.service \
             salt-master.service 
+
+        qubesctl saltutil.sync_all -l quiet --out quiet
+
         ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

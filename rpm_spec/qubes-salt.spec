@@ -44,6 +44,7 @@ systemctl --no-reload disable salt-master.service > /dev/null 2>&1 || true
 systemctl --no-reload disable salt-minion.service > /dev/null 2>&1 || true
 systemctl stop salt-master.service > /dev/null 2>&1 || true
 systemctl stop salt-minion.service > /dev/null 2>&1 || true
+qubesctl saltutil.sync_all -l quiet --out quiet
 
 %preun
 # Don't want or need minion or master services running
