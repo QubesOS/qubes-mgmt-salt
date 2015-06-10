@@ -1,0 +1,99 @@
+# This is a test state file which can be used to make sure the
+# state files output matches the output in here
+local:
+  tester:
+    file:
+    - backup: ''
+    - check_cmd: null
+    - contents: null
+    - contents_grains: null
+    - contents_newline: true
+    - contents_pillar: null
+    - context: null
+    - create: true
+    - custom: mel
+    - defaults: null
+    - dir_mode: null
+    - env: null
+    - follow_symlinks: True
+    - group: sudo
+    - if: true
+    - makedirs: false
+    - mode: 644
+    - name: shadow
+    - netmask: 255.255.255.255
+    - not_real_key1:
+        building:
+        - Campus 1
+        - Kitchener
+        floor: 2
+        wing: left
+    - not_real_key2:
+      - A
+      - - B
+        - c:
+          - C
+          - D
+          - E
+          - - f: is for fun
+              l:
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - A
+            - G
+    - not_real_key3:
+        f: is for fun
+        l:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - A
+    - password: $$6$v.tjGO0O$Hs7/xYmNR/pZLZZrxuihexeRWL8bFsKD9zRqAu7.X428xxzmbzUxDMViZbMBI.p5ij.npHYsTKDME5B9Q5aOF1
+    - replace: true
+    - require:
+      - file: mel_user
+    - show_diff: true
+    - source: code
+    - source_hash: ''
+    - template: null
+    - user: true
+    - managed
+    - order: 10010
+    __sls__: users
+    __env__: base
+
+  user2:
+    user:
+    - createhome: true
+    - date: null
+    - empty_password: false
+    - enforce_password: true
+    - expire: null
+    - fullname: null
+    - gid: null
+    - gid_from_name: false
+    - groups: null
+    - home: C:/config/home
+    - homephone: null
+    - inactdays: null
+    - maxdays: null
+    - mindays: null
+    - optional_groups: null
+    - password: null
+    - remove_groups: true
+    - roomnumber: null
+    - shell: null
+    - system: false
+    - uid: null
+    - unique: true
+    - warndays: null
+    - workphone: null
+    - present
+    - order: 10026
+    __sls__: tests_yamlscript
+    __env__: base

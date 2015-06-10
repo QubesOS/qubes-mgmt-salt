@@ -1,6 +1,0 @@
-node1.jenkins.plone.org
-node2.jenkins.plone.org
-node3.jenkins.plone.org
-node4.jenkins.plone.org
-
-test.jenkins.plone.org ansible_ssh_host=78.46.245.68

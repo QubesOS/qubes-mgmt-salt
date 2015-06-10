@@ -1,6 +1,0 @@
-[submodule "roles/plone.jenkins_server"]
-	path = roles/plone.jenkins_server
-	url = git@github.com:plone/plone.jenkins_server.git
-[submodule "roles/ansible-jenkins"]
-	path = roles/ansible-jenkins
-	url = git@github.com:ICTO/ansible-jenkins.git

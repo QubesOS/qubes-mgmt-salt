@@ -1,0 +1,65 @@
+local:
+  MESSAGING_config:
+    file:
+    - context: null
+    - defaults: null
+    - makedirs: false
+    - name: C:/abc.txt
+    - source: null
+    - source_hash: null
+    - source_hashes: null
+    - sources: null
+    - template: jinja
+    - text: MESSAGING-tcp://primaryserver:7921-tcp://secondaryserver:7922-7921
+    - append
+    - order: 10027
+    __sls__: tests_yamlscript
+    __env__: base
+  TEST_config:
+    file:
+    - context: null
+    - defaults: null
+    - makedirs: false
+    - name: C:/abc.txt
+    - source: null
+    - source_hash: null
+    - source_hashes: null
+    - sources: null
+    - template: jinja
+    - text: TEST-tcp://primaryserver:7931-tcp://secondaryserver:7932-7931
+    - append
+    - order: 10028
+    __sls__: tests_yamlscript
+    __env__: base
+  MESSAGING_config_new:
+    file:
+    - context: null
+    - defaults: null
+    - makedirs: false
+    - name: C:/abc.txt
+    - source: null
+    - source_hash: null
+    - source_hashes: null
+    - sources: null
+    - template: jinja
+    - text: MESSAGING-tcp://primaryserver:7921-tcp://secondaryserver:7922-7921
+    - append
+    - order: 10027
+    __sls__: tests_yamlscript
+    __env__: base
+  TEST_config_new:
+    file:
+    - context: null
+    - defaults: null
+    - makedirs: false
+    - name: C:/abc.txt
+    - source: null
+    - source_hash: null
+    - source_hashes: null
+    - sources: null
+    - template: jinja
+    - text: TEST-tcp://primaryserver:7931-tcp://secondaryserver:7932-7931
+    - append
+    - order: 10028
+    __sls__: tests_yamlscript
+    __env__: base

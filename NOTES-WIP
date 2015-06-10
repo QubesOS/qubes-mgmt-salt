@@ -11,19 +11,12 @@
 =======================================================================================================================
 - Allow gpg to verify key in test mode; it would prevent tests from runnning
 - not getting installed along with Qubes
-- add postinst script to maybe sync-all + gpg import + run states that create user salt directories (locale, etc)
 - allow changed in test mode; since salt expects that
+- create another gpg signed statefile for tests since importing vim conflicts with vim
 
 
 cli:
   - Need to create custom outputters for CLI, etc
-
-- qubes-pillar not being imported?  Moved all pillar data to pillar.  Better to
-  have one pillar directory anyway
-
-- debian and rpm using data in apps-salt-config/etc for salt, but
-  ...common/salt/files/minion.d contain same info for updating AND they may
-  become out of sync... try linking etc -> salt/files
 
 
 =======================================================================================================================
@@ -32,6 +25,11 @@ cli:
 - Make sure pillar directory is marked as a configuraion dir for debian and rpm
   install so user settings do not get modified
 
+- Modified to allow vim@env.  include works, but state fails using dom0 saltenv it seems
+  - tests/init.sh
+  - yamlscript_utils
+
+- state.py: 1563: with context.func_globals_inject(self.states[cdata['full']], **inject_globals):
 
 =======================================================================================================================
                                                        TIPS

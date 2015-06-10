@@ -1,0 +1,179 @@
+# This is a test state file which can be used to make sure the
+# state files output matches the output in here
+local:
+  mel_shadow_group:
+    group:
+    - addusers: null
+    - delusers: null
+    - gid: null
+    - members: null
+    - name: shadow
+    - system: false
+    - present
+  mel_sudo_group:
+    group:
+    - addusers: null
+    - delusers: null
+    - gid: null
+    - members: null
+    - name: sudo
+    - system: false
+    - present
+  mel_user:
+    group:
+    - addusers: null
+    - delusers: null
+    - gid: 444
+    - members: null
+    - name: users
+    - system: true
+    - present
+    user:
+    - createhome: true
+    - date: null
+    - empty_password: false
+    - enforce_password: true
+    - expire: null
+    - fullname: null
+    - gid: 444
+    - gid_from_name: false
+    - groups:
+      - sudo
+      - shadow
+      - users
+    - home: /home/mel
+    - homephone: null
+    - inactdays: null
+    - maxdays: null
+    - mindays: null
+    - name: mel
+    - optional_groups: []
+    - password: null
+    - remove_groups: true
+    - roomnumber: null
+    - shell: /bin/bash
+    - system: true
+    - uid: 400
+    - unique: true
+    - warndays: null
+    - workphone: null
+    - present
+    file:
+    - backupname: null
+    - clean: false
+    - dir_mode: null
+    - exclude_pat: null
+    - file_mode: null
+    - follow_symlinks: false
+    - force: false
+    - group: users
+    - makedirs: true
+    - mode: 777
+    - name: /home/mel
+    - recurse: null
+    - require: []
+    - user: mel
+    - directory
+  /home/mel/.ssh:
+    file:
+    - backupname: null
+    - clean: false
+    - dir_mode: null
+    - exclude_pat: null
+    - file_mode: null
+    - follow_symlinks: false
+    - force: false
+    - group: users
+    - makedirs: true
+    - mode: 700
+    #- name: /home/mel/.ssh
+    - recurse: null
+    - require:
+      - file: mel_user
+    - user: mel
+    - directory
+  /home/mel/.ssh/id_rsa:
+    file:
+    - backup: ''
+    - check_cmd: null
+    - contents: null
+    - contents_grains: null
+    - contents_newline: true
+    - contents_pillar: users:mel:ssh:keys:private
+    - context: null
+    - create: true
+    - defaults: null
+    - dir_mode: null
+    - env: null
+    - follow_symlinks: True
+    - group: users
+    - makedirs: true
+    - mode: 600
+    - name: /home/mel/.ssh/id_rsa
+    - replace: true
+    - require:
+      - file: mel_user
+      - file: /home/mel/.ssh
+    - show_diff: true
+    - source: null
+    - source_hash: ''
+    - template: null
+    - user: mel
+    - managed
+  /home/mel/.ssh/id_rsa.pub:
+    file:
+    - backup: ''
+    - check_cmd: null
+    - contents: null
+    - contents_grains: null
+    - contents_newline: true
+    - contents_pillar: users:mel:ssh:keys:public
+    - context: null
+    - create: true
+    - defaults: null
+    - dir_mode: null
+    - env: null
+    - follow_symlinks: True
+    - group: users
+    - makedirs: true
+    - mode: 644
+    #- name: /home/mel/.ssh/id_rsa.pub
+    - replace: true
+    - require:
+      - file: mel_user
+      - file: /home/mel/.ssh
+    - show_diff: true
+    - source: null
+    - source_hash: ''
+    - template: null
+    - user: mel
+    - managed
+  mel_user_auth_present:
+    ssh_auth:
+    - comment: hello@there
+    - config: .ssh/authorized_keys
+    - enc: ssh-rsa
+    - names:
+      - AAAAB3NzaC1kc3MAAACBAL0sQ9fJ5bYTEyY==
+      - ssh-dss AAAAB3NzaCL0sQ9fJ5bYTEyY== user@domain
+      - option3="value3" ssh-dss AAAAB3NzaC1kcQ9J5bYTEyY== other@testdomain
+      - AAAAB3NzaC1kcQ9fJFF435bYTEyY== newcomment
+    - options: null
+    - require:
+      - file: mel_user
+      - file: /home/mel/.ssh
+    - source: ''
+    - user: mel
+    - present
+  mel_user_auth_absent:
+    ssh_auth:
+    - comment: ''
+    - config: .ssh/authorized_keys
+    - enc: ssh-rsa
+    - name: DDdDDAAAAB3NzaC1kc3MAAACBAL0sQ9fJ5bYTEyY==
+    - options: null
+    - require:
+      - file: mel_user
+      - file: /home/mel/.ssh
+    - user: mel
+    - absent

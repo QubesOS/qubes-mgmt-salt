@@ -1,0 +1,19 @@
+#-------------------------------------------------------------------------------
+# Add file_roots and pillar_roots to BOTH master and minion
+#-------------------------------------------------------------------------------
+file_roots:
+  base:
+    - ...
+  test:
+    - /home/user/dockernas/srv/salt-formulas/yamlscript-formula
+
+pillar_roots:
+  base:
+    - ...
+  test:
+    - /home/user/dockernas/srv/salt-formulas/yamlscript-formula/tests_yamlscript
+
+#-------------------------------------------------------------------------------
+# To run tests
+#-------------------------------------------------------------------------------
+salt-call --local --out=yaml state.show_sls tests_yamlscript test

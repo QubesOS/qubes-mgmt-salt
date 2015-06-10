@@ -1,6 +1,0 @@
-ejabberd.loglevel: 4
-#ejabberd.watchdog_admins:
-#  - "bob@example.com"
-#ejabberd.hosts:
-#  - "localhost"
-#ejabbers.route_subdomains: s2s

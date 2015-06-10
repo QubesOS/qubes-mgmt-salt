@@ -1,7 +1,0 @@
----
-# Jenkins server for Plone CI testing
-
-- hosts: test.jenkins.plone.org
-  remote_user: root
-  roles:
-    - plone.jenkins_server
