@@ -549,5 +549,5 @@ $if 'gpg-verify' in tests:
 # state files (vim/init.sls{.asc} is the test file for this)
 #===============================================================================
 $if 'gpg-renderer' in tests:
-  $include: vim
+  $include: vim@base
 
