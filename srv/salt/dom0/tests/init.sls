@@ -5,11 +5,13 @@
 ##
 # Qubes state, and module tests
 #
+# qubesctl state.sls test
+#
 # Debug Environment:
 #   --local state.highstate
 #   --local state.highstate -l debug
 #   --local state.highstate test=true
-#   --local state.single test=true qvm.remove salt-testvm just-db
+#   --local state.single test=true qvm.absent salt-testvm just-db
 ##
 
 
@@ -55,9 +57,9 @@ $python: |
         'test-debug',
         'qvm-kill',
         'qvm-halted',
-        'qvm-remove',
         'qvm-absent',
-        'qvm-create',
+        'qvm-missing',
+        'qvm-present',
         'qvm-exists',
         'qvm-prefs-list',
         'qvm-prefs-get',
@@ -74,7 +76,6 @@ $python: |
         'qvm-vm',
         'qubes-dom0-update',
 
-      # 'fail-qvm-running',
         'gpg-import_key',
         'gpg-verify',
         'gpg-renderer',
@@ -96,8 +97,8 @@ $if 'test-debug' in tests:
   test-debug-id:
     test.debug:
       - enable-all: true
-      # enable: [qvm.remove, qvm.start]
-      # disable: [qvm.remove]
+      # enable: [qvm.absent, qvm.start]
+      # disable: [qvm.absent]
       # disable-all: true
 
 #===============================================================================
@@ -117,11 +118,11 @@ $if 'qvm-halted' in tests:
       - name: $test_vm_name
 
 #===============================================================================
-# Remove VM                                                           qvm-remove
+# Remove VM                                                           qvm-absent
 #===============================================================================
-$if 'qvm-remove' in tests:
-  qvm-remove-id:
-    qvm.remove:
+$if 'qvm-absent' in tests:
+  qvm-absent-id:
+    qvm.absent:
       - name: $test_vm_name
       - flags:
         # just-db
@@ -130,21 +131,21 @@ $if 'qvm-remove' in tests:
         # quiet
 
 #===============================================================================
-# Confirm VM does not exist                                           qvm-absent
+# Confirm VM does not exist                                          qvm-missing
 #===============================================================================
-$if 'qvm-absent' in tests:
-  qvm-absent-id:
-    qvm.absent:
+$if 'qvm-missing' in tests:
+  qvm-missing-id:
+    qvm.missing:
       - name: $test_vm_name
       # flags:
         # quiet
 
 #===============================================================================
-# Create VM                                                           qvm-create
+# Create VM                                                          qvm-present
 #===============================================================================
-$if 'qvm-create' in tests:
-  qvm-create-id:
-    qvm.create:
+$if 'qvm-present' in tests:
+  qvm-present-id:
+    qvm.present:
       - name: $test_vm_name
       - template: fedora-21
       - label: red
@@ -355,8 +356,8 @@ $if 'qvm-clone' in tests:
         # quiet
         # force-root
 
-  qvm-clone-remove-id:
-    qvm.remove:
+  qvm-clone-absent-id:
+    qvm.absent:
       - name: $'{0}-clone'.format(test_vm_name)
       - flags:
         - shutdown
@@ -371,9 +372,9 @@ $if 'qvm-vm' in tests:
       - actions:
         - kill: pass
         - halted: pass
-        - remove: pass
-        - absent
-        - create
+        - absent: pass
+        - missing
+        - present
         - exists
         - prefs
         - service
@@ -386,16 +387,16 @@ $if 'qvm-vm' in tests:
         - clone
       - kill: []
       - halted: []
-      - remove: []
+      - absent: []
         # flags:
           # just-db
           # shutdown
           # force-root
           # quiet
-      - absent: []
+      - missing: []
         # flags:
           # quiet
-      - create:
+      - present:
         - template: fedora-21
         - label: red
         - mem: 3000
@@ -500,25 +501,6 @@ $if 'qvm-vm' in tests:
           # no-color-output
 
 #===============================================================================
-# Deliberate Fail                                               FAIL qvm-running
-#===============================================================================
-$if 'fail-qvm-running' in tests:
-  fail-qvm-running-id:
-    qvm.vm:
-      - name: $test_vm_name
-      - actions:
-        - create: pass
-        - shutdown
-        - running
-      - create:
-        - template: fedora-21
-        - label: red
-        - mem: 3000
-        - vcpus: 4
-      - shutdown: []
-      - running: []
-
-#===============================================================================
 # Test new state and module to import gpg key                     gpg-import_key
 #
 # (moved to salt/gnupg.sls)
@@ -527,9 +509,9 @@ $if 'gpg-import_key' in tests:
   gpg-import_key-id:
     gpg.import_key:
       # source: salt://keys/nrgaway-qubes-signing-key.asc
-      # source: /srv/pillar/gnupg/keys/nrgaway-qubes-signing-key.asc
-      - contents-pillar: gnupg-nrgaway-key
-      # contents_pillar: gnupg-nrgaway-key
+      # source: /srv/pillar/base/gnupg/keys/nrgaway-qubes-signing-key.asc
+      - source: pillar://gnupg/keys/nrgaway-qubes-signing-key.asc
+      # contents-pillar: gnupg-nrgaway-key
       # user: salt
 
 #===============================================================================
@@ -538,8 +520,8 @@ $if 'gpg-import_key' in tests:
 $if 'gpg-verify' in tests:
   gpg-verify-id:
     gpg.verify:
-      - source: salt://vim/init.sls.asc
-      # key-data: salt://vim/init.sls
+      - source: salt://tests/test-gpg-renderer.sls.asc@dom0
+      # key-data: salt://tests/test-gpg-renderer.sls@dom0
       # user: salt
       # require:
       # - pkg: gnupg
@@ -549,5 +531,5 @@ $if 'gpg-verify' in tests:
 # state files (vim/init.sls{.asc} is the test file for this)
 #===============================================================================
 $if 'gpg-renderer' in tests:
-  $include: vim@base
+  $include: tests.test-gpg-renderer
 

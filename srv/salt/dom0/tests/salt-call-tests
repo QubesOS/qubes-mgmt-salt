@@ -87,9 +87,9 @@ TEST_VM_NAME='salt-testvm6'
 TESTS=(
     'qvm-kill'              # COMPLETE
   # 'qvm-halted'
-  # 'qvm-remove'
   # 'qvm-absent'
-  # 'qvm-create'
+  # 'qvm-missing'
+  # 'qvm-present'
   # 'qvm-exists'
   # 'qvm-prefs'
   # 'qvm-service'
@@ -282,9 +282,9 @@ if elementIn "${module}" in "${TESTS[@]}"; then
 fi
 
 #===============================================================================
-# Remove VM                                                           qvm-remove
+# Remove VM                                                           qvm-absent
 #===============================================================================
-module='qvm-remove'
+module='qvm-absent'
 if elementIn "${module}" in "${TESTS[@]}"; then
     args=(
         "${TEST_VM_NAME}"
@@ -297,26 +297,26 @@ if elementIn "${module}" in "${TESTS[@]}"; then
 fi
 
 #===============================================================================
-# Confirm VM does not exist                                           qvm-absent
+# Confirm VM does not exist                                          qvm-missing
 #===============================================================================
-module='qvm-absent'
+module='qvm-missing'
 if elementIn "${module}" in "${TESTS[@]}"; then
     args=(
         "${TEST_VM_NAME}"
         "flags=[quiet]"
     )
     # Not running module as well as state since we can only remove once
-    run_module qvm.check "${args[@]}" absent
+    run_module qvm.check "${args[@]}" missing
     run_state "${module/-/.}" "${args[@]}"
 fi
 
 #===============================================================================
-# Create VM                                                           qvm-create
+# Create VM                                                          qvm-present
 #===============================================================================
 #AUTO_TEST_MODE=0  # Only test; don't execute
 #TEST='test=true'
 
-module='qvm-create'
+module='qvm-present'
 if elementIn "${module}" in "${TESTS[@]}"; then
     args=(
         "${TEST_VM_NAME}"
@@ -564,8 +564,8 @@ fi
 #        # quiet
 #        # force-root
 #
-#  qvm-clone-remove-id:
-#    qvm.remove:
+#  qvm-clone-absent-id:
+#    qvm.absent:
 #      - name: $'{0}-clone'.format(test_vm_name)
 module='qvm-clone'
 if elementIn "${module}" in "${TESTS[@]}"; then
@@ -582,10 +582,10 @@ fi
 #  qvm-vm-id:
 #    qvm.vm:
 #      - name: $test_vm_name
-#      - remove:
+#      - absent:
 #        - flags:
 #          - shutdown
-#      - create:
+#      - present:
 #        - template: fedora-21
 #        - label: red
 #        - mem: 3000
