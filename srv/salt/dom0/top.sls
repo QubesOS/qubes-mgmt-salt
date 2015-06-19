@@ -17,9 +17,7 @@ dom0:
   # === Dom0 ==================================================================
   'virtual:Qubes':
     - match: grain
-
     # --- salt applications ---
-
     # --- dom0 configurations ---
-    - tests
-    # whonix.gateway
+    # tests
+    - virtual-machines
