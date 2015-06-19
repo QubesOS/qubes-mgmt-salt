@@ -10,31 +10,35 @@ Qubes test state functions
 '''
 
 # Import python libs
-import sys
 import logging
+
+# Salt libs
+from salt.exceptions import (
+    CommandExecutionError, SaltInvocationError
+)
 
 log = logging.getLogger(__name__)
 
 
 def __virtual__():
     '''
-    Only make these states available if a qvm provider has been detected or
-    assigned for this minion
+    Only make these states available if a salt test.debug module exists
     '''
     return 'test.debug' in __salt__
 
 
 def _state_action(_action, *varargs, **kwargs):
     '''
-    Calls the salt state via the state_utils utility function of same name.
     '''
-    # Use loaded module since it will contain __opts__ and __salt__ dunders
-    state_action = sys.modules['salt.loaded.ext.states.state_utils'].state_action
-    return state_action(_action, *varargs, **kwargs)
+    try:
+        status = __salt__[_action](*varargs, **kwargs)
+    except (SaltInvocationError, CommandExecutionError), e:
+        status = Status(retcode=1, stderr=e.message + '\n')
+    return dict(status)
 
 
 def debug(name, *varargs, **kwargs):
     '''
-    Sets debug mode for all or specific states results
+    Sets debug mode for all or specific states status
     '''
     return _state_action('test.debug', name, *varargs, **kwargs)

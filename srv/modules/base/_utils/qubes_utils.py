@@ -27,6 +27,9 @@ from salt.exceptions import (
     CommandExecutionError, SaltInvocationError
 )
 
+# Third party libs
+from options import Options
+
 # Enable logging
 log = logging.getLogger(__name__)
 
@@ -44,6 +47,201 @@ log = logging.getLogger(__name__)
 ##__salt__ = salt.loader.minion_mods(__opts__)
 ##__grains__ = __opts__['grains']
 ##__pillar__ = __opts__['pillar']
+
+
+class Status(Options):
+    def __init__(self, *args, **kwargs):
+        defaults = {
+            'name':  '',
+            'result':  None,
+            'retcode': 0,
+            'stdout':  '',
+            'stderr':  '',
+            'data':  None,
+            'changes': {},
+            'comment': '',
+        }
+
+        defaults.update(kwargs)
+        super(Status, self).__init__(*args, **defaults)
+
+    def __len__(self):
+        return self.passed()
+
+    def reset(self, key, default=None):
+        value = getattr(self, key, default)
+        self[key] = type(self[key])()
+        return value
+
+    # - 'result' or 'retcode' are the indicators of a successful status
+    # - If 'result' is not None that value is used and 'retcode' ignored
+    #   which allows retcode to be overridden if needed.  If 'result' is None
+    #   the value from 'retcode' is used to determine a pass or fail.
+    #
+    # 'retcode': 0 == pass / 1+ == fail (usually a shell return code)
+    # 'result':  True == pass / False == fail / None == Unused
+    def passed(self, **kwargs):
+        return self.result if self.result is not None else not bool(self.retcode)
+
+    def failed(self, **kwargs):
+        return not self.result if self.result is not None else bool(self.retcode)
+
+    def _format(self, name=None, retcode=None, result=None, data=None, prefix=None, message='', error_message=''):
+        '''Combines argument variables and formats the status.
+        '''
+        # Copy args to status. Passed args override status set args
+        args = ['name', 'retcode', 'result', 'data', 'prefix', 'message', 'error_message']
+        for arg in args:
+            if arg not in self or locals().get(arg, None):
+                self[arg] = locals()[arg]
+
+        if not self.comment:
+            # ------------------------------------------------------------------
+            # Create comment
+            # ------------------------------------------------------------------
+            prefix = self.prefix if 'prefix' in self else ''
+            message = self.message if 'message' in self else ''
+            error_message = self.error_message if 'error_message' in self else ''
+
+            if prefix is None:
+                prefix = '[FAIL] ' if self.failed() else '[PASS] '
+            indent = ' ' * len(prefix)
+
+            # Manage message
+            if self.failed():
+                if error_message:
+                    message = error_message
+            if not message:
+                indent = ''
+                message = message.strip()
+
+            stdout = stderr = ''
+            if self.failed() and self.stderr.strip():
+                if message:
+                    stderr += '{0}{1}'.format(prefix, message)
+                if self.stdout.strip():
+                    stderr += '\n{0}{1}'.format(indent, self.stdout.strip().replace('\n', '\n' + indent))
+                if self.stderr.strip():
+                    stderr += '\n{0}{1}'.format(indent, self.stderr.strip().replace('\n', '\n' + indent))
+            else:
+                if message:
+                    stdout += '{0}{1}'.format(prefix, message)
+                if self.stdout.strip():
+                    stdout += '\n{0}{1}'.format(indent, self.stdout.strip().replace('\n', '\n' + indent))
+
+            if stderr:
+                if stdout:
+                    stdout = '====== stdout ======\n{0}\n\n'.format(stdout)
+                stderr = '====== stderr ======\n{0}'.format(stderr)
+            self.comment = stdout + stderr
+
+            return self
+
+    def _finalize(self, data=[], mode='last', debug=False):
+        '''Merges provided list of status and prepares status
+        for return to salt.
+
+        Additional messages may be appended to stdout
+
+        data:
+            List of status to merge
+
+        mode:
+            all or last. last only uses last retcode to determine overall
+            success where all will fail on first failure code
+
+        debug:
+            Merges all status messages
+
+        debug_changes:
+            Shows changes in test mode
+        '''
+        def linefeed(text):
+            return '\n' if text else ''
+
+        comment = ''
+        message = ''
+        changes = {}
+
+        if not data:
+            data = [self]
+
+        index = retcode = 0
+        if mode in ['last']:
+            status = data[-1]
+            retcode = status.retcode
+            if status.result is not None:
+                retcode = not status.result
+            if status.passed():
+                index = -1
+
+        if debug:
+            index = 0
+
+        # ----------------------------------------------------------------------
+        # Determine 'retcode' and merge 'comments' and 'changes'
+        # ----------------------------------------------------------------------
+        for status in data[index:]:
+            # 'comment' - Merge comment
+            if status.comment.strip():
+                comment += linefeed(comment) + status.comment
+
+            # 'retcode' - Determine retcode
+            # Use 'result' over 'retcode' if result is not None as 'retcode'
+            # reflects last run state, where 'result' is set explicitly
+            if status.result is not None:
+                retcode = not status.result
+            elif status.retcode and mode in ['all']:
+                retcode = status.retcode
+
+            # XXX: TEST
+            if status.result and __opts__['test']:
+                status.result = None
+
+            elif __opts__['test']:
+                status.result = None if not retcode else False
+            else:
+                status.result = True if not retcode else False
+
+            # 'changes' - Merge changes
+            if status.changes and status.passed():
+                name = status.get('name', '')  # or self.__virtualname__
+                changes.setdefault(name, {})
+                for key, value in status.changes.items():
+                    changes[name][key] = value
+
+        # Only include last comment unless status failed
+        if not debug and mode in ['last'] and not retcode:
+            comment = status.comment
+
+##        # If called by CLI only return stdout
+##        if '__pub_fun' in self.kwargs:
+##
+##            # XXX: set __context__ retcode?
+##            #__context__['retcode'] = retcode
+##
+##            return dict(
+##                #name    = self.__virtualname__,
+##                retcode = retcode,
+##                #result = status.result,
+##                #comment = comment,
+##                stdout  = status.stdout or status.comment,
+##                stderr  = status.stdout,
+##                #changes = changes,
+##            )
+
+        # XXX: Could now just update self and return self, but may need to
+        #      make sure attrs are cleared first?
+        return Status(
+            #name    = self.__virtualname__,
+            name    = status.name,
+            retcode = retcode,
+            result = status.result,
+            comment = comment,
+            stdout  = status.stdout,
+            stderr  = status.stdout,
+            changes = changes,
+        )
 
 
 def tostring(value):

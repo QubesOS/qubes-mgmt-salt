@@ -16,8 +16,15 @@ Implementation of gpg utilities
 '''
 
 # Import python libs
-import sys
 import logging
+
+# Salt libs
+from salt.exceptions import (
+    CommandExecutionError, SaltInvocationError
+)
+
+# Salt + Qubes libs
+from qubes_utils import Status
 
 log = logging.getLogger(__name__)
 
@@ -31,12 +38,14 @@ def __virtual__():
     return 'gpg.import_key' in __salt__
 
 
-def _state_action(action, *varargs, **kwargs):
+def _state_action(_action, *varargs, **kwargs):
     '''
-    Calls the salt state via the state_utils utility function of same name.
     '''
-    state_action = sys.modules['salt.loaded.ext.states.state_utils'].state_action
-    return state_action(action, *varargs, **kwargs)
+    try:
+        status = __salt__[_action](*varargs, **kwargs)
+    except (SaltInvocationError, CommandExecutionError), e:
+        status = Status(retcode=1, result=False, comment=e.message + '\n')
+    return dict(status)
 
 
 def import_key(*varargs, **kwargs):

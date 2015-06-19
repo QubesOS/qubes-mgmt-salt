@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
 gnupg related utilities
-
-Note:  Currently only implemented import key
 '''
 
 # Import python libs
@@ -20,10 +18,10 @@ from salt.exceptions import (
 
 # Salt + Qubes libs
 import module_utils
+from qubes_utils import Status
 from qubes_utils import function_alias as _function_alias
 from qubes_utils import tostring as _tostring
 from module_utils import ModuleBase as _ModuleBase
-from module_utils import Result
 
 # Set up logging
 log = logging.getLogger(__name__)
@@ -58,12 +56,30 @@ class _GPGBase(_ModuleBase):
         super(_GPGBase, self).__init__(*varargs, **kwargs)
 
 
-def _get_path(filename):
+def _get_path(filename, pillar=False):
     if not filename:
         return ''
-    client = salt.fileclient.get_file_client(__opts__)
-    filename = client.cache_file(filename)
-    if not os.path.exists(filename):
+
+    saltenv = 'base'
+    if filename.startswith('pillar://'):
+        pillar = True
+        filename = filename.replace('pillar://', 'salt://')
+
+    if filename.startswith('salt://'):
+        try:
+            filename, saltenv = filename.split('@')
+        except ValueError: pass
+
+    client = salt.fileclient.get_file_client(__opts__, pillar)
+    if pillar:
+        file_roots = client.opts['file_roots']
+        client.opts['file_roots'] = client.opts['pillar_roots']
+
+    filename = client.cache_file(filename, saltenv)
+    if pillar:
+        client.opts['file_roots'] = file_roots
+
+    if not filename or not os.path.exists(filename):
         filename = ''
     return filename
 
@@ -177,33 +193,33 @@ class _Import_key(_GPGBase):
         args = self.args
         keywords = {'user': args.user,}
 
-        result = Result()
+        status = Status()
         if args.source:
             keywords['filename'] = _get_path(args.source)
             if not keywords['filename']:
-                result.recode = 1
-                result.message = 'Invalid filename source {0}'.format(args.source)
+                status.recode = 1
+                status.message = 'Invalid filename source {0}'.format(args.source)
         elif args.contents:
             keywords['text'] = args.contents
         elif args.contents_pillar:
             keywords['text'] = __pillar__.get(args.contents_pillar, None)
             if not keywords['text']:
-                result.recode = 1
-                result.message = 'Invalid pillar id source {0}'.format(args.contents_pillar)
+                status.recode = 1
+                status.message = 'Invalid pillar id source {0}'.format(args.contents_pillar)
         else:
-            result.recode = 1
-            result.message = 'Invalid options!'
+            status.recode = 1
+            status.message = 'Invalid options!'
 
-        if result.failed():
-            self.save_result(result)
+        if status.failed():
+            self.save_status(status)
         if __opts__['test']:
-            self.save_result(message='Key will be imported')
+            self.save_status(message='Key will be imported')
         else:
-            result = Result(**self.import_key(**keywords))
-            self.save_result(result=result)
+            status = Status(**self.import_key(**keywords))
+            self.save_status(status)
 
-        # Returns the results 'data' dictionary
-        return self.results()
+        # Returns the status 'data' dictionary
+        return self.status()
 
 
 @_function_alias('verify')
@@ -270,15 +286,15 @@ class _Verify(_GPGBase):
         args = self.args
         gnupg = _gpg._create_gpg(args.user)
 
-        result = Result()
+        status = Status()
 
         # Key source validation
         key_source = None
         if args.source:
             key_source = _get_path(args.source)
             if not key_source:
-                result.recode = 1
-                result.message = 'GPG validation failed: invalid key-source {0}'.format(key_source)
+                status.recode = 1
+                status.message = 'GPG validation failed: invalid key-source {0}'.format(key_source)
         elif args.key_contents:
             key_source = args.key_contents
         else:
@@ -290,23 +306,20 @@ class _Verify(_GPGBase):
             data_source, ext = os.path.splitext(key_source)
 
         if not os.path.exists(data_source):
-            result.retcode = 1
+            status.retcode = 1
             message = 'GPG validation failed: invalid data-source {0}'.format(data_source)
-            self.save_result(result=result, message=message)
-            return self.results()
+            self.save_status(status, message=message)
+            return self.status()
 
         # GPG verify
-        if __opts__['test']:
-            raise CommandExecutionError('Key will not be verified in test mode for secutity purposes')
-        else:
-            result = Result()
-            data = gnupg.verify_data(key_source, _get_data(data_source))
+        status = Status()
+        data = gnupg.verify_data(key_source, _get_data(data_source))
 
-            if not data.valid:
-                raise CommandExecutionError(data.stderr)
+        if not data.valid:
+            raise CommandExecutionError(data.stderr)
 
-            result.stdout = data.stderr
-            self.save_result(result=result)
+        status.stdout = data.stderr
+        self.save_status(status)
 
-        # Returns the results 'data' dictionary
-        return self.results()
+        # Returns the status 'data' dictionary
+        return self.status()

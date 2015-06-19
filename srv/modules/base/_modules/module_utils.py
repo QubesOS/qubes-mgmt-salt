@@ -28,11 +28,8 @@ from salt.exceptions import (
 
 # Salt + Qubes libs
 from qubes_utils import (
-    tostring, tolist
+    Status, tostring, tolist
 )
-
-# Third party libs
-from options import Options
 
 # Enable logging
 log = logging.getLogger(__name__)
@@ -121,15 +118,6 @@ def arg_info(parser, info=None, keyword_flag_keys=None, argv_ordering=[], skip=[
         positionals.append(action.dest)
     info['_argparse_args'] = [MARKER] * len(positionals)
 
-##    # args - positional argv
-##    if info['__args']:
-##        index = 0
-##        for value in info['__args']:
-##            # Get rid of any references to self
-##            if value ==  'self':
-##                continue
-##            info['_argparse_args'][index] = tostring(info[value])
-##            index += 1
     # args - positional argv
     index_args = 0
     if info['__args']:
@@ -163,24 +151,6 @@ def arg_info(parser, info=None, keyword_flag_keys=None, argv_ordering=[], skip=[
     if info['__varargs']:
         for value in tolist(info[info['__varargs']]):
             info['_argparse_varargs'].append(value)
-
-##    # XXX: Don't really think this is needed and breaks current modules...
-##    # Add vararg to skipped list if in 'skip'.  Issue is you end up with a
-##    # positional out of order in the optional _argparse_skipped list
-##    #
-##    # *varargs - positional argv
-##    if info['__varargs']:
-##        for index, value in enumerate(tolist(info[info['__varargs']])):
-##            key = positionals[index_args + index]
-##            info[key] = value
-##            if key in skip:
-##                info['_argparse_skipped'].append(value)
-##            else:
-##                info['_argparse_varargs'].append(value)
-
-    # argv_ordering processing
-    #for section in argv_ordering:
-    #    pass
 
     # flags = optional argv flags
     for flag in info['__flags']:
@@ -253,44 +223,6 @@ class ArgumentParser(argparse.ArgumentParser):
         raise CommandExecutionError('{0}: error: {1}\n'.format(self.prog, message))
 
 
-class Result(Options):
-    def __init__(self, *args, **kwargs):
-        defaults = {
-            'name':  '',
-            'result':  None,
-            'retcode': 0,
-            'stdout':  '',
-            'stderr':  '',
-            'data':  None,
-            'changes': {},
-            'comment': '',
-        }
-
-        defaults.update(kwargs)
-        super(Result, self).__init__(*args, **defaults)
-
-    def reset(self, key, default=None):
-        value = getattr(self, key, default)
-        self[key] = type(self[key])()
-        return value
-
-    # - 'result' or 'retcode' are the indicators of a successful result
-    # - If 'result' is not None that value is used and 'retcode' ignored
-    #   which allows retcode to be overridden if needed.  If 'result' is None
-    #   the value from 'retcode' is used to determine a pass or fail.
-    #
-    # 'retcode': 0 == pass / 1+ == fail (usually a shell return code)
-    # 'result':  True == pass / False == fail / None == Unused
-    def passed(self, **kwargs):
-        return self.result if self.result is not None else not bool(self.retcode)
-
-    def failed(self, **kwargs):
-        return not self.result if self.result is not None else bool(self.retcode)
-
-    def __len__(self):
-        return self.passed()
-
-
 class ModuleBase(object):
     '''ModuleBase is a base class which contains base functionality and utility
        to implement the qvm-* commands
@@ -313,18 +245,18 @@ class ModuleBase(object):
 
         if self.args.debug_mode is not None:
             if self.args.debug_mode:
-                if 'debug' not in self.args.result_mode:
-                    self.args.result_mode.append('debug')
+                if 'debug' not in self.args.status_mode:
+                    self.args.status_mode.append('debug')
                 if self.__virtualname__ not in __context__['debug']:
                     __context__['debug'].append(self.__virtualname__)
             else:
-                if 'debug' in self.args.result_mode:
-                    self.args.result_mode.remove('debug')
+                if 'debug' in self.args.status_mode:
+                    self.args.status_mode.remove('debug')
                 if self.__virtualname__ in __context__['debug']:
                     __context__['debug'].remove(self.__virtualname__)
         elif self.__virtualname__ in __context__['debug'] or '__all__' in __context__['debug']:
-            if 'debug' not in self.args.result_mode:
-                self.args.result_mode.append('debug')
+            if 'debug' not in self.args.status_mode:
+                self.args.status_mode.append('debug')
 
         self._debug_mode = __context__['debug']
 
@@ -334,7 +266,6 @@ class ModuleBase(object):
         self.kwargs = kwargs
 
         self._data = []
-        self._linefeed = '\n'
 
         if not hasattr(self, 'arg_options'):
             self.arg_options = self.arg_options_create()
@@ -351,9 +282,9 @@ class ModuleBase(object):
         argv = self.arg_info['_argparse_skipped'] + ['--defaults-end'] + self.arg_info['__argv']
         self.args = self.parser.parse_args(args=argv)
 
-        # Type of result mode to use (default: last)
-        if 'last' not in self.args.result_mode and 'all' not in self.args.result_mode:
-            self.args.result_mode.append('last')
+        # Type of status mode to use (default: last)
+        if 'last' not in self.args.status_mode and 'all' not in self.args.status_mode:
+            self.args.status_mode.append('last')
 
         # Set debug mode
         self._set_debug_mode()
@@ -362,8 +293,8 @@ class ModuleBase(object):
     def _parser_arguments_default(cls, parser):
         '''Default argparse definitions.
         '''
-        # Initial result_mode options
-        parser.add_argument('--result-mode', nargs='*', default=['last'], choices=('last', 'all', 'debug', 'debug-changes'), help=argparse.SUPPRESS)
+        # Initial status_mode options
+        parser.add_argument('--status-mode', nargs='*', default=['last'], choices=('last', 'all', 'debug'), help=argparse.SUPPRESS)
 
         # Run command post process hook function
         parser.add_argument('--run-post-hook', action='store', help=argparse.SUPPRESS)
@@ -432,105 +363,57 @@ class ModuleBase(object):
         self.arg_options = copy.deepcopy(data)
         return self.arg_options
 
-    def linefeed(self, text):
-        return self._linefeed if text else ''
-
-    def save_result(self, result=None, retcode=None, data=None, prefix=None, message='', error_message=''):
-        '''Merges data from individual results into master data dictionary
+    def save_status(self, status=None, retcode=None, result=None, data=None, prefix=None, message='', error_message=''):
+        '''Merges data from individual status into master data dictionary
         which will be returned and includes all changes and comments as well
-        as the overall result status
+        as the overall status status
         '''
+        # Create a default status if one does not exist
+        if status is None:
+            status = Status()
 
-        # Create a default result if one does not exist
-        if result is None:
-            result = Result()
+        if not status.name:
+            status.name = self.__virtualname__
 
-        # Copy args to result. Passed args override result set args
-        args = ['retcode', 'data', 'prefix', 'message', 'error_message']
-        for arg in args:
-            if arg not in result or locals().get(arg, None):
-                result[arg] = locals()[arg]
+        status._format(retcode=retcode, result=result, data=data, prefix=prefix, message=message, error_message=error_message)
+        self._data.append(status)
 
-        if not result.name:
-            result.name = self.__virtualname__
-
-        if not result.comment:
-            # ------------------------------------------------------------------
-            # Create comment
-            # ------------------------------------------------------------------
-            prefix = result.prefix if 'prefix' in result else ''
-            message = result.message if 'message' in result else ''
-            error_message = result.error_message if 'error_message' in result else ''
-
-            if prefix is None:
-                prefix = '[FAIL] ' if result.failed() else '[PASS] '
-            indent = ' ' * len(prefix)
-
-            # Manage message
-            if result.failed():
-                if error_message:
-                    message = error_message
-            if not message:
-                indent = ''
-                message = message.strip()
-
-            stdout = stderr = ''
-            if result.failed() and result.stderr.strip():
-                if message:
-                    stderr += '{0}{1}'.format(prefix, message)
-                if result.stdout.strip():
-                    stderr += '\n{0}{1}'.format(indent, result.stdout.strip().replace('\n', '\n' + indent))
-                if result.stderr.strip():
-                    stderr += '\n{0}{1}'.format(indent, result.stderr.strip().replace('\n', '\n' + indent))
-            else:
-                if message:
-                    stdout += '{0}{1}'.format(prefix, message)
-                if result.stdout.strip():
-                    stdout += '\n{0}{1}'.format(indent, result.stdout.strip().replace('\n', '\n' + indent))
-
-            if stderr:
-                if stdout:
-                    stdout = '====== stdout ======\n{0}\n\n'.format(stdout)
-                stderr = '====== stderr ======\n{0}'.format(stderr)
-            result.comment = stdout + stderr
-
-        self._data.append(result)
-        return result
+        return status
 
     def run(self, cmd, test_ignore=False, post_hook=None, data=None, **options):
         '''Executes cmd using salt.utils run_all function.
 
-        Fake results are returned instead of executing the command if test
+        Fake status are returned instead of executing the command if test
         mode is enabled.
         '''
         if __opts__['test'] and not test_ignore:
-            result = Result()
+            status = Status(retcode=0, prefix='[TEST] ')
         else:
             if isinstance(cmd, list):
                 cmd = ' '.join(cmd)
 
-            result = Result(**__salt__['cmd.run_all'](cmd, runas='user', output_loglevel='quiet', **options))
-            result.pop('pid', None)
+            status = Status(**__salt__['cmd.run_all'](cmd, runas='user', output_loglevel='quiet', **options))
+            status.pop('pid', None)
 
-        self._run_post_hook(post_hook, cmd, result, data)
+        self._run_post_hook(post_hook, cmd, status, data)
 
         cmd_options = str(options) if options else ''
         cmd_string = '{0} {1}'.format(cmd, cmd_options)
 
-        return self.save_result(result, message=cmd_string)
+        return self.save_status(status, message=cmd_string)
 
-    def _run_post_hook(self, post_hook, cmd, result, data):
+    def _run_post_hook(self, post_hook, cmd, status, data):
         '''Execute and post hooks if they exist.
         '''
-        self.run_post(cmd, result, data)
+        self.run_post(cmd, status, data)
         if post_hook:
-            post_hook(cmd, result, data)
+            post_hook(cmd, status, data)
         if self.args.run_post_hook:
-            self.args.run_post_hook(cmd, result, data)
+            self.args.run_post_hook(cmd, status, data)
 
-    def run_post(self, cmd, result, data):
-        '''Called by run to allow additional post-processing of results before
-        the results get stored to self.stdout, etc
+    def run_post(self, cmd, status, data):
+        '''Called by run to allow additional post-processing of status before
+        the status get stored to self.stdout, etc
 
         Implement in sub-class.
         '''
@@ -549,98 +432,12 @@ class ModuleBase(object):
         else:
             return None
 
-    def results(self, msg_all='', msg_passed='', msg_failed=''):
-        '''Returns the results 'data' (results) dictionary.
-
-        Additional messages may be appended to stdout
-
-        msg_all:
-            Append message for passed and failed result
-
-        msg_passed:
-            Only append message if result passed
-
-        msg_failed:
-            Only append message if result failed
+    def status(self):
+        '''Returns finalized merged 'data' status.
         '''
-        comment = ''
-        message = ''
-        changes = {}
-        mode = 'last' if 'last' in self.args.result_mode else 'all'
-        debug = True if 'debug' in self.args.result_mode else False
-        debug_changes = True if 'debug-changes' in self.args.result_mode else False
 
-        index = retcode = 0
-        if mode in ['last']:
-            result = self._data[-1]
-            retcode = result.retcode
-            if result.result is not None:
-                retcode = not result.result
-            if result.passed():
-                index = -1
+        mode = 'last' if 'last' in self.args.status_mode else 'all'
+        debug = True if 'debug' in self.args.status_mode else False
 
-        if debug:
-            index = 0
-
-        # ----------------------------------------------------------------------
-        # Determine 'retcode' and merge 'comments' and 'changes'
-        # ----------------------------------------------------------------------
-        for result in self._data[index:]:
-            # 'comment' - Merge comment
-            if result.comment.strip():
-                comment += self.linefeed(comment) + result.comment
-
-            # 'retcode' - Determine retcode
-            # Use 'result' over 'retcode' if result is not None as 'retcode'
-            # reflects last run state, where 'result' is set explicitly
-            if result.result is not None:
-                retcode = not result.result
-            elif result.retcode and mode in ['all']:
-                retcode = result.retcode
-
-            # 'changes' - Merge changes
-            if result.changes and result.passed() and (debug_changes or not __opts__['test']):
-                name = result.get('name', None) or self.__virtualname__
-                changes.setdefault(name, {})
-                for key, value in result.changes.items():
-                    changes[name][key] = value
-
-        # ----------------------------------------------------------------------
-        # Combine 'message' + 'comment'
-        # ----------------------------------------------------------------------
-        if msg_all:
-            message += msg_all
-        elif msg_passed and not retcode:
-            message += self.linefeed(message) + msg_passed
-        elif msg_failed and retcode:
-            message += self.linefeed(message) + msg_failed
-
-        # Only include last comment unless result failed
-        if not debug and mode in ['last'] and not retcode:
-            comment = result.comment
-
-        message += self.linefeed(message) + comment
-
-        # If called by CLI only return stdout
-        if '__pub_fun' in self.kwargs:
-
-            # XXX: set __context__ retcode?
-            #__context__['retcode'] = retcode
-
-            return dict(
-                #name    = self.__virtualname__,
-                retcode = retcode,
-                #comment = message,
-                stdout  = result.stdout or result.comment,
-                stderr  = result.stdout,
-                #changes = changes,
-            )
-
-        return Result(
-            name    = self.__virtualname__,
-            retcode = retcode,
-            comment = message,
-            stdout  = result.stdout,
-            stderr  = result.stdout,
-            changes = changes,
-        )
+        status = Status()
+        return status._finalize(data=self._data, mode=mode, debug=debug)

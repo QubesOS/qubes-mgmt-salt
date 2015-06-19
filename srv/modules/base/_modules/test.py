@@ -59,7 +59,7 @@ class _TestBase(_ModuleBase):
 @_function_alias('debug')
 class _Debug(_TestBase):
     '''
-    Sets debug mode for all or specific states results:
+    Sets debug mode for all or specific states status:
 
     Pass module names to enable or disable.
 
@@ -82,7 +82,7 @@ class _Debug(_TestBase):
     @classmethod
     def parser_arguments(cls, parser):
         # Defaults override
-        parser.add_argument('--result-mode', nargs='*', default=['all'], choices=('last', 'all', 'debug', 'debug-changes'), help=argparse.SUPPRESS)
+        parser.add_argument('--status-mode', nargs='*', default=['all'], choices=('last', 'all', 'debug', 'debug-changes'), help=argparse.SUPPRESS)
 
         # Optional Positional
         parser.add_argument('id', nargs='?', help=argparse.SUPPRESS)
@@ -101,29 +101,29 @@ class _Debug(_TestBase):
         if args.enable_all:
             if '__all__' not in self._debug_mode:
                 self._debug_mode.append('__all__')
-                self.save_result(message='Enabled \'ALL\'')
+                self.save_status(message='Enabled \'ALL\'')
             else:
-                self.save_result(prefix='[SKIP] ', message='Already enabled \'ALL\'')
+                self.save_status(prefix='[SKIP] ', message='Already enabled \'ALL\'')
         elif args.enable:
             for module in args.enable:
                 if module not in self._debug_mode:
                     self._debug_mode.append(module)
-                    self.save_result(message='Enabled \'{0}\''.format(module))
+                    self.save_status(message='Enabled \'{0}\''.format(module))
                 else:
-                    self.save_result(prefix='[SKIP] ', message='Already enabled \'{0}\''.format(module))
+                    self.save_status(prefix='[SKIP] ', message='Already enabled \'{0}\''.format(module))
 
         # Disable
         if args.disable_all:
             for module in sorted(self._debug_mode, reverse=True):
                 self._debug_mode.remove(module)
-                self.save_result(message='Disabled \'{0}\''.format(module))
+                self.save_status(message='Disabled \'{0}\''.format(module))
         elif args.disable:
             for module in args.disable:
                 if module in self._debug_mode:
                     self._debug_mode.remove(module)
-                    self.save_result(message='Disabled \'{0}\''.format(module))
+                    self.save_status(message='Disabled \'{0}\''.format(module))
                 else:
-                    self.save_result(prefix='[SKIP] ', message='Already disabled \'{0}\''.format(module))
+                    self.save_status(prefix='[SKIP] ', message='Already disabled \'{0}\''.format(module))
 
-        # Returns the results 'data' dictionary
-        return self.results()
+        # Returns the status 'data' dictionary
+        return self.status()
