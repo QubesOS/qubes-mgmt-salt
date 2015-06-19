@@ -1,45 +1,99 @@
 #!yamlscript
 #
-# Note that any values set in pillar WILL over ride any defaults set here with the
-# exception of values set by python code
-#
-# Process: salt defaults  <-- defaults (this file)  <-- pillar  <-- generated code
-#
 
 $comment: |
-    Pillars
-    -------
-    - Default mode will be auto.  Will attempt to locate pillar data
-      automatically based on the 'id' of the state file.  Pillar structure
-      must match state structure unless a state-side pillar map is set
-    - Place __pillar__ within a state to override default
-    - A pillar alias may be wanted to shorten paths in pillar data, or
-      when combining multiple types of state data within the same pillar.
-      An example of shortening the path follows:
 
-      pillar data
-      -----------
+    ============================================================================
+    Overview of Features:
+    ============================================================================
+    - Combine python and yaml in a nice human readable yaml format.  All the
+      power of python with readability of YAML
+
+    - Can automatically get pillar data and inject into state
+
+    - Non yaml state files such as yaml, jinga, and pyobjects can be included.
+      Those state files will be injected into the yamlscript template
+      where their values can be read or even modified.  And pre-processing
+      on the state files, such a jinga2 templating will automatically take
+      place in advance.  It can be as easy as just adding pillar data and run
+      with no state file modifications except adding the !#yamlscript shebang (or
+      appending it to an existing one)
+
+    - Access to read / write to any state file value
+
+    - requisites are automatically calculated just by using 'with' statement
+      and nesting (indenting) underneath
+
+    - test mode available to test state files against a test file before deployment
+
+    - support for pyobjects maps; yaml format available for creating them
+
+    - tracking of error positions in python snippets that will display real line number
+      error is one in state file compare to a generic stack trace related to
+      yamlscript source files
+
+    Cavaets:
+    - You must escape any scalar value that begins with a '$' with another
+      '$' so to produce '$4.19', escape like this: '$$4.19'
+
+
+    ============================================================================
+    Pillars:
+    ============================================================================
+    - Auto pillar mode is disabled by default.  The yamlscript renderer will
+      attempt to locate pillar data automatically based on the 'id' of the state
+      file when auto mode is enabled or individual state id is listed in the
+      $pillars.enabled list.
+
+    - The pillar structure must match state structure unless a state-side pillar
+      map is set.
+
+    - Place __pillar__ within an individual state to override any defaults.
+
+    - A pillar alias may be used to shorten paths in pillar data, or
+      when combining multiple types of state data within the same pillar data.
+
+    Important NOTE:
+
+      Note that any values set in pillar WILL override any defaults set withing
+      the state file with the exception of values set by python code.
+
+      Process:
+        state defaults  <-- sls defaults  <-- pillar data  <-- generated code
+
+    The following is an example of shortening the pillar path:
+
+      --------------------------------------------------------------------------
+      pillar data (/srv/pillar/users/init.sls)
+      --------------------------------------------------------------------------
       users:
         mel:
           user:
             user:
               gid: 400
               createhome: True
-      - OR... shorten path and use an alias of 'user.user' -
+
+      - OR... shorten the pillar path and use an alias of 'user.user'
+
       users:
         mel:
           user.user:
             gid: 400
             createhome: True
-      - OR... shorten path even more with an alias of 'None' -
 
-      You can set the aliases n the state file, to access pillar data as
-      follows:
+      - OR... shorten the pillar path even more with an alias of 'None'
 
-      $pillars state file declaration
-      -------------------------------
+      users:
+        mel:
+          gid: 400
+          createhome: True
+
+
+    ============================================================================
+    Pillars state file declaration:
+    ============================================================================
       $pillars:
-          auto: (True)|False
+          auto: True|(False)
           disabled:
             - <state_id>
             - <state_id>
@@ -47,24 +101,170 @@ $comment: |
             - <state_id>
             - <state_id>: <pillar_id>
           aliases:
-            - <state_id>.<state_name>: None|<path
+            - <state_id>.<state_name>: None|<path>
 
-      in yamlscript state file:
-      -------------------------
+      --------------------------------------------------------------------------
+      Yamlscript state file (/srv/salt/users/init.sls):
+      --------------------------------------------------------------------------
+      #!yamlscript
       $pillars:
           auto: True
           aliases:
             - user.user: None
             - ssh.directory: ssh
 
-      pillar data:
-      ------------
+      --------------------------------------------------------------------------
+      Pillar data (/srv/pillar/users/init.sls):
+      --------------------------------------------------------------------------
       users:
         mel:
           gid: 400
           createhome: True
           ssh:
             save_keys: False
+
+
+    ============================================================================
+    States:
+    ============================================================================
+    - Every state can contain additional keys / value pairs to provide hints
+      to the yamlscript renderer parser
+
+    __id__:
+        Override the supplied state id with scalar value.  This is useful
+        to prevent duplicate state id's when creating states dynamicly:
+
+            $'{0}_group'.format(group.group.name)
+
+    __pillar__:
+        Override `auto`, `disabled` and `enabled` declarations.
+
+        state_id:
+          state_name:
+            __pillar__: True|False|<string>
+
+        True:   Will attempt to merge pillar data
+        False:  Will not attempt to merge pillar data
+        string: string value of the pillar_id to use (map)
+
+    __alias__ declaration:
+        An `__alias__` declaration can be set to change the path to
+        pillar_data.  Only the path needs to be set since state_id and
+        state_path can be obtained.
+
+        state_id:
+          state_name:
+            __alias__: null
+            __alias__: user.user
+
+
+    ============================================================================
+    Yamlscript Commands:
+    ============================================================================
+    $python: |
+        Embed python script into yaml. Indent 4 spaces. Python can be embeded
+        in multiple locations without fear of using a duplicate key.
+
+        All variables and functions created within the embeded python script is
+        available to all states that follow the code which can be referenced
+        from the state from within the scalar by starting the scalar with a
+        dollar '$' sign.
+
+        Likewise, the python script can directly set values to individual
+        states by accessing them via dot notation via
+        <state_id>.<state_name>.<key>.
+
+        Pillar data can be manually loaded and accessed by dot-notation so long
+        as the pillar data is dictionary formed as well by updating the
+        yamlscript renderer:
+
+        Individual states can also access other state values in the same manner.
+
+          $python |
+              # Update the yamlscript renderer with manually obtained pillar
+              # data.  The update command will return a dot.notation accessable
+              # dictionary to allow convient access as well as merge any pillar
+              # data with the states within the sls file based on pillar and
+              # alias rules.
+              pillar_data = pillar('custom_pillar, {})
+              self.update(pillar_data)
+
+              # Directly set the name of the group
+              group.group.name = 'apache'
+
+              # Set gid so state can reference and use it
+              gid = 3000
+
+          group:
+            group.present:
+            - __id__: group_apache
+            - name:   null
+            # Use the value defined in python script for gid
+            - gid:    $gid
+
+          state_id:
+            state_name.function:
+              # Use the group name as Directly set in python as this state id
+              - __id__: $'{0}_group'.format(group.group.name)
+
+    $for:
+        Iterate over some object. States may be included within the loop by
+        indenting them
+
+        # Loop through all groups provided in pillar and create dynamic states
+        # to create them
+        $for name in pillar('absent_groups', []):
+          absent_groups:
+            group.absent:
+              - __id__: $'{0}_absent_group'.format(name)
+              - name:   $name
+
+    $with:
+        Allows any state indented below to become an automatic requisites which
+        automatically sets the indented state to require the state
+
+    $if:
+    $elif:
+    $else:
+        Conditionals will only include indented state if condtions are met
+
+        $if user.user.createhome and user.user.home is not None:
+          file.directory:
+          - __id__:           $'{0}_user'.format(user.user.name)
+          - name:             $user.user.home
+
+    $include: XXX: Provide more detailed explaination
+        Includes another state file and is not parsed by yamlscript directly
+
+    $extend: XXX: Provide more detailed explaination
+        Extend an existing state file.  Yamlscript does not parse the file.
+
+    $import: XXX: Provide more detailed explaination
+        Includes another state file and is parsed by yamlscript directly.  All
+        states imported are directly able to be referenced
+
+    $pillars:
+        Explained above
+
+    $test_file:
+        A test file can contain expected final highstate results that can be
+        used to test and verify state files.  See sample test files inculded
+        with the yamlscript formula for better understanding of usage.
+
+    $defaults:
+        defaults can be set as True or False. If True, all state fields are
+        prepopulated with the states default variables and values which may be
+        useful when using aliased (short) pillar names to prevent additional
+        pillar data from being merged.
+
+    $comment:
+        Just allows a nicely formatted YAML comment block.  Future versions
+        of yamlscript will convert regular style comments starting with the
+        pound/number sign '#' to $comment when loading the yaml and then
+        convert back when dumping to allow regular comments persist.
+
+        Normally comments are lost since they are not parsed and this would not
+        be desired in some use cases.
 
 # Will set all the default values from salt; allows short pillar descriptions
 $defaults : True
@@ -81,7 +281,6 @@ $pillars:
   enabled:
     - /etc/sudoers.d
     - sudoer_file
-
 
 # Main group add loop
 $for name, values in pillar('groups', {}).items():
