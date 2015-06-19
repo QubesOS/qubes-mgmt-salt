@@ -11,7 +11,7 @@ __author__ = 'Jason Mehring'
 #   True  : bind custom modules
 #   False : do not bind custom modules, but will attempt umounting then exit
 #   None  : do not bind custom modules, and do not attempt umounting
-BIND = True
+BIND = None
 
 import os
 import sys
@@ -19,51 +19,52 @@ import shutil
 import subprocess
 import logging
 
-import salt.config
-import salt.fileclient
-import salt.fileserver
-import salt.loader
-import salt.modules.saltutil
-import salt.pillar
+if BIND is not None:
+    import salt.config
+    import salt.fileclient
+    import salt.fileserver
+    import salt.loader
+    import salt.modules.saltutil
+    import salt.pillar
 
-try:
-    from subprocess import DEVNULL # py3k
-except ImportError:
-    import os
-    DEVNULL = open(os.devnull, 'wb')
+    try:
+        from subprocess import DEVNULL # py3k
+    except ImportError:
+        import os
+        DEVNULL = open(os.devnull, 'wb')
+
+    from salt.modules.saltutil import (
+        _get_top_file_envs, _listdir_recursively, _list_emptydirs
+    )
+    from salt.ext.six import string_types
+
+    # Enable logging
+    log = logging.getLogger(__name__)
+
+    BASE_DIR = os.getcwd()
+
+    # Set salt pillar, grains and opts settings so they can be applied to modules
+    __opts__ = salt.config.minion_config('/etc/salt/minion')
+    __opts__['grains'] = salt.loader.grains(__opts__)
+    pillar = salt.pillar.get_pillar(
+        __opts__,
+        __opts__['grains'],
+        __opts__['id'],
+        __opts__['environment'],
+    )
+    __opts__['pillar'] = pillar.compile_pillar()
+    __salt__ = salt.loader.minion_mods(__opts__)
+    __grains__ = __opts__['grains']
+    __pillar__ = __opts__['pillar']
+    __context__ = {}
+
+    salt.modules.saltutil.__opts__ =  __opts__
+    salt.modules.saltutil.__grains__ =  __grains__
+    salt.modules.saltutil.__pillar__ =  __pillar__
+    salt.modules.saltutil.__salt__ =  __salt__
+    salt.modules.saltutil.__context__ =  __context__
 
 from salt.scripts import salt_call
-from salt.modules.saltutil import (
-    _get_top_file_envs, _listdir_recursively, _list_emptydirs
-)
-from salt.ext.six import string_types
-
-# Enable logging
-log = logging.getLogger(__name__)
-
-BASE_DIR = os.getcwd()
-
-# Set salt pillar, grains and opts settings so they can be applied to modules
-__opts__ = salt.config.minion_config('/etc/salt/minion')
-__opts__['grains'] = salt.loader.grains(__opts__)
-pillar = salt.pillar.get_pillar(
-    __opts__,
-    __opts__['grains'],
-    __opts__['id'],
-    __opts__['environment'],
-)
-__opts__['pillar'] = pillar.compile_pillar()
-__salt__ = salt.loader.minion_mods(__opts__)
-__grains__ = __opts__['grains']
-__pillar__ = __opts__['pillar']
-__context__ = {}
-
-salt.modules.saltutil.__opts__ =  __opts__
-salt.modules.saltutil.__grains__ =  __grains__
-salt.modules.saltutil.__pillar__ =  __pillar__
-salt.modules.saltutil.__salt__ =  __salt__
-salt.modules.saltutil.__context__ =  __context__
-
 
 def _bind(form, saltenv=None, umount=False):
     '''
@@ -154,7 +155,9 @@ def _bind(form, saltenv=None, umount=False):
 
             if os.path.isfile(full):
                 touched = True
-                os.remove(full)
+                try:
+                    os.remove(full)
+                except OSError: pass
 
         # Cleanup empty dirs
         while True:

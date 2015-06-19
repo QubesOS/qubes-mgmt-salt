@@ -854,8 +854,9 @@ def compile_state_data(
         '__argspec__',
         '__pillar__',
         '__alias__',
-        '__pillar_data__'
-        '__env__'
+        '__pillar_data__',
+        '__data__',
+        '__env__',
     ]
 
     # be sure all the data is YSOrderedDict type
@@ -927,9 +928,15 @@ class Deserialize(object):
         self.sls = sls
         self.sls_type = kwargs.get('sls_type', None)
         self.kwargs = kwargs
-        self.client = salt.fileclient.get_file_client(__opts__)
-
         self.defaults = defaults
+
+        # Use __opts__ from config module otherwise roots file client will get
+        # stuck using the 'file_roots' for pillars if any pillars are using
+        # yamlscript.  config module contains unmodified 'file_roots'
+        opts = __opts__
+        if self.sls_type in 'pillar':
+            opts = sys.modules['salt.loaded.int.module.config'].__opts__
+        self.client = salt.fileclient.get_file_client(opts)
 
         if isinstance(template, dict):
             self.state_file_content = YSOrderedDict.convert(template)

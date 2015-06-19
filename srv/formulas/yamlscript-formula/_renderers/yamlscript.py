@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-# DockerNAS - User Salt State Formulas - Version 0.0.1
-# Copyright 2014 Jason Mehring
+# DockerNAS - Yamlscript - Version 0.2
+# Copyright 2014-2015 Jason Mehring
 # All rights reserved
 #
 # Redistribution and use in source and binary forms, with or without
@@ -75,6 +75,7 @@ import copy
 
 import salt.loader
 import salt.fileclient
+import salt.utils.compat
 from salt.utils.pyobjects import Registry
 
 import yamlscript_utils
@@ -88,7 +89,7 @@ from yamlscript_utils import (RenderError,
 
 
 try:
-    __context__['yamlscript_loaded'] = True
+    __context__['salt.loaded.ext.render.yamlscript'] = True
 except NameError:
     __context__ = {}
 
@@ -108,6 +109,7 @@ def get_state_function(state_name, function):
     module = globals().get(state_camel, None)
     state_function = getattr(module, function, None)
     return state_function
+
 
 def find_state(data, state_id, state_name, replace=None):
     '''
@@ -167,7 +169,8 @@ class Data(object):
     _locals = {}
     _script_data = {}
 
-    def __init__(self, script_data):
+    def __init__(self, parent, script_data):
+        self.parent = parent
         self._state_list.extend(copy.deepcopy(__context__['state_list']))
         self._script_data = script_data
 
@@ -206,9 +209,9 @@ class Data(object):
 
         return data
 
-    def update(self, data, other_data=None):
+    def defaults(self, data, other_data=None):
         '''
-        Find and valid state structures within data and update them to default
+        Find and valid state structures within data and reset them to defaults
 
         :param YSOrderedDict data: De-serialized script_data (nested)
         :param dict other_data: Provided from template via python call
@@ -266,13 +269,35 @@ class Data(object):
                 pillar_data = data.get('__pillar_data__', {})
             except AttributeError: pass
 
-        # Allow other_data to honour aliases
+        # Use aliases to find other_data within a dictionary tree
         if other_data:
             other_data = self.other_aliases(data, state_id, state_name,
                                             other_data)
+        other_data = copy.deepcopy(other_data)
 
-        # Only allow pillar data keys that exist in __argspec__ or in sls
-        # template
+        # Merge data directly provided from state
+        if '__data__' in data:
+            if not isinstance(data['__data__'], collections.Mapping):
+                # Attempt to evaluate __data__ if it's not a dictionary
+                # NOTE: _locals stack will not be available on initial call
+                state_data = self.parent.evaluate_state_items(data['__data__'])
+                if state_data and isinstance(state_data, collections.Mapping):
+                    data['__data__'] = state_data
+
+            if isinstance(data['__data__'], collections.Mapping):
+                # Allow all keys to be merged since the data was user provided
+                # and no automatic magic is required to locate data set
+                for key in data['__data__'].keys():
+                    if key not in data['__argspec__']:
+                        data['__argspec__'].append(key)
+
+                update(other_data, data['__data__'], create=True)
+                create = True
+
+                # Pop to prevent future updates?
+                data.pop('__data__', None)
+
+        # Merge other_data with pillar_data
         pillar_data = copy.deepcopy(pillar_data)
         update(pillar_data, other_data, create=True)
 
@@ -402,6 +427,7 @@ class Render(object):
     # yamlscript keys
     yamlscript_keys = [
         '__id__',
+        '__data__',
     ]
     yamlscript_keys.extend(yamlscript_private_keys)
 
@@ -430,13 +456,21 @@ class Render(object):
 
         # Data holds all the state contents and provides the ability to
         # merge, update and manipulate the script_data
-        data = Data(copy.deepcopy(script_data))
+        data = Data(self, copy.deepcopy(script_data))
         self.data = data
 
         # Set _locals vars that will be accessible to template
         self._locals = self.data._locals
         self._locals['data'] = self.data
         self._locals['self'] = self
+
+        # Use __opts__ from config module otherwise roots file client will get
+        # stuck using the 'file_roots' for pillars if any pillars are using
+        # yamlscript.  config module contains unmodified 'file_roots'
+        opts = __opts__
+        if self.sls_type in 'pillar':
+            opts = sys.modules['salt.loaded.int.module.config'].__opts__
+        self.client = salt.fileclient.get_file_client(opts)
 
         # Start parsing the script_data to generate salt_data state objects
         self.parse(self.data._script_data)
@@ -459,6 +493,7 @@ class Render(object):
         :param YSOrderedDict data: De-serialized script_data
         '''
         index_if = None
+
         for key_node, key_value in data.items():
             for name in key_value.keys():
                 if hasattr(key_value, '__index__'):
@@ -475,39 +510,43 @@ class Render(object):
                     self.index['key_start_line_offset'] = -1
 
                     # clear 'if' stack
-                    if index_if is not None and command['type'] not in ['elif', 'else'] and self._stack_if:
-                        index_if = None
+                    if getattr(self, '_stack_if', None) and command['type'] not in ['elif', 'else']:
                         self._stack_if.pop()
-                    # for
-                    if command['type'] == 'for':
-                        # For loop will reset values to default at end of each loop
-                        self._locals['__data__'] = key_value
-                        self._stack_forloop.append(copy.deepcopy(key_value))
-                        cmd = '{0}:\n    self.parse(__data__)\n    self._forloop_reset()\n'.format(command['statement'])
-                        self.execute(cmd)
-                        if self._stack_forloop:
-                            self._stack_forloop.pop()
+
                     # if
-                    elif command['type'] == 'if':
-                        index_if = len(self._stack_if)
+                    if command['type'] == 'if':
                         self._stack_if.append(False)
                         self._locals['__data__'] = key_value
                         cmd = '{0}:\n    self.parse(__data__)\n    self._stack_if[-1] = True\n'.format(
                             command['statement'])
                         self.execute(cmd)
+
                     # elif
                     elif command['type'] == 'elif':
-                        if index_if is not None and not self._stack_if[index_if]:
+                        if not self._stack_if[-1]:
                             self._locals['__data__'] = key_value
                             cmd = '{0}:\n    self.parse(__data__)\n    self._stack_if[-1] = True\n'.format(
                                 command['statement'][2:])
                             self.execute(cmd)
+
                     # else
                     elif command['type'] == 'else':
-                        if index_if is not None and not self._stack_if[index_if]:
+                        if not self._stack_if[-1]:
                             self._locals['__data__'] = key_value
                             cmd = 'self.parse(__data__)\nself._stack_if[-1] = True\n'.format(command['statement'])
                             self.execute(cmd)
+
+                    # for
+                    elif command['type'] == 'for':
+                        # For loop will reset values to default at end of each loop
+                        self._locals['__data__'] = key_value
+                        #self._stack_forloop.append(copy.deepcopy(key_value))
+                        self._stack_forloop.append( (set(self._locals.keys()), copy.deepcopy(key_value)) )
+                        cmd = '{0}:\n    self.parse(__data__)\n    self._forloop_reset()\n'.format(command['statement'])
+                        self.execute(cmd)
+                        if self._stack_forloop:
+                            self._stack_forloop.pop()
+
                     # with
                     elif command['type'] == 'with':
                         def exec_with(node, statement):
@@ -526,15 +565,20 @@ class Render(object):
                         else:
                             # `with` statement that includes a pyobjects state object
                             exec_with(key_value, command['statement'])
+
+                    # python
                     elif command['type'] == 'python':
                         self.index['key_start_line_offset'] = 0
                         self.execute(command['statement'])
+
+                    # command not implemented
                     else:
-                        # command not implemented
                         pass
+
                     break
+
+                # Create the real final state
                 else:
-                    # Create the real final state
                     self.add(data, key_node, name)
 
     def process_sls_imports(self, code):
@@ -546,7 +590,6 @@ class Render(object):
         disable the registry since all we're looking for here is python objects,
         not salt state data.
         '''
-        client = salt.fileclient.get_file_client(__opts__)
         template = StringIO.StringIO(code)
 
         # Our import regexes
@@ -571,7 +614,7 @@ class Render(object):
                     # that we're importing everything
                     imports = None
 
-                state_file = client.cache_file(import_file, self._globals['saltenv'])
+                state_file = self.client.cache_file(import_file, self._globals['saltenv'])
                 if not state_file:
                     raise ImportError("Could not find the file {0!r}".format(import_file))
 
@@ -728,14 +771,24 @@ class Render(object):
     def _forloop_reset(self):
         '''
         Resets forloop scope to a fresh state for next iteration; called
-        automatically by forloop when its completes each loop cycle
+        automatically by forloop when it completes each loop cycle
 
-        self.data.update() is called which will reset all states in scope
+        self.data.defaults() is called which will reset all states in scope
         to default values so they are ready to use again on the next loop
         cycle.
         '''
-        data = copy.deepcopy(self._stack_forloop[-1:][0])
-        data = self.data.update(data)
+        locals_keys_original, data = self._stack_forloop[-1]
+        data = copy.deepcopy(data)
+
+        # Filter locals to only contain original vars + states
+        locals_keys_current = set(self._locals.keys())
+        common = locals_keys_current.intersection(set(self.data._states))
+        common.update(locals_keys_original)
+        for key in [k for k in self._locals.keys() if k not in common]:
+            self._locals.pop(key)
+
+        # Reset state templates to default values
+        data = self.data.defaults(data)
         self._locals['__data__'] = data
 
     def update(self, other_data):
@@ -758,7 +811,7 @@ class Render(object):
         :return: A DataWrapper (other_data)
         :rtype: DataWrapper
         '''
-        self.data.update(self._locals['__data__'], other_data)
+        self.data.defaults(self._locals['__data__'], other_data)
         return DataWrapper(other_data)
 
     def add(self, data, state_id, state_name):
@@ -776,6 +829,7 @@ class Render(object):
         :rtype: salt.utils.pyobjects.State
         '''
         # Keep the original state intact in case it needs to be re-used
+        self.data.merge(data, state_id, state_name)
         scalar = copy.deepcopy(data[state_id][state_name])
 
         # Lets see if any values need to be eval'd
@@ -861,6 +915,18 @@ class Render(object):
         return state_function(state_id, **defaults)
 
 
+
+def get_dunder(dunder_name):
+    return globals().get(dunder_name, {})
+
+
+def pack_dunder(name, dunder_name):
+    mod = sys.modules[name]
+    dunder = get_dunder(dunder_name)
+    if dunder and not hasattr(mod, dunder_name):
+        setattr(mod, dunder_name, dunder)
+
+
 def render(template, saltenv='base', sls='', **kwargs):
     '''
     Creates an OrderedDict representing id's with states and values from a
@@ -869,30 +935,27 @@ def render(template, saltenv='base', sls='', **kwargs):
     Yamlscript is a mix of python and yaml using yamls structured human readable
     format.
     '''
-    # Keep track of stack during include statements
-    yamlscript_utils.Cache(__context__)
-    yamlscript_utils.Cache.set(sls, sls)
-
-    # Set some global builtins in yamlscript_utils
-    def getvar(var):
-        return kwargs.get(var, globals().get(var, {}))
-
-    salt = getvar('__salt__')
-    states = getvar('__states__')
-    pillar = getvar('__pillar__')
-    grains = getvar('__grains__')
-    opts = getvar('__opts__')
-
-    yamlscript_utils.__opts__ = opts
-    yamlscript_utils.__states__ = states
-    yamlscript_utils.__pillar__ = pillar
-
     # Detect if we are running a template, pillar or state
     if 'sls_type' not in kwargs.keys():
-        if states:
+        if kwargs.get('_pillar_rend', False):
+            kwargs['sls_type'] = 'pillar'
+        elif get_dunder('__states__'):
             kwargs['sls_type'] = 'state'
         else:
             kwargs['sls_type'] = 'pillar'
+
+    if not 'salt.loaded.ext.render.yamlscript' in __context__:
+        __context__['salt.loaded.ext.render.yamlscript'] = True
+        salt.utils.compat.pack_dunder('salt.loaded.ext.render.yamlscript')
+
+    # Apply dunders to yamlscript_utils if they do not yet exist
+    dunders = ['__salt__', '__states__', '__pillar__', '__grains__', '__utils__', '__opts__']
+    for dunder in dunders:
+        pack_dunder('yamlscript_utils', dunder)
+
+    # Keep track of stack during include statements
+    yamlscript_utils.Cache(__context__)
+    yamlscript_utils.Cache.set(sls, sls)
 
     # Convert yaml to ordered dictionary
     deserialize = yamlscript_utils.Deserialize(
@@ -901,6 +964,7 @@ def render(template, saltenv='base', sls='', **kwargs):
         sls=sls,
         **kwargs
     )
+
     script_data = deserialize.generate(
         deserialize.state_file_content,
         yamlscript_utils.YSOrderedDict()
@@ -912,30 +976,24 @@ def render(template, saltenv='base', sls='', **kwargs):
         # Call pyobjects to build globals and provide functions to create states
         pyobjects = kwargs['renderers']['pyobjects']
         _globals = pyobjects(template, saltenv, sls, salt_data=False, **kwargs)
+        _globals['__utils__'] = get_dunder('__utils__')
     else:
-        # add some convenience methods to the global scope as well as the "dunder"
+        # Add some convenience methods to the global scope as well as the "dunder"
         # format of all of the salt objects
-        try:
-            _globals = {
-                # the "dunder" formats are still available for direct use
-                '__salt__': salt,
-                '__pillar__': pillar,
-                '__grains__': grains,
+        _globals = {}
+        for dunder in dunders:
+            _globals[dunder] = get_dunder(dunder)
+            _globals[dunder.replace('_', '')] = get_dunder(dunder)
 
-                'pillar': pillar.get,
-            }
-            if salt:
-                # salt, pillar & grains all provide shortcuts or object interfaces
-                _globals['grains'] = salt['grains.get']
-                _globals['mine'] = salt['mine.get']
-                _globals['config'] = salt['config.get']
-        except NameError:
-            raise
+        _globals['pillar'] = _globals.get('salt')['pillar.get']
+        _globals['grains'] = _globals.get('salt')['grains.get']
+        _globals['mine']   = _globals.get('salt')['mine.get']
+        _globals['config'] = _globals.get('salt')['config.get']
 
     # Use copy of __pillar__ and __grains__ dictionaries
-    salt_vars = ['__pillar__', '__grains__']
-    for var in salt_vars:
-        _globals[var] = copy.deepcopy(_globals[var])
+    salt_dunders = ['__pillar__', '__grains__']
+    for dunder in salt_dunders:
+        _globals[dunder] = copy.deepcopy(_globals[dunder])
 
     # Additional globals
     _globals['__context__'] = dict(state_list=deserialize.state_list)
@@ -944,7 +1002,6 @@ def render(template, saltenv='base', sls='', **kwargs):
     # Can't use pyobject global 'salt' since we need to import salt classes
     _globals.pop('salt', None)
 
-    # Render the script data that was de-serialized into salt_data
     rendered = Render(script_data, kwargs['sls_type'], _globals=_globals)
 
     # If its a pillar or template, return it now
