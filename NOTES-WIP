@@ -9,12 +9,6 @@
 =======================================================================================================================
                                                       ISSUES
 =======================================================================================================================
-- Allow gpg to verify key in test mode; it would prevent tests from runnning
-- not getting installed along with Qubes
-- allow changed in test mode; since salt expects that
-- create another gpg signed statefile for tests since importing vim conflicts with vim
-
-
 cli:
   - Need to create custom outputters for CLI, etc
 
@@ -24,10 +18,6 @@ cli:
 =======================================================================================================================
 - Make sure pillar directory is marked as a configuraion dir for debian and rpm
   install so user settings do not get modified
-
-- Modified to allow vim@env.  include works, but state fails using dom0 saltenv it seems
-  - tests/init.sh
-  - yamlscript_utils
 
 - state.py: 1563: with context.func_globals_inject(self.states[cdata['full']], **inject_globals):
 
