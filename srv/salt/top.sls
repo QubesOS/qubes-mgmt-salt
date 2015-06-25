@@ -14,9 +14,9 @@
 # --> qubesctl state.highstate test=True
 
 base:
-  # === Common ================================================================
+  # === Base States ===========================================================
   '*':
-    # --- salt applications ---
+    # --- salt configurations ---
     - salt
     - salt.minion_absent
     - salt.master_absent
@@ -27,10 +27,48 @@ base:
     # --- install user salt directories and sample locale states ---
     - salt-user
 
-    # --- system configurations ---
-    - gnupg
-    # users
-
-    # --- utilities ---
+  # === Base States Formulas ==================================================
+    # --- applications ---
     - vim
 
+    # --- configurations ---
+    - gpg
+    # users
+
+    # --- tests ---
+    # gpg.tests
+
+dom0:
+  # === Dom0 State Formulas ===================================================
+  'virtual:Qubes':
+    - match: grain
+    # --- applications ---
+
+    # --- configurations ---
+    - virtual-machines
+
+    # --- tests ---
+    # qvm.tests
+    # qubes-dom0-update.tests
+
+vm:
+  # === AppVM State Formulas ==================================================
+  'virtual_subtype:Xen PV DomU':
+    - match: grain
+
+    # --- applications ---
+    - python_pip  # Not needed if salt installed via repo (yum, apt-get)
+
+    # --- configurations ---
+    - theme
+    - theme.fonts_ubuntu
+    - theme.fonts_source_code_pro
+
+vm_other:
+  # === Other State Formulas ==================================================
+  'vm_other:true':
+    - match: pillar
+    # --- applications ---
+
+    # --- configurations ---
+    - os

@@ -9,6 +9,17 @@
 =======================================================================================================================
                                                       ISSUES
 =======================================================================================================================
+split into formulas:
+  - Initally seperate all modules into formula directories within app-salt-config as it will allow better testing
+    and experimentation on the best method to split and rename packages
+
+  - Need to make decision on how to hanlde formulas.  Currently method would require manually adding the formuala
+    path to file_roots unless the recursive option is enabled
+
+  - Will formulas become installable packages? Or git submodules?
+  	- Benefit of becoming a package is a util can be written to add formula to top.sls and file_roots
+	- Initial salt config would then run a highstate to install packages, then add them to config
+
 cli:
   - Need to create custom outputters for CLI, etc
 
