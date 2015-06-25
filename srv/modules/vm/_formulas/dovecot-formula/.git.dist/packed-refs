@@ -1,5 +1,0 @@
-# pack-refs with: peeled fully-peeled 
-38d6bceffc77603b8f9f3c08160604f57f34646f refs/remotes/origin/master
-38d6bceffc77603b8f9f3c08160604f57f34646f refs/remotes/origin/style-short-dec
-ceb7b6a5341428fb6f18a50ffbac737e5928ccb7 refs/tags/0.0.1
-0acdcf84ed9ce507539d62063b7715d4fd00423a refs/tags/0.0.2
