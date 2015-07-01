@@ -25,14 +25,13 @@ from module_utils import ModuleBase as _ModuleBase
 log = logging.getLogger(__name__)
 
 # Define the module's virtual name
-__virtualname__ = 'test'
+__virtualname__ = 'debug'
 
 
 def __virtual__():
     '''
-    Confine this module to Qubes dom0 based systems
     '''
-    return True
+    return __virtualname__
 
 #__outputter__ = {
 #    'get_prefs': 'txt',
@@ -56,8 +55,8 @@ class _TestBase(_ModuleBase):
         super(_TestBase, self).__init__(*varargs, **kwargs)
 
 
-@_function_alias('debug')
-class _Debug(_TestBase):
+@_function_alias('mode')
+class _Mode(_TestBase):
     '''
     Sets debug mode for all or specific states status:
 
@@ -77,7 +76,7 @@ class _Debug(_TestBase):
         '''
         '''
         self.arg_options_create(argv_ordering=['flags', 'args', 'varargs', 'keywords'])
-        super(_Debug, self).__init__(*varargs, **kwargs)
+        super(_Mode, self).__init__(*varargs, **kwargs)
 
     @classmethod
     def parser_arguments(cls, parser):

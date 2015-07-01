@@ -22,9 +22,8 @@ log = logging.getLogger(__name__)
 
 def __virtual__():
     '''
-    Only make these states available if a salt test.debug module exists
     '''
-    return 'test.debug' in __salt__
+    return 'debug.mode' in __salt__
 
 
 def _state_action(_action, *varargs, **kwargs):
@@ -37,8 +36,8 @@ def _state_action(_action, *varargs, **kwargs):
     return dict(status)
 
 
-def debug(name, *varargs, **kwargs):
+def mode(name, *varargs, **kwargs):
     '''
     Sets debug mode for all or specific states status
     '''
-    return _state_action('test.debug', name, *varargs, **kwargs)
+    return _state_action('debug.mode', name, *varargs, **kwargs)

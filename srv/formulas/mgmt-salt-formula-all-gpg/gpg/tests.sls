@@ -11,18 +11,18 @@
 
 $python: |
     tests = [
-        'test-debug',
+        'debug-mode',
         'gpg-import_key',
         'gpg-verify',
         'gpg-renderer',
     ]
 
 #===============================================================================
-# Set salt state result debug mode (enable/disable)                   test-debug
+# Set salt state result debug mode (enable/disable)                   debug-mode
 #===============================================================================
-$if 'test-debug' in tests:
-  gpg-test-debug-id:
-    test.debug:
+$if 'debug-mode' in tests:
+  gpg-test-debug-mode-id:
+    debug.mode:
       - enable-all: true
       # enable: [qvm.absent, qvm.start]
       # disable: [qvm.absent]
@@ -47,7 +47,8 @@ $if 'gpg-import_key' in tests:
 $if 'gpg-verify' in tests:
   gpg-verify-id:
     gpg.verify:
-      - source: salt://gpg/test-gpg-renderer.sls.asc@dom0
+      # source: salt://gpg/test-gpg-renderer.sls.asc@dom0
+      - source: salt://gpg/test-gpg-renderer.sls.asc
       # key-data: salt://gpg/test-gpg-renderer.sls@dom0
       # user: salt
       # require:
