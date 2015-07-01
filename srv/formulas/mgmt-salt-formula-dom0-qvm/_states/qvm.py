@@ -197,7 +197,7 @@ def present(name, *varargs, **kwargs):
     if exists_status.passed():
         message = "A VM with the name '{0}' already exists.".format(name)
         present_status = Status()._format(prefix='[SKIP] ', message=message)
-        return dict(present_status._finalize())
+        return dict(present_status._finalize(test_mode=__opts__['test']))
 
     return _state_action('qvm.create', name, *varargs, **kwargs)
 
@@ -212,7 +212,7 @@ def absent(name, *varargs, **kwargs):
     if missing_status.passed():
         message = "The VM with the name '{0}' is already missing.".format(name)
         absent_status = Status()._format(prefix='[SKIP] ', message=message)
-        return dict(absent_status._finalize())
+        return dict(absent_status._finalize(test_mode=__opts__['test']))
     return _state_action('qvm.remove', name, *varargs, **kwargs)
 
 

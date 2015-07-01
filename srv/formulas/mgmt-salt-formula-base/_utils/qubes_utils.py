@@ -137,7 +137,7 @@ class Status(Options):
 
             return self
 
-    def _finalize(self, data=[], mode='last', debug=False):
+    def _finalize(self, data=[], status_mode='last', cli_mode=False, debug_mode=False, test_mode=False):
         '''Merges provided list of status and prepares status
         for return to salt.
 
@@ -146,15 +146,18 @@ class Status(Options):
         data:
             List of status to merge
 
-        mode:
+        status_mode:
             all or last. last only uses last retcode to determine overall
             success where all will fail on first failure code
 
-        debug:
+        cli_mode:
+            True if called by commandline interface, otherwise false
+
+        debug_mode:
             Merges all status messages
 
-        debug_changes:
-            Shows changes in test mode
+        test_mode:
+            True if test mode is enabled, otherwise false
         '''
         def linefeed(text):
             return '\n' if text else ''
@@ -167,7 +170,7 @@ class Status(Options):
             data = [self]
 
         index = retcode = 0
-        if mode in ['last']:
+        if status_mode in ['last']:
             status = data[-1]
             retcode = status.retcode
             if status.result is not None:
@@ -175,7 +178,7 @@ class Status(Options):
             if status.passed():
                 index = -1
 
-        if debug:
+        if debug_mode:
             index = 0
 
         # ----------------------------------------------------------------------
@@ -191,14 +194,12 @@ class Status(Options):
             # reflects last run state, where 'result' is set explicitly
             if status.result is not None:
                 retcode = not status.result
-            elif status.retcode and mode in ['all']:
+            elif status.retcode and status_mode in ['all']:
                 retcode = status.retcode
 
-            # XXX: TEST
-            if status.result and __opts__['test']:
+            if status.result and test_mode:
                 status.result = None
-
-            elif __opts__['test']:
+            elif test_mode:
                 status.result = None if not retcode else False
             else:
                 status.result = True if not retcode else False
@@ -211,29 +212,20 @@ class Status(Options):
                     changes[name][key] = value
 
         # Only include last comment unless status failed
-        if not debug and mode in ['last'] and not retcode:
+        if not debug_mode and status_mode in ['last'] and not retcode:
             comment = status.comment
 
-##        # If called by CLI only return stdout
-##        if '__pub_fun' in self.kwargs:
-##
-##            # XXX: set __context__ retcode?
-##            #__context__['retcode'] = retcode
-##
-##            return dict(
-##                #name    = self.__virtualname__,
-##                retcode = retcode,
-##                #result = status.result,
-##                #comment = comment,
-##                stdout  = status.stdout or status.comment,
-##                stderr  = status.stdout,
-##                #changes = changes,
-##            )
+        # If called by CLI only return stdout
+        if cli_mode:
+            return dict(
+                retcode = retcode,
+                stdout  = status.stdout or comment,
+                stderr  = status.stdout,
+            )
 
         # XXX: Could now just update self and return self, but may need to
         #      make sure attrs are cleared first?
         return Status(
-            #name    = self.__virtualname__,
             name    = status.name,
             retcode = retcode,
             result = status.result,

@@ -435,9 +435,9 @@ class ModuleBase(object):
     def status(self):
         '''Returns finalized merged 'data' status.
         '''
-
-        mode = 'last' if 'last' in self.args.status_mode else 'all'
-        debug = True if 'debug' in self.args.status_mode else False
+        status_mode = 'last' if 'last' in self.args.status_mode else 'all'
+        cli_mode = True if '__pub_fun' in self.kwargs else False
+        debug_mode = True if 'debug' in self.args.status_mode else False
 
         status = Status()
-        return status._finalize(data=self._data, mode=mode, debug=debug)
+        return status._finalize(data=self._data, status_mode=status_mode, cli_mode=cli_mode, debug_mode=debug_mode, test_mode=__opts__['test'])
