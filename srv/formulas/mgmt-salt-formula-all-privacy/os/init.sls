@@ -23,11 +23,10 @@ general-utilities:
       - telnet
 
 $if grains('os_family') == 'Debian':
-  $with os-dependencies:
+  os-dependencies:
     pkg.installed:
       - names: 
         - apt-file
-#    pip.installed:
 
 /root:
   file:
