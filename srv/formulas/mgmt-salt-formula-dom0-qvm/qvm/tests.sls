@@ -36,7 +36,7 @@ $python: |
     test_vm_name = 'salt-testvm6'
 
     tests = [
-        'test-debug',
+        'debug-mode',
         'qvm-kill',
         'qvm-halted',
         'qvm-absent',
@@ -59,11 +59,11 @@ $python: |
     ]
 
 #===============================================================================
-# Set salt state result debug mode (enable/disable)                   test-debug
+# Set salt state result debug mode (enable/disable)                   debug-mode
 #===============================================================================
-$if 'test-debug' in tests:
-  qvm-test-debug-id:
-    test.debug:
+$if 'debug-mode' in tests:
+  qvm-test-debug-mode-id:
+    debug.mode:
       - enable-all: true
       # enable: [qvm.absent, qvm.start]
       # disable: [qvm.absent]
