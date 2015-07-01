@@ -24,7 +24,7 @@
 # last message
 $if pillar('qubes:debug'):
   virtual-machines-debug-id:
-    test.debug:
+    debug.mode:
       - enable-all: true
 
 $for vmname, vmtype in pillar('qubes:defaults:virtual-machines', {}).items():
@@ -55,7 +55,7 @@ $for vmname, vmtype in pillar('qubes:defaults:virtual-machines', {}).items():
 
   $else:
     virtual_machine_id:
-      qubes.status:
+      status.create:
         - __id__:  $vmname
         - result: false
         - comment: |

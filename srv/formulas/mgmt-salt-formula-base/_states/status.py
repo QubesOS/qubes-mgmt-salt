@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 
 def __virtual__():
-    return 'qubes'
+    return True
 
 
 def _state_action(_action, *varargs, **kwargs):
@@ -37,7 +37,7 @@ def _state_action(_action, *varargs, **kwargs):
     return dict(status)
 
 
-def status(name, comment, result=None):
+def create(name, comment, result=None):
     '''
     Used to show an alert message when a condition is met not to include a state.
     '''
