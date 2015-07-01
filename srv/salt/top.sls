@@ -4,7 +4,7 @@
 # --> qubesctl saltutil.sync_all
 #
 # 2) Initial Key Import:
-# --> qubesctl state.sls gnupg
+# --> qubesctl state.sls gpg
 #
 # 3) Highstate will execute all states
 # --> qubesctl state.highstate
@@ -13,8 +13,8 @@
 #    mode and may apply state anyway.  Needs more testing to confirm or not!
 # --> qubesctl state.highstate test=True
 
+# === Base States =============================================================
 base:
-  # === Base States ===========================================================
   '*':
     # --- salt configurations ---
     - salt
@@ -34,14 +34,15 @@ base:
     # --- configurations ---
     - gpg
     # users
+    # os
 
     # --- tests ---
     # gpg.tests
 
+# === Dom0 State Formulas =====================================================
 dom0:
-  # === Dom0 State Formulas ===================================================
-  'virtual:Qubes':
-    - match: grain
+  dom0:
+    - match: nodegroup
     # --- applications ---
 
     # --- configurations ---
@@ -51,11 +52,10 @@ dom0:
     # qvm.tests
     # qubes-dom0-update.tests
 
+# === AppVM State Formulas ====================================================
 vm:
-  # === AppVM State Formulas ==================================================
-  'virtual_subtype:Xen PV DomU':
-    - match: grain
-
+  vm:
+    - match: nodegroup
     # --- applications ---
     - python_pip  # Not needed if salt installed via repo (yum, apt-get)
 
@@ -64,11 +64,10 @@ vm:
     - theme.fonts_ubuntu
     - theme.fonts_source_code_pro
 
+# === Other State Formulas ====================================================
 vm_other:
-  # === Other State Formulas ==================================================
-  'vm_other:true':
-    - match: pillar
+  vm_other:
+    - match: nodegroup
     # --- applications ---
-
     # --- configurations ---
     - os
