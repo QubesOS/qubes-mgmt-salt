@@ -14,7 +14,7 @@ $with /usr/share/fonts/ubuntu-font-family:
     - file_mode: 644
 
   $if grains('os') == 'Fedora':
-    $with ttmkfdir -o /usr/share/fonts/ubuntu-font-family/fonts.scale -d /usr/share/fonts/ubuntu-font-family > /usr/share/fonts/ubuntu-font-family/fonts.dir && fc-cache -fv:
+    ttmkfdir -o /usr/share/fonts/ubuntu-font-family/fonts.scale -d /usr/share/fonts/ubuntu-font-family > /usr/share/fonts/ubuntu-font-family/fonts.dir && fc-cache -fv:
       cmd.run: 
         - creates: 
           - /usr/share/fonts/ubuntu-font-family/fonts.dir
@@ -27,4 +27,3 @@ $with /usr/share/fonts/ubuntu-font-family:
 # Remove ubuntu directory if it exists (old naming format)
 /usr/share/fonts/ubuntu:
   file.absent: []
-

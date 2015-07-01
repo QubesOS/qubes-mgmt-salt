@@ -14,7 +14,7 @@ $with /usr/share/fonts/source-code-pro:
     - file_mode: 644
   
   $if grains('os') == 'Fedora':
-    $with ttmkfdir -o /usr/share/fonts/source-code-pro/fonts.scale -d /usr/share/fonts/source-code-pro > /usr/share/fonts/source-code-pro/fonts.dir && fc-cache -fv:
+    ttmkfdir -o /usr/share/fonts/source-code-pro/fonts.scale -d /usr/share/fonts/source-code-pro > /usr/share/fonts/source-code-pro/fonts.dir && fc-cache -fv:
       cmd.run: 
         - creates: 
           - /usr/share/fonts/source-code-pro/fonts.dir
@@ -31,4 +31,3 @@ $with /usr/share/fonts/source-code-pro:
 # Remove Source-Code-Pro directory if it exists (old naming format)
 /usr/share/fonts/Source-Code-Pro:
   file.absent: []
-
