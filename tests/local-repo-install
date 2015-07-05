@@ -35,7 +35,7 @@
 source lib/functions.sh
 
 if [ $# -eq 0 ] || [ $# -eq 1 ]; then
-    error 'You must provide a DIST and either [upgrade|dist-upgrade|reinstall] or package names to install!'
+    error "You must provide a DIST and either [upgrade|dist-upgrade|reinstall] or package names to install!"
     info "usage $0 <dist> [upgrade|dist-upgrade] | [reinstall] <package-name> [package-name]..."
     exit
 fi
@@ -48,7 +48,7 @@ fi
 
 DIST="${1}"
 if ! elementIn "$DIST" ${DISTS_FEDORA[@]} ${DISTS_DEBIAN[@]}; then
-    error 'You must provide a valid DIST such as fc21 or jessie!'
+    error "You must provide a valid DIST such as fc21 or jessie!"
     info "usage $0 <dist> [upgrade|dist-upgrade] | [reinstall] <package-name> [package-name]..."
     exit 1
 fi
@@ -156,7 +156,7 @@ uninstallLocalRepo() {
     local dist="${1}"
 
     if elementIn "$dist" ${DISTS_DEBIAN[@]}; then
-        info 'Removing local ${LOCAL_REPO_DIR} repo from /etc/apt/sources.list.d'
+        info "Removing local ${LOCAL_REPO_DIR} repo from /etc/apt/sources.list.d"
         rm -f "/etc/apt/sources.list.d/local-repo.list"
     fi
 }
