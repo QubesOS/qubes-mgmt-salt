@@ -17,27 +17,49 @@
 base:
   '*':
     # --- salt configurations ---
-    - salt
-    - salt.minion_absent
-    - salt.master_absent
-    - salt.api_absent
-    - salt.syndic_absent
-    - salt.halite_absent
+    - salt.standalone
+    - salt.directories
+    - salt.pkgrepo
 
     # --- install user salt directories and sample locale states ---
     - salt-user
 
   # === Base States Formulas ==================================================
-    # --- applications ---
-    - vim
-
     # --- configurations ---
     - gpg
     # users
-    # os
 
     # --- tests ---
     # gpg.tests
+
+  # VM nodegroup + enable_gitfs == true
+  # Enable in /srv/pillar/vm/formulas/init.sls
+  'P@virtual_subtype:Xen\sPV\sDomU and I@enable_gitfs:true':
+    - match: compound
+    # --- salt git formulas ---
+    {% if grains['os_family']|lower == 'debian' %}
+    - salt.gitfs.dulwich
+    {% endif %}
+    - salt.formulas
+
+# === Common State Formulas ===================================================
+all:
+  '*':
+    # --- applications ---
+    - vim
+
+  vm:
+    - match: nodegroup
+    # --- configurations ---
+    - theme
+    - theme.fonts_ubuntu
+    - theme.fonts_source_code_pro
+
+  # Enable in /srv/pillar/all/privacy/init.sls
+  'enable_privacy:true':
+    - match: pillar
+    # --- configurations ---
+    - privacy
 
 # === Dom0 State Formulas =====================================================
 dom0:
@@ -57,17 +79,4 @@ vm:
   vm:
     - match: nodegroup
     # --- applications ---
-    - python_pip  # Not needed if salt installed via repo (yum, apt-get)
-
-    # --- configurations ---
-    - theme
-    - theme.fonts_ubuntu
-    - theme.fonts_source_code_pro
-
-# === Other State Formulas ====================================================
-vm_other:
-  vm_other:
-    - match: nodegroup
-    # --- applications ---
-    # --- configurations ---
-    - os
+    - python_pip
