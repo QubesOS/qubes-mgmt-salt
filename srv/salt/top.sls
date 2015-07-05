@@ -33,7 +33,7 @@ base:
     # gpg.tests
 
   # VM nodegroup + enable_gitfs == true
-  # Enable in /srv/pillar/vm/formulas/init.sls
+  # Enable in /srv/pillar/vm/salt/formulas.sls
   'P@virtual_subtype:Xen\sPV\sDomU and I@enable_gitfs:true':
     - match: compound
     # --- salt git formulas ---
