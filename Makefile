@@ -1,4 +1,3 @@
-#
 # The Qubes OS Project, http://www.qubes-os.org
 #
 # Copyright (C) 2011  Marek Marczykowski <marmarek@invisiblethingslab.com>
@@ -19,11 +18,11 @@
 #
 #
 
-# Salt branch to use
-BRANCH_app_salt = 2014.7.2
+PACKAGE_NAME := qubes-mgmt-salt
 
-RPMS_DIR=rpm/
+RPMS_DIR := rpm/
 VERSION := $(shell cat version)
+RELEASE := $(shell cat rel)
 
 all:
 	@true
@@ -39,8 +38,8 @@ help:
 	    @exit 0;
 
 rpms:
-	rpmbuild --define "_rpmdir rpm/" -bb rpm_spec/qubes-salt.spec
-	rpm --addsign rpm/x86_64/qubes-salt*$(VERSION)*.rpm
+	rpmbuild --define "_rpmdir rpm/" -bb rpm_spec/$(PACKAGE_NAME).spec
+	rpm --addsign rpm/x86_64/$(PACKAGE_NAME)-$(VERSION)-$(RELEASE)*.rpm
 
 rpms-dom0: rpms
 	@true
@@ -51,25 +50,25 @@ rpms-vm: rpms
 update-repo-current:
 	for vmrepo in ../yum/current-release/current/vm/* ; do \
 		dist=$$(basename $$vmrepo) ;\
-		ln -f $(RPMS_DIR)/x86_64/qubes-salt*$(VERSION)*$$dist*.rpm $$vmrepo/rpm/ ;\
+		ln -f $(RPMS_DIR)/x86_64/$(PACKAGE_NAME)-$(VERSION)-$(RELEASE).$$dist*.rpm $$vmrepo/rpm/ ;\
 	done
 
 update-repo-current-testing:
 	for vmrepo in ../yum/current-release/current-testing/vm/* ; do \
 		dist=$$(basename $$vmrepo) ;\
-		ln -f $(RPMS_DIR)/x86_64/qubes-salt*$(VERSION)*$$dist*.rpm $$vmrepo/rpm/ ;\
+		ln -f $(RPMS_DIR)/x86_64/$(PACKAGE_NAME)-$(VERSION)-$(RELEASE).$$dist*.rpm $$vmrepo/rpm/ ;\
 	done
 
 update-repo-unstable:
 	for vmrepo in ../yum/current-release/unstable/vm/* ; do \
 		dist=$$(basename $$vmrepo) ;\
-		ln -f $(RPMS_DIR)/x86_64/qubes-salt*$(VERSION)*$$dist*.rpm $$vmrepo/rpm/ ;\
+		ln -f $(RPMS_DIR)/x86_64/$(PACKAGE_NAME)-$(VERSION)-$(RELEASE).$$dist*.rpm $$vmrepo/rpm/ ;\
 	done
 
 update-repo-template:
 	for vmrepo in ../template-builder/yum_repo_qubes/* ; do \
 		dist=$$(basename $$vmrepo) ;\
-		ln -f $(RPMS_DIR)/x86_64/qubes-salt*$(VERSION)*$$dist*.rpm $$vmrepo/rpm/ ;\
+		ln -f $(RPMS_DIR)/x86_64/$(PACKAGE_NAME)-$(VERSION)-$(RELEASE).$$dist*.rpm $$vmrepo/rpm/ ;\
 	done
 
 install:
@@ -87,7 +86,7 @@ install:
 	done
 
 .PHONY: get-sources
-get-sources: GIT_REPOS := $(addprefix $(SRC_DIR)/,app-salt)
+get-sources: GIT_REPOS := $(addprefix $(SRC_DIR)/,mgmt-salt)
 get-sources:
 	@set -a; \
 	pushd $(BUILDER_DIR) &> /dev/null; \
