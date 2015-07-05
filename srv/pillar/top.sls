@@ -20,13 +20,15 @@ all:
 
 # === Dom0 ====================================================================
 dom0:
-  '*':
+  dom0:
+    - match: nodegroup
     - qubes
     # qubes.users
     - qubes.virtual-machines
 
 # === vm ======================================================================
 vm:
-  '*':
+  vm:
+    - match: nodegroup
     - qubes.users
-    - formulas
+    - salt.formulas
