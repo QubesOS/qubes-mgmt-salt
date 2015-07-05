@@ -1,7 +1,0 @@
-TODO
-----
-
-- Add sudo.append key.  If True append rule, if False overwrite rule
-- Add example on how to apply users to specific 'grain'; use pyobjects Map?
-- Remove quotes around strings; yaml does not need them
-- Octal values begin with a 0; but salt just strips that out (even with a string?)
