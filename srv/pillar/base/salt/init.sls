@@ -8,6 +8,9 @@
 salt:
   clean_config_d_dir: False
   install_packages: True
+  {% if grains['os']|lower == 'fedora' %}
+  repotype: fedora
+  {% endif %}
 
   # salt master config
   minion:
