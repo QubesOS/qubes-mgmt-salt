@@ -19,7 +19,7 @@ DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
 #### '-------------------------------------------------------------------------
 info ' Installing Qubes Salt Management Flavor'
 #### '-------------------------------------------------------------------------
-aptInstall salt-common salt-minion qubes-salt-config
+aptInstall salt-common salt-minion qubes-mgmt-salt-vm
 
 #### '----------------------------------------------------------------------
 info ' Cleanup'

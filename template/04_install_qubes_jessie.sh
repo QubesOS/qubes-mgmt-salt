@@ -13,7 +13,7 @@ trap cleanup EXIT
 #### '-------------------------------------------------------------------------
 info ' Installing Qubes Salt Management Flavor'
 #### '-------------------------------------------------------------------------
-aptInstall salt-common salt-minion qubes-salt-config
+aptInstall salt-common salt-minion qubes-mgmt-salt-vm
 
 #### '----------------------------------------------------------------------
 info ' Cleanup'
