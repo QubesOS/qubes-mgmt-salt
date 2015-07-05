@@ -1,4 +1,4 @@
-qubes-salt-config (3.0.0-1) unstable; urgency=low
+qubes-mgmt-salt (3.0.0-1) unstable; urgency=low
 
   * Initial Release.
 

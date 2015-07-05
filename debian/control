@@ -1,4 +1,4 @@
-Source: qubes-salt-config
+Source: qubes-mgmt-salt
 Section: admin
 Priority: extra
 Maintainer: Jason Mehring <nrgaway@gmail.com>
@@ -6,19 +6,51 @@ Build-Depends: debhelper (>= 9~), quilt
 Standards-Version: 3.9.5
 Homepage: http://www.qubes-os.org
 
-Package: qubes-salt-config
+Package: qubes-mgmt-salt
 Section: admin
 Architecture: all
-Depends: 
-    salt-common (>= 2014.7.2), 
-    salt-minion (>= 2014.7.2),
-    vim,
-    git,
+Depends:
+    salt-common,
+    salt-minion,
     ca-certificates,
     lsb-release,
-    rsync,
+    python-gnupg,
+    qubes-mgmt-salt-config,
+    qubes-mgmt-salt-base
+Description: Qubes+Salt Management dependencies.
+
+Package: qubes-mgmt-salt-config
+Section: admin
+Architecture: all
+Description: Qubes+Salt Management base configuration for SaltStack's Salt Infrastructure automation and management system.
+Depends:
+    salt-common,
+    salt-minion
+
+Package: qubes-mgmt-salt-dom0
+Section: admin
+Architecture: all
+Depends:
+    qubes-mgmt-salt,
+    qubes-mgmt-salt-base,
+    qubes-mgmt-salt-config,
+    qubes-mgmt-salt-dom0-qvm,
+    qubes-mgmt-salt-dom0-update,
+    qubes-mgmt-salt-dom0-virtual-machines,
+    qubes-mgmt-salt-dom0-policy-qubesbuilder,
+    qubes-mgmt-salt-dom0-fix-permissions,
+    qubes-mgmt-salt-dom0-template-upgrade
+Description: Qubes+Salt Management dom0 dependencies.
+
+Package: qubes-mgmt-salt-vm
+Section: admin
+Architecture: all
+Depends:
+    qubes-mgmt-salt,
+    qubes-mgmt-salt-base,
+    qubes-mgmt-salt-config,
+    git,
     python-dulwich,
     python-pip,
-    python-gnupg,
-    ${misc:Depends}
-Description: Configuration files for SaltStack's Salt Infrastructure automation and management system  
+    qubes-mgmt-salt-vm-python-pip
+Description: Qubes+Salt Management vm dependencies.

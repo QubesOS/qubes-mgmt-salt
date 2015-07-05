@@ -17,41 +17,10 @@
 # https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html or
 # the debian-policy package
 
-
-# Disable systemd units
-disableSystemdUnits() {
-    for unit in $*; do
-        systemctl is-enabled ${unit} > /dev/null 2>&1 && {
-            echo "Disabling ${unit}..."
-            systemctl is-active ${unit} > /dev/null 2>&1 && {
-                systemctl stop ${unit} > /dev/null 2>&1 || true
-            }
-            if [ -f /lib/systemd/system/${unit} ]; then
-                if fgrep -q '[Install]' /lib/systemd/system/${unit}; then
-                    systemctl disable ${unit} > /dev/null 2>&1 || true
-                else
-                    # Forcibly disable
-                    echo "Forcibly disabling: ${unit}"
-                    ln -sf /dev/null /etc/systemd/system/${unit}
-                fi
-            else
-                    systemctl disable ${unit} > /dev/null 2>&1 || true
-            fi
-        } || {
-            echo "It appears ${unit} is already disabled!"
-        }
-    done
-}
-
-
 case "${1}" in
     configure)
-        disableSystemdUnits \
-            salt-minion.service \
-            salt-master.service 
-
-        qubesctl saltutil.sync_all -l quiet --out quiet
-
+        salt-call --local saltutil.sync_all -l quiet --out quiet > /dev/null || true
+        salt-call --local state.sls salt.standalone-config -l quiet --out quiet > /dev/null || true
         ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
