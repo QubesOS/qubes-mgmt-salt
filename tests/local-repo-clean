@@ -1,0 +1,58 @@
+#!/bin/bash -e
+# vim: set ts=4 sw=4 sts=4 et :
+
+#
+# local-repo-clean
+#
+
+# Copyright (C) 2014 - 2015 Jason Mehring <nrgaway@gmail.com>
+# License: GPL-2+
+# Authors: Jason Mehring
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# ================
+# local-repo-clean
+# ================
+# 
+# Cleans all the local repos located in the 'repo' directory.
+#
+# WARNING:
+# All created directories and packages that may have been copied to the
+# repo/dist/rpm|deb directories will be deleted.
+
+source lib/functions.sh
+
+LOCAL_REPO_DIR=repo
+
+##### '-------------------------------------------------------------------------
+debug " Creating repos for: ${DISTS_FEDORA[@]} ${DISTS_DEBIAN[@]}"
+##### '-------------------------------------------------------------------------
+
+for dist in "${DISTS_FEDORA[@]]}"; do
+    info "Cleaning ${dist} repo..."    
+    rm -rf "${LOCAL_REPO_DIR}/${dist}/rpm/"*
+    rm -rf "${LOCAL_REPO_DIR}/${dist}/repodata"
+done
+
+for dist in "${DISTS_DEBIAN[@]]}"; do
+    info "Cleaning ${dist} repo..."    
+    rm -rf "${LOCAL_REPO_DIR}/${dist}/deb/"*
+    rm -rf "${LOCAL_REPO_DIR}/${dist}/db"
+    rm -rf "${LOCAL_REPO_DIR}/${dist}/dists"
+    rm -rf "${LOCAL_REPO_DIR}/${dist}/pool"
+    rm -rf "${LOCAL_REPO_DIR}/${dist}/conf"
+done
+
+debug 'Done cleaning repos'

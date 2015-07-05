@@ -1,0 +1,40 @@
+=====
+Tests
+=====
+
+-----
+Notes
+-----
+Fedora package group definitions in `lib/comps-qubes-mgmt-salt.xml`
+
+------------
+Instructions
+------------
+	DIST=fc21
+
+1.	Copy packages from:
+		qubes-builder/qubes-packages-mirror-repo/$DIST/rpm|deb
+	to:
+		./repo/$DIST/rpm|deb
+
+2.	Create a local repo from rpm or deb packages.  First move the packages into
+    the repo/$DIST directory as stated in step 1, then:
+        ./local-repo-create $DIST [fc22..]
+
+3.  Install packages / groups using local repo as a source:
+        ./local-repo-install $DIST <pkg-name>
+
+4.	Cleans all the local repos (deletes all files within):
+        ./local-repo-clean
+
+5.  To uninstall qubes-mgmt-salt and all directories that may have been
+    created.
+        ./uninstall-qubes-mgmt-salt
+
+    WARNING: The following directories and contents will be destroyed (deleted):
+        /etc/salt/minion.d
+        /var/cache/salt
+        /srv/user*
+        /srv/formulas
+        /srv/pillar
+        /srv/salt

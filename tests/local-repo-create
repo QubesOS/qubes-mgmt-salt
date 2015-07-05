@@ -1,0 +1,177 @@
+#!/bin/bash -e
+# vim: set ts=4 sw=4 sts=4 et :
+
+#
+# local-repo-create
+#
+
+# Copyright (C) 2014 - 2015 Jason Mehring <nrgaway@gmail.com>
+# License: GPL-2+
+# Authors: Jason Mehring
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# ==================
+# local-repo-create
+# ==================
+# 
+# Creates local repos for either Fedora or Debian based distributions based
+# on the rpm/deb packages located in the repo/$DIST/rpm|deb directories.
+#
+# Note that Debian packages need the *.changes files as well as the other
+# created package files such as *.deb, *.gz.
+
+source lib/functions.sh
+
+if [ $# -eq 0 ]; then
+    error 'You must provide at least one valid DIST such as fc21 or jessie!'
+    info "usage $0 <dist> [dist]..."
+    exit
+fi
+
+ID=$(id -ur)
+if [ $ID != 0 ] ; then
+    error "This script should be run as root user."
+    exit 1
+fi
+
+DISTS=${@}
+TEST_DIR="${PWD}"
+
+# ==============================================================================
+# Cleanup function
+# ==============================================================================
+function cleanup() {
+    errval=$?
+    error "EXITING!!"
+    trap - ERR EXIT
+    trap
+    exit $errval
+}
+
+# ==============================================================================
+# Create local Fedora repo
+# ==============================================================================
+function createFedoraRepo() {
+    local dist="${1}"
+
+    info "Creating repo for: ${dist}..."
+
+    rm -rf "${LOCAL_REPO_DIR}/repodata"
+    mkdir -p "${LOCAL_REPO_DIR}/repodata"
+
+    createrepo -q -g "${TEST_DIR}/lib/comps-qubes-mgmt-salt.xml" "${LOCAL_REPO_DIR}" -o "${LOCAL_REPO_DIR}"
+    chown -R --reference="${LOCAL_REPO_DIR}" "${LOCAL_REPO_DIR}"
+}
+
+# ==============================================================================
+# Calculate sha1
+# ==============================================================================
+calc_sha1() {
+    local dist="${1}"
+
+    f=dists/${dist}/${2}
+    echo -n " "
+    echo -n `sha1sum $f|cut -d' ' -f 1` ""
+    echo -n `stat -c %s $f` ""
+    echo ${1}
+}
+
+# ==============================================================================
+# Create local Debian repo
+# ==============================================================================
+createDebianRepo() {
+    local dist="${1}"
+
+    info "Creating repo for: ${dist}..."
+
+    for dir in conf db dists pool; do
+        rm -rf "${LOCAL_REPO_DIR}/${dir}"
+    done
+
+    mkdir -p "${LOCAL_REPO_DIR}/conf"
+    mkdir -p "${LOCAL_REPO_DIR}/dists/${dist}/main/binary-amd64"
+    if [ ! -e "${LOCAL_REPO_DIR}/conf/distributions" ]; then
+        touch "${LOCAL_REPO_DIR}/conf/distributions"
+    fi
+
+    distribution_title_case=$(echo ${DISTRIBUTION} | sed -e 's/^./\U&/';)
+    read -r -d '' apt_distributions <<EOF || true
+Origin: Local ${distribution_title_case}
+Label: Local ${distribution_title_case}
+Codename: ${dist}
+Architectures: amd64 source
+Components: main
+Description: Apt repository for ${distribution_title_case} ${dist}
+
+EOF
+    echo "${apt_distributions}" > "${LOCAL_REPO_DIR}/conf/distributions"
+
+    for package in "${LOCAL_REPO_DIR}/deb/"*.changes; do
+        package=${package##*/}
+        reprepro -b "${LOCAL_REPO_DIR}" include "${dist}" "${LOCAL_REPO_DIR}/deb/${package}"
+
+        pushd "${LOCAL_REPO_DIR}"
+            dpkg-scanpackages --multiversion . > "dists/${dist}/main/binary-amd64/Packages"
+            gzip -9c "dists/${dist}/main/binary-amd64/Packages" > "dists/${dist}/main/binary-amd64/Packages.gz"
+            cat > "dists/${dist}/Release" <<EOF
+Label: Local Repo
+Suite: ${dist}
+Codename: ${dist}
+Date: `date -R`
+Architectures: amd64
+Components: main
+SHA1:
+EOF
+            info "Calculating sha1 for ${package}"
+            calc_sha1 "${dist}" "main/binary-amd64/Packages" >> "dists/${dist}/Release"
+            calc_sha1 "${dist}" "main/binary-amd64/Packages" >> "dists/${dist}/Release.gz"
+            rm -f "dists/${dist}/Release.gpg"
+        popd
+    done
+}
+
+
+#### '----------------------------------------------------------------------
+info ' Traping ERR and EXIT signals and cleanup (umount)'
+#### '----------------------------------------------------------------------
+trap cleanup ERR
+trap cleanup EXIT
+
+
+##### '-------------------------------------------------------------------------
+debug " Creating repos for: ${DISTS}"
+##### '-------------------------------------------------------------------------
+for dist in ${DISTS[@]]}; do
+    LOCAL_REPO_DIR="repo/${dist}"
+
+    if elementIn "$dist" ${DISTS_FEDORA[@]}; then
+        createFedoraRepo "${dist}"
+    fi
+
+    if elementIn "$dist" ${DISTS_DEBIAN[@]}; then
+        info "Creating repo for: ${dist}..."
+        DISTRIBUTION="debian"
+        createDebianRepo "${dist}"
+    fi
+done
+
+
+#### '----------------------------------------------------------------------
+info ' Cleaning up...'
+#### '----------------------------------------------------------------------
+trap - ERR EXIT
+trap
+
+debug 'Done creating repos'

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE comps PUBLIC "-//Red Hat, Inc.//DTD Comps info//EN" "comps.dtd">
+<comps>
+  <group>
+    <id>qubes-mgmt-vm</id>
+    <name>Qubes+Salt VM Management Environment</name>
+    <default>true</default>
+    <packagelist>
+      <packagereq type="mandatory">qubes-mgmt-vm</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-config</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-overrides</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-salt</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-yamlscript-renderer</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-yamlscript-users</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-gpg</packagereq>
+      <packagereq type="optional">qubes-mgmt-salt-vm-python-pip</packagereq>
+    </packagelist>
+  </group>
+  <group>
+    <id>qubes-mgmt-dom0</id>
+    <name>Qubes+Salt dom0 Management Environment</name>
+    <default>true</default>
+    <packagelist>
+      <packagereq type="mandatory">qubes-mgmt-dom0</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-config</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-overrides</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-salt</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-yamlscript-renderer</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-yamlscript-users</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-gpg</packagereq>
+      <packagereq type="optional">qubes-mgmt-salt-dom0-qvm</packagereq>
+      <packagereq type="optional">qubes-mgmt-salt-dom0-update</packagereq>
+      <packagereq type="optional">qubes-mgmt-salt-dom0-virtual-machines</packagereq>
+      <packagereq type="optional">qubes-mgmt-salt-dom0-policy-qubesbuilder</packagereq>
+      <packagereq type="optional">qubes-mgmt-salt-dom0-fix-permissions</packagereq>
+      <packagereq type="optional">qubes-mgmt-salt-dom0-template-upgrade</packagereq>
+    </packagelist>
+  </group>
+  <group>
+    <id>qubes-mgmt-demo</id>
+    <name>Qubes+Salt Demo Formulas</name>
+    <default>true</default>
+    <packagelist>
+      <packagereq type="optional">qubes-mgmt-salt-demo</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-config</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-overrides</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-salt</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-yamlscript-renderer</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-yamlscript-users</packagereq>
+      <packagereq type="mandatory">qubes-mgmt-salt-base-gpg</packagereq>
+      <packagereq type="optional">qubes-mgmt-salt-all-vim</packagereq>
+      <packagereq type="optional">qubes-mgmt-salt-all-privacy</packagereq>
+      <packagereq type="optional">qubes-mgmt-salt-all-theme</packagereq>
+    </packagelist>
+  </group>
+</comps>

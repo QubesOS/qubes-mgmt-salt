@@ -1,0 +1,206 @@
+#!/bin/bash -e
+# vim: set ts=4 sw=4 sts=4 et :
+
+#
+# local-repo-install
+#
+
+# Copyright (C) 2014 - 2015 Jason Mehring <nrgaway@gmail.com>
+# License: GPL-2+
+# Authors: Jason Mehring
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# ==================
+# local-repo-install
+# ==================
+# 
+# Installs packages created with 'create-local-repo' for either Fedora or
+# Debian based distros. 
+#
+# This script is useful to test newly built packages to make sure they install
+# properly and mimiks a real apt-get/yum remote update.
+
+source lib/functions.sh
+
+if [ $# -eq 0 ] || [ $# -eq 1 ]; then
+    error 'You must provide a DIST and either [upgrade|dist-upgrade|reinstall] or package names to install!'
+    info "usage $0 <dist> [upgrade|dist-upgrade] | [reinstall] <package-name> [package-name]..."
+    exit
+fi
+
+ID=$(id -ur)
+if [ $ID != 0 ] ; then
+    error "This script should be run as root user."
+    exit 1
+fi
+
+DIST="${1}"
+if ! elementIn "$DIST" ${DISTS_FEDORA[@]} ${DISTS_DEBIAN[@]}; then
+    error 'You must provide a valid DIST such as fc21 or jessie!'
+    info "usage $0 <dist> [upgrade|dist-upgrade] | [reinstall] <package-name> [package-name]..."
+    exit 1
+fi
+shift 1
+
+APT_GET_OPTIONS="-o Dpkg::Options::="--force-confnew" --yes"
+if [ "${1}" == "reinstall" ]; then
+    APT_GET_OPTIONS+=" --reinstall"
+    shift 1
+elif [ "${1}" == "upgrade" ]; then
+    UPGRADE=true
+elif [ "${1}" == "dist-upgrade" ]; then
+    DIST_UPGRADE=true
+fi
+
+PACKAGES="$@"
+TEST_DIR="${PWD}"
+LOCAL_REPO_DIR="repo/${DIST}"
+
+# ==============================================================================
+# Cleanup function
+# ==============================================================================
+function cleanup() {
+    errval=$?
+    error "EXITING!!"
+    trap - ERR EXIT
+    trap
+    exit $errval
+}
+
+# ==============================================================================
+# apt-get update
+# ==============================================================================
+function aptUpdate() {
+    debug "Updating system..."
+    DEBIAN_FRONTEND="noninteractive" DEBIAN_PRIORITY="critical" DEBCONF_NOWARNINGS="yes" \
+        apt-get update
+}
+
+# ==============================================================================
+# apt-get upgrade
+# ==============================================================================
+function aptUpgrade() {
+    DEBIAN_FRONTEND="noninteractive" DEBIAN_PRIORITY="critical" DEBCONF_NOWARNINGS="yes" \
+        env APT_LISTCHANGES_FRONTEND=none apt-get upgrade -u -y --force-yes
+}
+
+# ==============================================================================
+# apt-get dist-upgrade
+# ==============================================================================
+function aptDistUpgrade() {
+    DEBIAN_FRONTEND="noninteractive" DEBIAN_PRIORITY="critical" DEBCONF_NOWARNINGS="yes" \
+        env APT_LISTCHANGES_FRONTEND=none apt-get dist-upgrade -u -y --force-yes
+}
+
+# ==============================================================================
+# apt-get install
+# ==============================================================================
+function aptInstall() {
+    local files="$@"
+    DEBIAN_FRONTEND="noninteractive" DEBIAN_PRIORITY="critical" DEBCONF_NOWARNINGS="yes" \
+        apt-get ${APT_GET_OPTIONS} install ${files[@]}
+}
+
+# ==============================================================================
+# yum install
+# ==============================================================================
+function yumInstall() {
+    local files="$@"
+
+    export YUM0="${TEST_DIR}/${LOCAL_REPO_DIR%%/*}"
+    export YUM_OPTS="$YUM_OPTS --setopt=group_package_types=mandatory,default,optional"
+    yum install -c "${TEST_DIR}/lib/yum.conf" $YUM_OPTS -y ${files[@]} || RETCODE=1
+}
+
+# ==============================================================================
+# Update package index
+# ==============================================================================
+function updatePackageIndex() {
+    local dist="${1}"
+
+    if elementIn "$dist" ${DISTS_DEBIAN[@]}; then
+        aptUpdate
+    fi
+}
+
+# ==============================================================================
+# Install local repo
+# ==============================================================================
+installLocalRepo() {
+    local dist="${1}"
+
+    if elementIn "$dist" ${DISTS_DEBIAN[@]}; then
+        info "Adding local ${LOCAL_REPO_DIR} repo to /etc/apt/sources.list.d/local-repo.list"
+        cat > "/etc/apt/sources.list.d/local-repo.list" <<EOF
+deb [trusted=yes] file:$(readlink -m ${LOCAL_REPO_DIR}) ${DIST} main
+EOF
+    fi
+}
+
+# ==============================================================================
+# Uninstall local Repo
+# ==============================================================================
+uninstallLocalRepo() {
+    local dist="${1}"
+
+    if elementIn "$dist" ${DISTS_DEBIAN[@]}; then
+        info 'Removing local ${LOCAL_REPO_DIR} repo from /etc/apt/sources.list.d'
+        rm -f "/etc/apt/sources.list.d/local-repo.list"
+    fi
+}
+
+##### '-------------------------------------------------------------------------
+debug " Upgrading ${PACKAGES}"
+##### '-------------------------------------------------------------------------
+
+#### '----------------------------------------------------------------------
+info ' Traping ERR and EXIT signals and cleanup (umount)'
+#### '----------------------------------------------------------------------
+trap cleanup ERR
+trap cleanup EXIT
+
+
+#### '----------------------------------------------------------------------
+info " Installing ${PACKAGES}..."
+#### '----------------------------------------------------------------------
+installLocalRepo "${DIST}"
+updatePackageIndex "${DIST}"
+
+if elementIn "$DIST" ${DISTS_FEDORA[@]}; then
+    info "Installing ${PACKAGES[@]}..."
+    yumInstall "${PACKAGES}"
+fi
+
+if elementIn "$DIST" ${DISTS_DEBIAN[@]}; then
+    if [ "${UPGRADE}" == true ]; then
+        info "Upgrading packages..."
+        aptUpgrade
+    elif [ "${DIST_UPGRADE}" == true ]; then
+        info "Distribution Upgrading packages..."
+        aptDistUpgrade
+    else
+        info "Installing ${PACKAGES[@]}..."
+        aptInstall "${PACKAGES}"
+    fi
+fi
+
+#### '----------------------------------------------------------------------
+info ' Cleaning up...'
+#### '----------------------------------------------------------------------
+uninstallLocalRepo "${DIST}"
+updatePackageIndex "${DIST}"
+trap - ERR EXIT
+trap
+
