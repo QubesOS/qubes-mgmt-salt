@@ -52,7 +52,7 @@ sock_dir: /var/run/salt/minion
 # Set the default outputter used by the salt-call command. The default is
 # "nested".
 # ------------------------------------------------------------------------------
-output: nested
+#output: nested
 
 # ------------------------------------------------------------------------------
 # By default output is colored. To disable colored output, set the color value
