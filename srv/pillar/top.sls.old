@@ -1,0 +1,40 @@
+# vim: set syntax=yaml ts=2 sw=2 sts=2 et :
+#
+# Pillar top.sls
+# /srv/pillar/top.sls
+#
+# Re-sync pillars
+# --> qubesctl saltutil.refresh_pillar
+#
+
+#  NOTE: Any configuration data contained within this file will override
+#        and cause conflicts with tops_d/* top configurations; therefore
+#        create any custom tops within the tops_d directory.
+
+# === Common ==================================================================
+base:
+  '*':
+    # salt
+    # salt.pillar_roots # XXX: just include in salt
+    - salt-config  # NEW! This will set up root and pillar paths
+    - gnupg
+  
+# === all =====================================================================
+all:
+  '*':
+    - privacy
+
+# === Dom0 ====================================================================
+dom0:
+  dom0:
+    - match: nodegroup
+    - qubes
+    # qubes.users
+    - qubes.virtual-machines
+
+# === vm ======================================================================
+vm:
+  vm:
+    - match: nodegroup
+    - qubes.users
+    - salt.formulas

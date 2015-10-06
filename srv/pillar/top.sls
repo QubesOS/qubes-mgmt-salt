@@ -7,28 +7,11 @@
 # --> qubesctl saltutil.refresh_pillar
 #
 
-# === Common ==================================================================
-base:
-  '*':
-    - salt
-    - gnupg
-  
-# === all =====================================================================
-all:
-  '*':
-    - privacy
+{%- set default = {'base': {'*': ['topd']}}|yaml(False) %}
 
-# === Dom0 ====================================================================
-dom0:
-  dom0:
-    - match: nodegroup
-    - qubes
-    # qubes.users
-    - qubes.virtual-machines
+{%- if salt.topd is defined %}
+  {%- set top = salt.topd.get_top('salt://_topd', opts)|yaml(False) %}
+  {#- set status = salt.topd.status(show_full_context())|yaml(False) #}
+{%- endif %}
 
-# === vm ======================================================================
-vm:
-  vm:
-    - match: nodegroup
-    - qubes.users
-    - salt.formulas
+{{ top if top is defined else default }}

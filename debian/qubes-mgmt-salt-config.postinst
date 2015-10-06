@@ -23,15 +23,9 @@ case "${1}" in
         qubesctl state.sls qubes.config -l quiet --out quiet > /dev/null || true
         qubesctl saltutil.sync_all -l quiet --out quiet > /dev/null || true
 
-        # Enable States
-        #qubesctl topd.enable privacy saltenv=dom0 -l quiet --out quiet > /dev/null || true
         # Enable Pillar States
-        #qubesctl topd.enable privacy saltenv=dom0 pillar=true -l quiet --out quiet > /dev/null || true
-        
-        # Enable Test States
-        #qubesctl topd.enable privacy saltenv=test -l quiet --out quiet > /dev/null || true
-        # Enable Test Pillar States
-        #qubesctl topd.enable privacy saltenv=test pillar=true -l quiet --out quiet > /dev/null || true
+        qubesctl topd.enable qubes saltenv=dom0 pillar=true -l quiet --out quiet > /dev/null || true
+        qubesctl topd.enable qubes.config saltenv=dom0 pillar=true -l quiet --out quiet > /dev/null || true
         ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

@@ -12,71 +12,19 @@
 # 4) Highstate test mode only.  Note note all states seem to conform to test
 #    mode and may apply state anyway.  Needs more testing to confirm or not!
 # --> qubesctl state.highstate test=True
+#
+# 5) Show all enabled tops
+# --> qubesctl state.show_top
 
-# === Base States =============================================================
-base:
-  '*':
-    # --- salt configurations ---
-    - salt.standalone
-    - salt.directories
-    - salt.pkgrepo
+#  NOTE: Any configuration data contained within this file will override
+#        and cause conflicts with tops_d/* top configurations; therefore
+#        create any custom tops within the tops_d directory.
 
-    # --- install user salt directories and sample locale states ---
-    - salt-user
+{%- set default = {'base': {'*': ['topd']}}|yaml(False) %}
 
-  # === Base States Formulas ==================================================
-    # --- configurations ---
-    - gpg
-    # users
+{%- if salt.topd is defined %}
+  {%- set top = salt.topd.get_top('salt://_topd')|yaml(False) %}
+  {#- set status = salt.topd.status(show_full_context())|yaml(False) #}
+{%- endif %}
 
-    # --- tests ---
-    # gpg.tests
-
-  # VM nodegroup + enable_gitfs == true
-  # Enable in /srv/pillar/vm/salt/formulas.sls
-  'P@virtual_subtype:Xen\sPV\sDomU and I@enable_gitfs:true':
-    - match: compound
-    # --- salt git formulas ---
-    {% if grains['os_family']|lower == 'debian' %}
-    - salt.gitfs.dulwich
-    {% endif %}
-    - salt.formulas
-
-# === Common State Formulas ===================================================
-all:
-  '*':
-    # --- applications ---
-    - vim
-
-  vm:
-    - match: nodegroup
-    # --- configurations ---
-    - theme
-    - theme.fonts_ubuntu
-    - theme.fonts_source_code_pro
-
-  # Enable in /srv/pillar/all/privacy/init.sls
-  'enable_privacy:true':
-    - match: pillar
-    # --- configurations ---
-    - privacy
-
-# === Dom0 State Formulas =====================================================
-dom0:
-  dom0:
-    - match: nodegroup
-    # --- applications ---
-
-    # --- configurations ---
-    - virtual-machines
-
-    # --- tests ---
-    # qvm.tests
-    # qubes-dom0-update.tests
-
-# === AppVM State Formulas ====================================================
-vm:
-  vm:
-    - match: nodegroup
-    # --- applications ---
-    - python_pip
+{{ top if top is defined else default }}
