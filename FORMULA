@@ -1,0 +1,23 @@
+# vim: set syntax=yaml ts=2 sw=2 sts=2 et :
+
+name:          mgmt-salt-conf
+top_level_dir: mgmt-salt
+saltenv:       base
+version:       3.0.0
+release:       1
+os:            RedHat, Debian, Ubuntu, Suse, FreeBSD
+os_family:     RedHat, Debian, Suse, FreeBSD
+summary:       Configuration files for SaltStack's Salt Infrastructure automation and management system
+description: |
+  Configuration files for SaltStack's Salt Infrastructure automation and management system
+
+state-tops:
+  base:
+    enable:
+      - qubes.config
+  
+pillar-tops:
+  base:
+    enable:
+      - qubes
+      - qubes.config
