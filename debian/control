@@ -10,13 +10,13 @@ Package: qubes-mgmt-salt
 Section: admin
 Architecture: all
 Depends:
-    salt-common,
-    salt-minion,
+    salt-common (>= 2015.8.0),
+    salt-minion (>= 2015.8.0),
     ca-certificates,
-    lsb-release,
-    python-gnupg,
     qubes-mgmt-salt-config,
     qubes-mgmt-salt-base
+Recommends:
+    lsb-release
 Description: Qubes+Salt Management dependencies.
 
 Package: qubes-mgmt-salt-config
@@ -24,8 +24,8 @@ Section: admin
 Architecture: all
 Description: Qubes+Salt Management base configuration for SaltStack's Salt Infrastructure automation and management system.
 Depends:
-    salt-common,
-    salt-minion
+    salt-common (>= 2015.8.0),
+    salt-minion (>= 2015.8.0),
 
 Package: qubes-mgmt-salt-dom0
 Section: admin
@@ -34,12 +34,14 @@ Depends:
     qubes-mgmt-salt,
     qubes-mgmt-salt-base,
     qubes-mgmt-salt-config,
-    qubes-mgmt-salt-dom0-qvm,
     qubes-mgmt-salt-dom0-update,
+    qubes-mgmt-salt-dom0-qvm
+Recommends:
     qubes-mgmt-salt-dom0-virtual-machines,
     qubes-mgmt-salt-dom0-policy-qubesbuilder,
     qubes-mgmt-salt-dom0-fix-permissions,
     qubes-mgmt-salt-dom0-template-upgrade
+Conflicts: qubes-mgmt-salt-vm
 Description: Qubes+Salt Management dom0 dependencies.
 
 Package: qubes-mgmt-salt-vm
@@ -49,6 +51,7 @@ Depends:
     qubes-mgmt-salt,
     qubes-mgmt-salt-base,
     qubes-mgmt-salt-config,
+Recommends:
     git,
     python-dulwich,
     python-pip,
