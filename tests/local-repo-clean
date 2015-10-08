@@ -44,6 +44,9 @@ for dist in "${DISTS_FEDORA[@]]}"; do
     info "Cleaning ${dist} repo..."    
     rm -rf "${LOCAL_REPO_DIR}/${dist}/rpm/"*
     rm -rf "${LOCAL_REPO_DIR}/${dist}/repodata"
+
+    # Make sure packages are not cached in Debian
+    rm -rf /var/cache/yum/*/${dist##*fc}/template-builder-repo/
 done
 
 for dist in "${DISTS_DEBIAN[@]]}"; do

@@ -1,61 +1,94 @@
-#!/bin/bash
+#!/bin/bash -e
+# vim: set ts=4 sw=4 sts=4 et :
 
-# Base Packages:
-# --------------
-# qubes-mgmt-salt
-# qubes-mgmt-salt-config
-# qubes-mgmt-salt-base
-# qubes-mgmt-salt-base-salt
-# qubes-mgmt-salt-base-overrides
-# qubes-mgmt-salt-base-gpg
-# qubes-mgmt-salt-base-yamlscript-renderer
-# qubes-mgmt-salt-base-yamlscript-users
-# 
-# Dom0 Packages:
-# --------------
-# qubes-mgmt-salt-dom0
-# qubes-mgmt-salt-dom0-qvm
-# qubes-mgmt-salt-dom0-update
-# qubes-mgmt-salt-dom0-virtual-machines
-# qubes-mgmt-salt-dom0-fix-permissions
-# qubes-mgmt-salt-dom0-policy-qubesbuilder
-# qubes-mgmt-salt-dom0-template-upgrade
 #
-# VM Packages:
-# ------------
-# qubes-mgmt-salt-vm
-# qubes-mgmt-salt-vm-python-pip
+# qubes-mgmt-salt-uninstall
 #
-# Demo packages:
-# --------------
-# qubes-mgmt-salt-demo
-# qubes-mgmt-salt-all-vim
-# qubes-mgmt-salt-all-theme
-# qubes-mgmt-salt-all-privacy
 
+packages=(
+    # Salt Packages:
+    # --------------
+    'salt'         # Fedora
+    'salt-common'  # Debian
+    'salt-minion'
+
+    # Pseudo Packages:
+    # ----------------
+    'qubes-mgmt-salt'
+    'qubes-mgmt-salt-config'
+    'qubes-mgmt-salt-dom0'
+    'qubes-mgmt-salt-vm'
+    'qubes-mgmt-salt-dom0-formulas'
+    'qubes-mgmt-salt-vm-formulas'
+    'qubes-mgmt-salt-extra-formulas'
+    'qubes-mgmt-salt-demo'
+    'qubes-mgmt-salt-dev'
+
+    # Base Packages:
+    # --------------
+    'qubes-mgmt-salt-base'
+    'qubes-mgmt-salt-base-overrides'
+    'qubes-mgmt-salt-base-topd'
+ 
+    # Dom0 Packages:
+    # --------------
+    'qubes-mgmt-salt-dom0-qvm'
+    'qubes-mgmt-salt-dom0-update'
+    'qubes-mgmt-salt-dom0-virtual-machines'
+    'qubes-mgmt-salt-dom0-fix-permissions'
+    'qubes-mgmt-salt-dom0-policy-qubesbuilder'
+    'qubes-mgmt-salt-dom0-template-upgrade'
+
+    # VM Packages:
+    # ------------
+    'qubes-mgmt-salt-vm-python-pip'
+ 
+    # Extra packages:
+    # --------------
+    'qubes-mgmt-salt-all-yamlscript-renderer'
+    'qubes-mgmt-salt-all-yamlscript-users'
+    'qubes-mgmt-salt-all-salt'
+    'qubes-mgmt-salt-all-gnupg'
+    'qubes-mgmt-salt-all-privacy'
+    'qubes-mgmt-salt-all-theme'
+    'qubes-mgmt-salt-all-vim'
+    'qubes-mgmt-salt-template'
+)
+
+SALT_DIRS=(
+    '/etc/salt'
+    '/var/cache/salt'
+    '/srv/salt'
+    '/srv/pillar'
+    '/srv/formulas'
+    '/srv/spm'
+    '/srv/user_salt'
+    '/srv/user_pillar'
+)
+
+# Determine OS and package removal program
 which apt-get && {
-    apt-get remove --purge qubes-salt-config || true
-    apt-get autoremove -y
-
-    apt-get remove -y --purge qubes-mgmt-salt-vm || true
-    apt-get remove -y --purge qubes-mgmt-salt-dom0 || true
-    apt-get remove -y --purge qubes-mgmt-salt || true
-    apt-get remove -y --purge qubes-mgmt-salt-base || true
-    apt-get remove -y --purge qubes-mgmt-salt-config || true
-    apt-get remove -y --purge qubes-mgmt-salt-demo || true
-    apt-get autoremove -y
+    OS='Debian'
+    REMOVE='apt-get remove -y --purge'
 } || {
-    yum erase -y qubes-salt-config || true
-    yum erase -y qubes-mgmt-salt-vm || true
-    yum erase -y qubes-mgmt-salt-dom0 || true
-    yum erase -y qubes-mgmt-salt || true
-    yum erase -y qubes-mgmt-salt-base || true
-    yum erase -y qubes-mgmt-salt-config || true
-    yum erase -y qubes-mgmt-salt-demo || true
+    OS='Fedora'
+    REMOVE='yum erase -y'
 }
-rm -rf /etc/salt/minion.d
-rm -rf /var/cache/salt
-rm -rf /srv/user*
-rm -rf /srv/formulas
-rm -rf /srv/pillar
-rm -rf /srv/salt
+
+# Attempt to remove all qubes-mgmt related packages
+for package in ${packages[@]}; do
+    echo "Attempting to remove $package..."
+    $REMOVE ${package} || true
+done
+
+# Make sure packages are not cached in Debian
+if [ ${OS} == 'Debian' ]; then
+    apt-get autoremove -y
+else
+    rm -rf /var/cache/yum/*/*/template-builder-repo/
+fi
+
+# Remove all salt related directories
+for path in ${SALT_DIRS}; do
+    rm -rf ${path} || true
+done
