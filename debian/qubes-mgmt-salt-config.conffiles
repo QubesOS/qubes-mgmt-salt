@@ -1,5 +1,0 @@
-/srv/pillar/base/qubes/init.sls
-/srv/pillar/base/qubes/init.top
-/srv/pillar/base/qubes/config.sls
-/srv/pillar/base/qubes/config.top
-/srv/pillar/base/qubes/vmtype.jinja
