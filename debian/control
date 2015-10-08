@@ -2,7 +2,10 @@ Source: qubes-mgmt-salt
 Section: admin
 Priority: extra
 Maintainer: Jason Mehring <nrgaway@gmail.com>
-Build-Depends: debhelper (>= 9~), quilt
+Build-Depends: 
+    debhelper (>= 9~),
+    quilt,
+    python-yaml
 Standards-Version: 3.9.5
 Homepage: http://www.qubes-os.org
 

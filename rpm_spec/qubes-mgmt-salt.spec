@@ -16,6 +16,7 @@ BuildArch: noarch
 Requires:  salt
 Requires:  salt-minion
 Requires:  qubes-mgmt-salt-base
+BuildRequires: PyYAML
 Requires(post): /usr/bin/qubesctl
 
 %define _builddir %(pwd)
@@ -28,6 +29,7 @@ Summary:   Qubes+Salt Management base configuration for SaltStack's Salt Infrast
 Group:     System administration tools
 Requires:  salt
 Requires:  salt-minion
+BuildRequires: PyYAML
 BuildArch: noarch
 
 %description config

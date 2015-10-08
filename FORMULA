@@ -1,23 +1,36 @@
 # vim: set syntax=yaml ts=2 sw=2 sts=2 et :
 
-name:          mgmt-salt-conf
-top_level_dir: mgmt-salt
-saltenv:       base
-version:       3.0.0
-release:       1
-os:            RedHat, Debian, Ubuntu, Suse, FreeBSD
-os_family:     RedHat, Debian, Suse, FreeBSD
-summary:       Configuration files for SaltStack's Salt Infrastructure automation and management system
+package-name:       qubes-mgmt-salt-config
+name:               mgmt-salt-config
+top_level_dir:
+formula-files:
+pillar-files:
+test-formula-files: 
+test-pillar-files: 
+formula_root:       /
+saltenv:            base
+version:            3.0.0
+release:            1
+os:                 RedHat, Debian, Ubuntu, Suse, FreeBSD
+os_family:          RedHat, Debian, Suse, FreeBSD
+summary:            Installs salts configuration files, directory layout and qubesctl
 description: |
-  Configuration files for SaltStack's Salt Infrastructure automation and management system
+  Installs salts configuration files, directory layout and qubesctl
 
-state-tops:
-  base:
-    enable:
-      - qubes.config
-  
-pillar-tops:
-  base:
-    enable:
-      - qubes
-      - qubes.config
+  - qubes-mgmt-salt:  
+      Installs salt and base configuration and modules
+
+  - qubes-mgmt-salt-dom0:
+      qubes-mgmt-salt + dom0 depends
+
+  - qubes-mgmt-salt-dom0-formulas:
+      All dom0 formulas
+
+  - qubes-mgmt-salt-vm:
+      qubes-mgmt-salt + VM depends
+     
+  - qubes-mgmt-salt-vm-formulas:
+      All VM formulas
+
+  - qubes-mgmt-salt-extra-formulas:   
+      All extra formulas (qubes-mgmt-all-*)
