@@ -10,10 +10,8 @@ Package: qubes-mgmt-salt
 Section: admin
 Architecture: all
 Depends:
-    salt-common (>= 2015.8.0),
-    salt-minion (>= 2015.8.0),
-    ca-certificates,
-    qubes-mgmt-salt-config,
+    salt-common,
+    salt-minion,
     qubes-mgmt-salt-base
 Recommends:
     lsb-release
@@ -24,18 +22,16 @@ Section: admin
 Architecture: all
 Description: Qubes+Salt Management base configuration for SaltStack's Salt Infrastructure automation and management system.
 Depends:
-    salt-common (>= 2015.8.0),
-    salt-minion (>= 2015.8.0),
+    salt-common,
+    salt-minion
 
 Package: qubes-mgmt-salt-dom0
 Section: admin
 Architecture: all
 Depends:
     qubes-mgmt-salt,
-    qubes-mgmt-salt-base,
-    qubes-mgmt-salt-config,
-    qubes-mgmt-salt-dom0-update,
-    qubes-mgmt-salt-dom0-qvm
+    qubes-mgmt-salt-dom0-qvm,
+    qubes-mgmt-salt-dom0-update
 Recommends:
     qubes-mgmt-salt-dom0-virtual-machines,
     qubes-mgmt-salt-dom0-policy-qubesbuilder,
@@ -49,11 +45,41 @@ Section: admin
 Architecture: all
 Depends:
     qubes-mgmt-salt,
-    qubes-mgmt-salt-base,
-    qubes-mgmt-salt-config,
 Recommends:
-    git,
-    python-dulwich,
-    python-pip,
     qubes-mgmt-salt-vm-python-pip
 Description: Qubes+Salt Management vm dependencies.
+
+Package: qubes-mgmt-salt-dom0-formulas
+Section: admin
+Architecture: all
+Depends:
+    qubes-mgmt-salt,
+    qubes-mgmt-salt-dom0-qvm,
+    qubes-mgmt-salt-dom0-update,
+    qubes-mgmt-salt-dom0-virtual-machines,
+    qubes-mgmt-salt-dom0-fix-permissions,
+    qubes-mgmt-salt-dom0-policy-qubesbuilder,
+    qubes-mgmt-salt-dom0-template-upgrade
+Description: All Qubes+Salt Management dom0 formulas.
+
+Package: qubes-mgmt-salt-vm-formulas
+Section: admin
+Architecture: all
+Depends:
+    qubes-mgmt-salt,
+    qubes-mgmt-salt-vm-python-pip
+Description: All Qubes+Salt Management VM formulas
+
+Package: qubes-mgmt-salt-extra-formulas
+Section: admin
+Architecture: all
+Depends:
+    qubes-mgmt-salt,
+    qubes-mgmt-salt-all-salt,
+    qubes-mgmt-salt-all-privacy,
+    qubes-mgmt-salt-all-theme,
+    qubes-mgmt-salt-all-vim,
+    qubes-mgmt-salt-all-gnupg,
+    qubes-mgmt-salt-all-yamlscript-renderer,
+    qubes-mgmt-salt-all-yamlscript-users
+Description: All Qubes+Salt Management extra (qubes-mgmt-all-*) formulas
