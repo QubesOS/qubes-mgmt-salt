@@ -13,10 +13,11 @@ URL:	   http://www.qubes-os.org/
 
 Group:     System administration tools
 BuildArch: noarch
-Requires:  salt
+Requires:  salt >= 2015.8
 Requires:  salt-minion
 Requires:  qubes-mgmt-salt-base
 BuildRequires: PyYAML
+BuildRequires: tree
 Requires(post): /usr/bin/qubesctl
 
 %define _builddir %(pwd)
@@ -34,59 +35,6 @@ BuildArch: noarch
 
 %description config
 Qubes+Salt Management base configuration for SaltStack's Salt Infrastructure automation and management system.
-
-%package dom0
-Summary:   Qubes+Salt Management dom0 dependencies.
-Group:     System administration tools
-BuildArch: noarch
-Requires:  qubes-mgmt-salt
-Requires:  qubes-mgmt-salt-dom0-qvm
-Requires:  qubes-mgmt-salt-dom0-update
-Requires:  qubes-mgmt-salt-dom0-virtual-machines
-Requires(post): /usr/bin/qubesctl
-Conflicts:  qubes-mgmt-salt-vm
-
-%description dom0
-Qubes+Salt Management dom0 dependencies.
-
-%package vm
-Summary:   Qubes+Salt Management VM dependencies.
-Group:     System administration tools
-BuildArch: noarch
-Requires:  qubes-mgmt-salt
-Requires:  qubes-mgmt-salt-vm-python-pip
-Requires(post): /usr/bin/qubesctl
-Conflicts:  qubes-mgmt-salt-dom0
-
-%description vm
-Qubes+Salt Management VM dependencies.
-
-%package dom0-formulas
-Summary:   All Qubes+Salt Management dom0 formulas
-Group:     System administration tools
-BuildArch: noarch
-Requires:  qubes-mgmt-salt
-Requires:  qubes-mgmt-salt-dom0-qvm
-Requires:  qubes-mgmt-salt-dom0-update
-Requires:  qubes-mgmt-salt-dom0-virtual-machines
-Requires:  qubes-mgmt-salt-dom0-fix-permissions
-Requires:  qubes-mgmt-salt-dom0-policy-qubesbuilder
-Requires:  qubes-mgmt-salt-dom0-template-upgrade
-Requires(post): /usr/bin/qubesctl
-
-%description dom0-formulas
-Qubes+Salt Management dom0 formulas.
-
-%package vm-formulas
-Summary:   All Qubes+Salt Management VM formulas
-Group:     System administration tools
-BuildArch: noarch
-Requires:  qubes-mgmt-salt
-Requires:  qubes-mgmt-salt-vm-python-pip
-Requires(post): /usr/bin/qubesctl
-
-%description vm-formulas
-Qubes+Salt Management VM formulas.
 
 %package extra-formulas
 Summary:   All Qubes+Salt Management extra (qubes-mgmt-all-*) formulas
@@ -118,56 +66,48 @@ ln -sf . %{name}-%{version}
 make install DESTDIR=%{buildroot} LIBDIR=%{_libdir} BINDIR=%{_bindir} SBINDIR=%{_sbindir} SYSCONFDIR=%{_sysconfdir}
 
 %post
-qubesctl saltutil.sync_all -l quiet --out quiet > /dev/null || true
+qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
+qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
-%post dom0
-qubesctl saltutil.sync_all -l quiet --out quiet > /dev/null || true
-
-%post vm
-qubesctl saltutil.sync_all -l quiet --out quiet > /dev/null || true
-
-%post dom0-formulas
-qubesctl saltutil.sync_all -l quiet --out quiet > /dev/null || true
-
-%post vm-formulas
-qubesctl saltutil.sync_all -l quiet --out quiet > /dev/null || true
+%post config
+qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
+qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
 %post extra-formulas
-qubesctl saltutil.sync_all -l quiet --out quiet > /dev/null || true
+qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
+qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
 %files
 %defattr(-,root,root)
 
 %files config
 %defattr(-,root,root)
-%{_bindir}/qubesctl
-
+%attr(750, root, root) %dir /etc/salt
 %attr(750, root, root) %dir /etc/salt/minion.d
-%{_sysconfdir}/salt/*
-
-%attr(750, root, root) %dir /srv/reactor
-/srv/reactor/*
+%attr(750, root, root) %dir /etc/salt/spm.repos.d
+%config(noreplace) /etc/salt/minion.d/f_defaults.conf
+/etc/salt/minion.dist
+/etc/salt/minion.dom0.conf
+/etc/salt/minion.vm.conf
+/etc/salt/spm
+/etc/salt/spm.repos.d/local.repo
 
 %attr(750, root, root) %dir /srv/formulas
 /srv/formulas/.gitignore
 
-%attr(750, root, root) %dir /srv/salt
-/srv/salt/*
-
 %attr(750, root, root) %dir /srv/pillar
-%config(noreplace) /srv/pillar/*
+%config(noreplace) /srv/pillar/top.sls
+/srv/pillar/top.sls.old
 
-%files dom0
-%defattr(-,root,root)
+%attr(750, root, root) %dir /srv/reactor
+/srv/reactor/import_keys
+/srv/reactor/sync_all.sls
 
-%files vm
-%defattr(-,root,root)
+%attr(750, root, root) %dir /srv/salt
+%config(noreplace) /srv/salt/top.sls
+/srv/salt/top.sls.old
 
-%files dom0-formulas
-%defattr(-,root,root)
-
-%files vm-formulas
-%defattr(-,root,root)
+/usr/bin/qubesctl
 
 %files extra-formulas
 %defattr(-,root,root)

@@ -5,7 +5,8 @@ Maintainer: Jason Mehring <nrgaway@gmail.com>
 Build-Depends: 
     debhelper (>= 9~),
     quilt,
-    python-yaml
+    python-yaml,
+    tree
 Standards-Version: 3.9.5
 Homepage: http://www.qubes-os.org
 
@@ -13,7 +14,7 @@ Package: qubes-mgmt-salt
 Section: admin
 Architecture: all
 Depends:
-    salt-common,
+    salt-common (>= 2015.8~),
     salt-minion,
     qubes-mgmt-salt-base
 Recommends:
