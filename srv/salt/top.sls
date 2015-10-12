@@ -23,7 +23,7 @@
 {%- set default = {'base': {'*': ['topd']}}|yaml(False) %}
 
 {%- if salt.topd is defined %}
-  {%- set top = salt.topd.get_top('salt://_topd')|yaml(False) %}
+  {%- set top = salt.topd.get_top('salt://_tops', opts, saltenv=None)|yaml(False) %}
   {#- set status = salt.topd.status(show_full_context())|yaml(False) #}
 {%- endif %}
 
