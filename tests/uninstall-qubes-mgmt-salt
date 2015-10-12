@@ -27,6 +27,7 @@ packages=(
     # Base Packages:
     # --------------
     'qubes-mgmt-salt-base'
+    'qubes-mgmt-salt-base-config'
     'qubes-mgmt-salt-base-overrides'
     'qubes-mgmt-salt-base-topd'
  
@@ -89,6 +90,6 @@ else
 fi
 
 # Remove all salt related directories
-for path in ${SALT_DIRS}; do
+for path in ${SALT_DIRS[@]}; do
     rm -rf ${path} || true
 done
