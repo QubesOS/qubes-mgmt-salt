@@ -14,7 +14,7 @@ Package: qubes-mgmt-salt
 Section: admin
 Architecture: all
 Depends:
-    salt-common (>= 2015.8~),
+    salt-common (>= 2015.5~),
     salt-minion,
     qubes-mgmt-salt-base
 Recommends:
