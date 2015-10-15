@@ -4,6 +4,11 @@ Directly call a salt command in the modules, does not require a running salt
 minion to run.
 '''
 
+try:
+    import qubes.mgmt.patches
+except ImportError:
+    pass
+
 import sys
 sys.argv.append('--local')
 
