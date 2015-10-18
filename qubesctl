@@ -10,7 +10,7 @@ except ImportError:
     pass
 
 import sys
-sys.argv.append('--local')
+sys.argv.insert(1, '--local')
 
 from salt.scripts import salt_call
 
