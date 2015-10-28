@@ -80,8 +80,8 @@ def main(argv):
             data = _ordered_load(infile.read(), yaml.SafeLoader)
             if data:
                 config.update(data)
-    except (ParserError, ReaderError) as e:
-        sys.exit('Parser Error: {0}:'.format(filename), e)
+    except (ParserError, ReaderError):
+        sys.exit('Parser Error: {0}:'.format(infile))
 
     if args.env:
         for env in args.env:
