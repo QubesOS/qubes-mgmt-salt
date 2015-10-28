@@ -4,7 +4,7 @@
 # --> qubesctl saltutil.sync_all
 #
 # 2) Initial Key Import:
-# --> qubesctl state.sls gpg
+# --> qubesctl state.sls gnupg
 #
 # 3) Highstate will execute all states
 # --> qubesctl state.highstate
