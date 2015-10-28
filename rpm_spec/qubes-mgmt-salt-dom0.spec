@@ -32,6 +32,7 @@ Summary:   All Qubes+Salt Management dom0 formulas
 Group:     System administration tools
 BuildArch: noarch
 Requires:  qubes-mgmt-salt
+Requires:  qubes-mgmt-salt-dom0
 Requires:  qubes-mgmt-salt-dom0-qvm
 Requires:  qubes-mgmt-salt-dom0-update
 Requires:  qubes-mgmt-salt-dom0-virtual-machines
