@@ -1,0 +1,11 @@
+The order of package installation is important since pacaking relies on some configurations being in place.
+
+    salt / salt-common
+    salt-minion
+    qubes-mgmt-salt-config
+    qubes-mgmt-salt-base-overrides
+    qubes-mgmt-salt-base-overrides-libs
+    qubes-mgmt-salt-base-topd
+    qubes-mgmt-salt-base-config
+    qubes-mgmt-salt-base
+    qubes-mgmt-salt
