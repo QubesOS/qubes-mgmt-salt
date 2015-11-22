@@ -101,7 +101,7 @@ def main(argv):
         if item is None:
             item = ''
         else:
-            item = subprocess.list2cmdline([str(item).strip()])
+            item = str(item)
             item = item.replace('\n', '\\\n')
 
         data.append('{0:>{1}} ?= {2}'.format(key, width, item))

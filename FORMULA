@@ -7,7 +7,7 @@ formula-files:
 pillar-files:
 test-formula-files: 
 test-pillar-files: 
-formula_root:       /
+formula_dir:        /
 saltenv:            base
 version:            3.0.0
 release:            1

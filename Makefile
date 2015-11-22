@@ -28,7 +28,8 @@ install-custom::
 	@install -p -m 0755 qubesctl $(DESTDIR)$(BINDIR)
 	
 	# Install /etc/salt/* and /srv/*
-	@$(call install-files, etc srv, /)
+	cp -Tr etc $(DESTDIR)/etc
+	cp -Tr srv $(DESTDIR)/srv
 	
 .PHONY: get-sources
 get-sources: GIT_REPOS := $(addprefix $(SRC_DIR)/,$(MGMT_SALT_COMPONENTS) mgmt-salt-app-saltstack)

@@ -19,254 +19,66 @@
 REQUIRED_FORMULA_FIELDS := MGMT_PACKAGE_NAME MGMT_NAME MGMT_VERSION MGMT_RELEASE MGMT_SUMMARY MGMT_DESCRIPTION
 
 # Set defaults for missing fields
-MGMT_FORMULA_FILES      ?= ""
-MGMT_PILLAR_FILES       ?= ""
-MGMT_TEST_FORMULA_FILES ?= ""
-MGMT_TEST_PILLAR_FILES  ?= ""
+MGMT_FORMULA_FILES      ?=
+MGMT_PILLAR_FILES       ?=
+MGMT_TEST_FORMULA_FILES ?=
+MGMT_TEST_PILLAR_FILES  ?=
 
 MGMT_TOP_LEVEL_DIR      ?= $(MGMT_NAME)
 MGMT_STATE_NAME         ?= $(MGMT_TOP_LEVEL_DIR)
-MGMT_FORMULA_ROOT       ?= $(MGMT_SALT_FORMULA_DIR)
 MGMT_TEST_STATE_DIR     ?= $(MGMT_SALT_FORMULA_DIR)
 MGMT_SALTENV            ?= $(MGMT_DEFAULT_SALTENV)
 
 MGMT_OS                 ?= RedHat, Debian, Ubuntu, Suse, FreeBSD
 MGMT_OS_FAMILY          ?= RedHat, Debian, Suse, FreeBSD
 
-# Used to insert comments into code
-_ := 
-
-# Calculate FORMULA_DIR locations
-FORMULA_DIR = \
-	$(if $(filter $(MGMT_FORMULA_ROOT), $(MGMT_SALT_STATE_DIR)), \
-	     $(call _, "if (formula_root) == '/srv/salt'                        ") \
-	     $(if $(filter $(MGMT_SALTENV), $(MGMT_DEFAULT_SALTENV)), \
-	          $(call _, "if (saltenv) == 'base' and (default_saltenv) == 'base") \
-	          $(call _, "    formula_dir = '/srv/salt'                        ") \
-	          $(MGMT_FORMULA_ROOT), \
-	          $(if $(filter $(MGMT_SALTENV), $(MGMT_DEFAULT_TESTENV)), \
-	               $(call _, "if (saltenv) == 'test' and (default_testenv) == 'test") \
-	               $(call _, "    formula_dir = '/srv/formulas/test/<formula_name>'") \
-		       $(MGMT_TEST_STATE_DIR)/$(MGMT_DEFAULT_TESTENV)/$(MGMT_NAME), \
-		       \
-		       $(call _, "else                                  ") \
-	               $(call _, "    formula_dir = '/srv/formulas/base'") \
-	               $(MGMT_FORMULA_ROOT)/$(MGMT_SALTENV))), \
-	     $(call _, "else (formula_root) != '/srv/salt'                        ") \
-	     $(call _, "    formula_dir = '/srv/formulas/<saltenv>/<formula_name>'") \
-	     $(MGMT_FORMULA_ROOT)/$(MGMT_SALTENV)/$(MGMT_NAME))
-
-# Calculate PILLAR_DIR locations
-PILLAR_DIR = \
-	$(if $(filter $(MGMT_FORMULA_ROOT), $(MGMT_SALT_STATE_DIR)), \
-	     $(call _, "if (formula_root) == '/srv/salt'                        ") \
-	     $(if $(filter $(MGMT_SALTENV), $(MGMT_DEFAULT_SALTENV)), \
-	          $(call _, "if (saltenv) == 'base' and (default_saltenv) == 'base") \
-	          $(call _, "    pillar_dir = '/srv/pillar'                       ") \
-	          $(MGMT_SALT_PILLAR_DIR), \
-	          $(if $(filter $(MGMT_SALTENV), $(MGMT_DEFAULT_TESTENV)), \
-	               $(call _, "if (saltenv) == 'test' and (default_testenv) == 'test") \
-	               $(call _, "    pillar_dir = '/srv/pillar/test                   ") \
-	               $(MGMT_SALT_PILLAR_DIR)/$(MGMT_DEFAULT_TESTENV), \
-		       \
-		       $(call _, "else                                    ") \
-	               $(call _, "    pillar_dir = '/srv/pillar/<saltenv>'") \
-	               $(MGMT_SALT_PILLAR_DIR)/$(MGMT_SALTENV))), \
-	     $(call _, "else (formula_root) != '/srv/salt'      ") \
-	     $(call _, "    pillar_dir = '/srv/pillar/<saltenv>'") \
-	     $(MGMT_SALT_PILLAR_DIR)/$(MGMT_SALTENV))
-
-bold   ?= $$(tput bold    2>/dev/null || tput md 2>/dev/null)
-normal ?= $$(tput sgr0    2>/dev/null || tput me 2>/dev/null)
-black  ?= $$(tput setaf 0 2>/dev/null || tput AF 0 2>/dev/null)
-red    ?= $$(tput setaf 1 2>/dev/null || tput AF 1 2>/dev/null)
-green  ?= $$(tput setaf 2 2>/dev/null || tput AF 2 2>/dev/null)
-blue   ?= $$(tput setaf 4 2>/dev/null || tput AF 4 2>/dev/null)
-white  ?= $$(tput setaf 7 2>/dev/null || tput AF 7 2>/dev/null)
-label   = $(blue)
-text    = $(black)
-
-color = \
-	$(if $(call is-verbose), \
-	    $(info $(shell echo $(or $(red), $(2))$(1)$(normal))) \
-	)
-
-debug = \
-	$(if $(call is-verbose), \
-	    $(info $(shell echo $(blue)$(1)$(or $(3), $(normal))$(2)$(normal))) \
-	)
-
-is-verbose = \
-	$(shell if [ $(VERBOSE) -gt 1 ]; then echo true; fi)
-
-remove-quotes = \
-	$(shell echo $(1))
-
-is-directory = \
-	$(if $(wildcard $(1)/.), $(1))
-
-is-file = \
-	$(if $(wildcard $(1)/.),,$(1))
-
-find-files = \
-	$(if $(wildcard $(1)), $(shell find $(1)),)
-
-get-relbase = \
-	$(eval file = $(1)) \
-	$(eval basedir = $(2)) \
-	$(eval relpaths = $(3)) \
-	$(eval filtered = $(filter $(basedir), $(relpaths))) \
-	$(call debug, "║     filtered: ", $(filtered)) \
-	$(call debug, "║      basedir: ", $(basedir)) \
-	$(eval relbase = $(if $(filtered), \
-	        $(shell realpath --relative-base $(basedir) $(file)), \
-	        $(file))) \
-	$(call debug, "║      relbase: ", $(relbase)) \
-	$(relbase)
-
-install-directory = \
-	$(eval file = $(1)) \
-	$(eval targetdir = $(2)) \
-	$(eval relbase = $(3)) \
-	$(if $(call is-directory, $(file)), \
-	    $(call debug, "║  install DIR: ", $(targetdir)/$(relbase)) \
-	    $(call debug, "║",  install -d -m 0750 $(DESTDIR)/$(targetdir)/$(relbase), $(white)) \
-	    $(call debug, "║") \
-	    $(shell install -d -m 0750 $(DESTDIR)/$(targetdir)/$(relbase)))
-
-install-file = \
-	$(eval file = $(1)) \
-	$(eval targetdir = $(2)) \
-	$(eval relbase = $(3)) \
-	$(if $(call is-file, $(file)), \
-	    $(call debug, "║ install FILE: ", $(file)) \
-	    $(call debug, "║           TO: ", $(targetdir)/$(relbase)) \
-	    $(call debug, "║",  install -p -m 0640 $(file) $(DESTDIR)/$(targetdir)/$(relbase), $(white)) \
-	    $(call debug, "║") \
-	    $(shell install -p -m 0640 "$(file)" "$(DESTDIR)/$(targetdir)/$(relbase)")) 
-
-install-files = \
-	$(eval basepaths = $(call remove-quotes, $(1))) \
-	$(eval targetdir = $(call remove-quotes, $(2))) \
-	$(eval relpaths = $(call remove-quotes, $(3))) \
-	$(call debug, "║      DESTDIR:   ", $(DESTDIR)) \
-	$(call debug, "║    basepaths: ", $(basepaths)) \
-	$(call debug, "║    targetdir: ", $(targetdir)) \
-	$(call debug, "║     relpaths:  ", $(relpaths)) \
-	$(call color, "║═══════════════════════════════════════════════════════════════════════════════") \
-	$(if $(basepaths), \
-	    $(eval alldirs = $(shell find $(basepaths) -maxdepth 1 -type d)) \
-	    $(eval allfiles = $(shell find -maxdepth 1 -type f -exec basename {} \;)) \
-	    $(eval basedirs = $(filter $(basepaths), $(alldirs))) \
-	    $(eval basefiles = $(filter $(basepaths), $(allfiles))) \
-	    $(if $(or $(basedirs), $(basefiles)), $(shell install -d -m 0750 $(DESTDIR)/$(targetdir))) \
-	    $(call debug, "║       alldirs: ", $(alldirs)) \
-	    $(call debug, "║      basedirs: ", $(basedirs)) \
-            $(call color, "╠── Installing Directories and Contents  ───────────────────────────────────────") \
-	    $(foreach basedir, $(basedirs), \
-	        $(eval files = $(call find-files, $(basedir))) \
-	        $(foreach file, $(files), \
-		    $(eval relbase = $(call get-relbase, $(file), $(basedir), $(relpaths))) \
-		    $(if $(call is-directory, $(file)), \
-	                $(call install-directory, $(file), $(targetdir), $(relbase)) \
-		    , \
-	                $(call install-file, $(file), $(targetdir), $(relbase)) \
-		    ) \
-	        ) \
-		$(call color, "╠───────────────────────────────────────────────────────────────────────────────") \
-	    ) \
-	    $(call debug, "") \
-	    $(call color, "╔═══════════════════════════════════════════════════════════════════════════════") \
-	    $(call debug, "║      allfiles: ", $(allfiles)) \
-	    $(call debug, "║     basefiles: ", $(basefiles)) \
-            $(call color, "╠── Installing Base Files  ─────────────────────────────────────────────────────") \
-	    $(foreach basefile, $(basefiles), \
-	        $(if $(filter $(MGMT_SALT_STATE_DIR), $(targetdir)), \
-	            $(call color, "╠── Move files in rootdir to subdirs ───────────────────────────────────────────") \
-		    $(foreach basedir, $(basedirs), \
-		        $(if $(filter-out _%, $(basedir)), \
-	                    $(call debug, "║     basefile: ", $(basefile)) \
-	                    $(call debug, "║      basedir: ", $(basedir)) \
-	                    $(call debug, "║ install -p -m 0644 $(basefile) $(DESTDIR)/$(targetdir)/$(basedir)/$(basefile)") \
-	                    $(shell install -p -m 0644 $(basefile) $(DESTDIR)/$(targetdir)/$(basedir)/$(basefile)) \
-			    $(call debug, "║") \
-	                 ) \
-		    ) \
-	        , \
-		    $(eval relbase := $(call get-relbase, $(basefile), $(basefile), $(relpaths))) \
-	            $(call install-file, $(basefile), $(targetdir), $(relbase)) \
-	        ) \
-	        $(call color, "╠───────────────────────────────────────────────────────────────────────────────") \
-	    ) \
-	) \
-	$(call debug, "") 
-
 # Install Formula
-install-formula = \
-	$(eval       saltenv = $(call remove-quotes, $(1))) \
-	$(eval formula_files = $(call remove-quotes, $(2))) \
-	$(eval   formula_dir = $(call remove-quotes, $(3))) \
-	$(eval      relbases = $(call remove-quotes, $(4))) \
-	$(call debug, "║      saltenv: ", $(saltenv)) \
-	$(call debug, "║formula_files: ", $(formula_files)) \
-	$(call debug, "║  formula_dir: ", $(formula_dir)) \
-	$(call debug, "║     relbases: ", $(relbases)) \
-	$(if $(formula_files), \
-	      $(call install-files, \
-	          $(formula_files), \
-	          $(formula_dir) \
-	      ) \
-	)
-	
-# Install Pillar Data
-install-pillar = \
-	$(eval      saltenv = $(call remove-quotes, $(1))) \
-	$(eval pillar_files = $(call remove-quotes, $(2))) \
-	$(eval   pillar_dir = $(call remove-quotes, $(3))) \
-	$(eval     relbases = $(call remove-quotes, $(4))) \
-	$(call debug, "║     saltenv: ", $(saltenv)) \
-	$(call debug, "║pillar_files: ", $(pillar_files)) \
-	$(call debug, "║  pillar_dir: ", $(pillar_dir)) \
-	$(call debug, "║    relbases: ", $(relbases)) \
-	$(if $(pillar_files), \
-	      $(call install-files, \
-	          $(pillar_files), \
-		  $(pillar_dir), \
-		  $(pillar_files) \
-	      ) \
-	)
+install-formula:
+ifneq (,$(MGMT_FORMULA_FILES))
+	install -d $(DESTDIR)$(MGMT_FORMULA_DIR)
+	cp -r $(MGMT_FORMULA_FILES) $(DESTDIR)$(MGMT_FORMULA_DIR)/
+	# Place README and LICENSE in each non _* subdirectory
+	$(foreach subdir,$(filter-out _%, $(MGMT_FORMULA_FILES)), \
+			cp LICENSE README.rst $(DESTDIR)$(MGMT_FORMULA_DIR)/$(subdir)/;)
+else
+	@true
+endif
 
+# Install Pillar Data
+install-pillar:
+ifneq (,$(MGMT_PILLAR_FILES))
+	install -d $(DESTDIR)$(MGMT_PILLAR_DIR)
+	cp -Tr $(MGMT_PILLAR_FILES) $(DESTDIR)$(MGMT_PILLAR_DIR)/
+else
+	@true
+endif
+	
 # Install Formula Tests
-install-test-formula = \
-	$(eval       saltenv = $(call remove-quotes, $(1))) \
-	$(eval formula_files = $(call remove-quotes, $(2))) \
-	$(eval   formula_dir = $(call remove-quotes, $(3))) \
-	$(eval    state_name = $(call remove-quotes, $(4))) \
-	$(eval test_dir_name = $(call remove-quotes, $(5))) \
-	$(call debug, "║      saltenv: ", $(saltenv)) \
-	$(call debug, "║formula_files: ", $(formula_files)) \
-	$(call debug, "║  formula_dir: ", $(formula_dir)) \
-	$(call debug, "║   state_name: ", $(state_name)) \
-	$(call debug, "║test_dir_name: ", $(test_dir_name)) \
-	$(call color, "║═══════════════════════════════════════════════════════════════════════════════") \
-	\
-	$(call _, "Test Formula Contents (minus state directory)") \
-	$(if $(filter-out $(test_dir_name), $(formula_files)), \
-	      $(call install-files, \
-	          $(filter-out $(test_dir_name), $(formula_files)), \
-	          $(formula_dir) \
-	      ) \
-	) \
-	\
-	$(call _, "Test Formula State Directory") \
-	$(call _, "rename 'tests' directory to $(STATE_NAME) using relbase") \
-	$(if $(filter $(test_dir_name), $(formula_files)), \
-	      $(call install-files, \
-	           $(filter $(test_dir_name), $(formula_files)), \
-	           $(formula_dir)/$(state_name), \
-		   $(test_dir_name) \
-	      ) \
-	)
+install-test-formula: test_state_dir = $(MGMT_TEST_STATE_DIR)/$(MGMT_DEFAULT_TESTENV)/$(MGMT_NAME)
+install-test-formula: 
+ifneq (,$(MGMT_TEST_FORMULA_FILES))
+	install -d $(DESTDIR)$(test_state_dir)
+ifneq (,$(filter-out tests, $(MGMT_TEST_FORMULA_FILES)))
+	# Test Formula Contents (minus state directory)
+	cp -r $(filter-out tests, $(MGMT_TEST_FORMULA_FILES)) $(DESTDIR)$(test_state_dir)/
+endif
+ifneq (,$(filter tests, $(MGMT_TEST_FORMULA_FILES)))
+	# Test Formula State Directory
+	# rename 'tests' directory to $(STATE_NAME)
+	cp -r tests $(DESTDIR)$(test_state_dir)/$(MGMT_STATE_NAME)
+endif
+else
+	@true
+endif
+
+install-test-pillar: test_pillar_dir = $(MGMT_SALT_PILLAR_DIR)/$(MGMT_DEFAULT_TESTENV)
+install-test-pillar:
+ifneq (,$(MGMT_TEST_PILLAR_FILES))
+	install -d $(DESTDIR)$(test_pillar_dir)
+	cp -Tr $(MGMT_TEST_PILLAR_FILES) $(DESTDIR)$(test_pillar_dir)/
+else
+	@true
+endif
 
 # Required FORMULA fields
 .PHONY: required
@@ -281,138 +93,105 @@ all: required
 
 .PHONY: get-package_name
 get-package_name: required
-	@echo $(MGMT_PACKAGE_NAME)
+	@echo "$(MGMT_PACKAGE_NAME)"
 
 .PHONY: get-formula_name
 get-formula_name: required
-	@echo $(MGMT_NAME)
+	@echo "$(MGMT_NAME)"
 
 .PHONY: get-state_name
 get-state_name: required
-	@echo $(MGMT_TOP_LEVEL_DIR)
+	@echo "$(MGMT_TOP_LEVEL_DIR)"
 
 .PHONY: get-formula_root
 get-formula_root: required
-	@echo $(MGMT_FORMULA_ROOT)
+	@echo "$(MGMT_FORMULA_ROOT)"
 
 .PHONY: get-saltenv
 get-saltenv: required
-	@echo $(MGMT_SALTENV)
+	@echo "$(MGMT_SALTENV)"
 
 .PHONY: get-testenv
 get-testenv: required
-	@echo $(MGMT_DEFAULT_TESTENV)
+	@echo "$(MGMT_DEFAULT_TESTENV)"
 
 .PHONY: get-formula_files
 get-formula: required
-	@echo $(MGMT_FORMULA_FILES)
+	@echo "$(MGMT_FORMULA_FILES)"
 
 .PHONY: get-pillar_files
 get-pillar: required
-	@echo $(MGMT_PILLAR_FILES)
+	@echo "$(MGMT_PILLAR_FILES)"
 
 .PHONY: get-test_formula_files
 get-test_formula: required
-	@echo $(MGMT_TEST_FORMULA_FILES)
+	@echo "$(MGMT_TEST_FORMULA_FILES)"
 
 .PHONY: get-test_pillar_files
 get-test_pillar: required
-	@echo $(MGMT_TEST_PILLAR_FILES)
+	@echo "$(MGMT_TEST_PILLAR_FILES)"
 
 .PHONY: get-test_dirname
 get-test_dir: required
-	@echo $(MGMT_TEST_DIRNAME)
+	@echo "$(MGMT_TEST_DIRNAME)"
 
 .PHONY: get-test_state_dir
 get-test_state_dir: required
-	@echo $(MGMT_TEST_STATE_DIR)
+	@echo "$(MGMT_TEST_STATE_DIR)"
 
 .PHONY: get-salt_state_dir
 get-salt_state_dir: required
-	@echo $(MGMT_SALT_STATE_DIR)
+	@echo "$(MGMT_SALT_STATE_DIR)"
 
 .PHONY: get-salt_pillar_dir
 get-salt_pillar_dir: required
-	@echo $(MGMT_SALT_PILLAR_DIR)
+	@echo "$(MGMT_SALT_PILLAR_DIR)"
 
 .PHONY: get-salt_formula_dir
 get-salt_formula_dir: required
-	@echo $(MGMT_SALT_FORMULA_DIR)
+	@echo "$(MGMT_SALT_FORMULA_DIR)"
 
 .PHONY: get-version
 get-version: required
-	@echo $(MGMT_VERSION)
+	@echo "$(MGMT_VERSION)"
 
 .PHONY: get-release
 get-release: required
-	@echo $(MGMT_RELEASE)
+	@echo "$(MGMT_RELEASE)"
 
 .PHONY: get-summary
 get-summary: required
-	@echo $(MGMT_SUMMARY)
+	@echo "$(MGMT_SUMMARY)"
 
 .PHONY: get-description
 get-description: required
-	@echo $(MGMT_DESCRIPTION)
+	echo "$(MGMT_DESCRIPTION)"
 
 .PHONY: get-verbose
 get-verbose: required
-	@echo $(VERBOSE)
+	@echo "$(VERBOSE)"
 
 .PHONY: get-destdir
 get-destdir: required
-	@echo $(DESTDIR)
+	@echo "$(DESTDIR)"
 
 .PHONY: get-formula_dir
 get-formula_dir: required
-	@echo $(FORMULA_DIR)
+	@echo "$(MGMT_FORMULA_DIR)"
 
 .PHONY: get-pillar_dir
 get-pillar_dir: required
-	@echo $(PILLAR_DIR)
+	@echo "$(MGMT_PILLAR_DIR)"
 	
 .PHONY: install-custom
 install-custom:: 
 	@true
 
 .PHONY: install
-install:: required install-custom
-	@$(call debug, "") \
-
-	@# Install Formula State Files
-	@$(if $(MGMT_FORMULA_FILES), \
-	    $(call color, "╔═══ State Formulas ════════════════════════════════════════════════════════════") \
-	    $(call install-formula, $(MGMT_SALTENV), \
-	                            $(MGMT_FORMULA_FILES), \
-	                            $(FORMULA_DIR)))
-	
-	@# Install Formula Pillar Data
-	@$(if $(MGMT_PILLAR_FILES), \
-	    $(call color, "╔═══ Pillar Formulas ═══════════════════════════════════════════════════════════") \
-	    $(call install-pillar, $(MGMT_SALTENV), \
-	                           $(MGMT_PILLAR_FILES), \
-	                           $(PILLAR_DIR)))
-	
-	$(info =====     test-formula-dir: $(test-formula-dir))
-	@# Change saltenv to test environment
-	@$(eval MGMT_SALTENV = $(MGMT_DEFAULT_TESTENV))
-
-	@# Install Formula Test State Files
-	@$(if $(MGMT_TEST_FORMULA_FILES), \
-	    $(call color, "╔═══ Test State Formulas ═══════════════════════════════════════════════════════") \
-	    $(call install-test-formula, $(MGMT_SALTENV), \
-	                                 $(MGMT_TEST_FORMULA_FILES), \
-	                                 $(FORMULA_DIR), \
-	                                 $(MGMT_STATE_NAME), \
-	                                 $(MGMT_TEST_DIRNAME)))
-
-	@# Install Formula Test Pillar Data
-	@$(if $(MGMT_TEST_PILLAR_FILES), \
-	    $(call color, "╔═══ Test Pillar Formulas ══════════════════════════════════════════════════════") \
-	    $(call install-pillar, $(MGMT_SALTENV), \
-	                           $(MGMT_TEST_PILLAR_FILES), \
-	                           $(PILLAR_DIR)))
-	
+install:: required 
+install:: install-formula install-pillar 
+install:: install-test-formula install-test-pillar 
+install:: install-custom
 	@if [ $(VERBOSE) -gt 1 ]; then \
 	    echo; \
 	    if which tree >/dev/null 2>&1; then \
