@@ -83,7 +83,5 @@ Depends:
     qubes-mgmt-salt-all-privacy,
     qubes-mgmt-salt-all-theme,
     qubes-mgmt-salt-all-vim,
-    qubes-mgmt-salt-all-gnupg,
-    qubes-mgmt-salt-all-yamlscript-renderer,
-    qubes-mgmt-salt-all-yamlscript-users
+    qubes-mgmt-salt-all-gnupg
 Description: All Qubes+Salt Management extra (qubes-mgmt-all-*) formulas

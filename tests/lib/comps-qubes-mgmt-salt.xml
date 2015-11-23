@@ -29,8 +29,6 @@
       <packagereq type="mandatory">qubes-mgmt-salt-base</packagereq>
       <packagereq type="mandatory">qubes-mgmt-salt-base-overrides</packagereq>
       <packagereq type="mandatory">qubes-mgmt-salt-base-salt</packagereq>
-      <packagereq type="mandatory">qubes-mgmt-salt-base-yamlscript-renderer</packagereq>
-      <packagereq type="mandatory">qubes-mgmt-salt-base-yamlscript-users</packagereq>
       <packagereq type="mandatory">qubes-mgmt-salt-base-gpg</packagereq>
       <packagereq type="optional">qubes-mgmt-salt-dom0-qvm</packagereq>
       <packagereq type="optional">qubes-mgmt-salt-dom0-update</packagereq>
@@ -51,8 +49,6 @@
       <packagereq type="mandatory">qubes-mgmt-salt-base</packagereq>
       <packagereq type="mandatory">qubes-mgmt-salt-base-overrides</packagereq>
       <packagereq type="mandatory">qubes-mgmt-salt-base-salt</packagereq>
-      <packagereq type="mandatory">qubes-mgmt-salt-base-yamlscript-renderer</packagereq>
-      <packagereq type="mandatory">qubes-mgmt-salt-base-yamlscript-users</packagereq>
       <packagereq type="mandatory">qubes-mgmt-salt-base-gpg</packagereq>
       <packagereq type="optional">qubes-mgmt-salt-all-vim</packagereq>
       <packagereq type="optional">qubes-mgmt-salt-all-privacy</packagereq>

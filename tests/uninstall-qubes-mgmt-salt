@@ -46,8 +46,6 @@ packages=(
  
     # Extra packages:
     # --------------
-    'qubes-mgmt-salt-all-yamlscript-renderer'
-    'qubes-mgmt-salt-all-yamlscript-users'
     'qubes-mgmt-salt-all-salt'
     'qubes-mgmt-salt-all-gnupg'
     'qubes-mgmt-salt-all-privacy'

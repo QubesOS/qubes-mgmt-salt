@@ -60,8 +60,6 @@ Requires:  qubes-mgmt-salt-all-privacy
 Requires:  qubes-mgmt-salt-all-theme
 Requires:  qubes-mgmt-salt-all-vim
 Requires:  qubes-mgmt-salt-all-gnupg
-Requires:  qubes-mgmt-salt-all-yamlscript-renderer
-Requires:  qubes-mgmt-salt-all-yamlscript-users
 Requires(post): /usr/bin/qubesctl
 
 %description extra-formulas
