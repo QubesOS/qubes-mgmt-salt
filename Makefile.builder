@@ -66,7 +66,8 @@ mgmt-salt-create-vars-makefile::
 # Copy the master 'Makefile.install' to the package's chroot environment
 mgmt-salt-copy-master-makefile::
 	@$(if $(filter-out $(SOURCE_COPY_IN), source-mgmt-salt-copy-in), \
-	    $(shell cp -p $(MGMT_PLUGIN_DIR)Makefile.install $(_CHROOT_SRC)) \
+	    $(shell cp --remove-destination -p $(MGMT_PLUGIN_DIR)Makefile.install \
+			$(_CHROOT_SRC)) \
 	) 
 
 # Copy / create all required build Makefiles for each mgmt-salt* COMPONENT
