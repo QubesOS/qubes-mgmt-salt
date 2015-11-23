@@ -1,13 +1,10 @@
-%{!?version: %define version %(make get-version)}
-%{!?rel: %define rel %(make get-release)}
-%{!?package_name: %define package_name %(make get-package_name)}
-%{!?package_summary: %define package_summary %(make get-summary)}
-%{!?package_description: %define package_description %(make get-description)}
+%{!?version: %define version %(cat version)}
+%{!?rel: %define rel %(cat rel)}
 
 Name:      qubes-mgmt-salt
 Version:   %{version}
 Release:   %{rel}%{?dist}
-Summary:   %{package_summary}
+Summary:   Installs salts configuration files, directory layout and qubesctl
 License:   GPL 2.0
 URL:	   http://www.qubes-os.org/
 
@@ -23,7 +20,25 @@ Requires(post): /usr/bin/qubesctl
 %define _builddir %(pwd)
 
 %description
-%{package_description}
+Installs salts configuration files, directory layout and qubesctl
+
+- qubes-mgmt-salt:
+    Installs salt and base configuration and modules
+
+- qubes-mgmt-salt-dom0:
+    qubes-mgmt-salt + dom0 depends
+
+- qubes-mgmt-salt-dom0-formulas:
+    All dom0 formulas
+
+- qubes-mgmt-salt-vm:
+    qubes-mgmt-salt + VM depends
+
+- qubes-mgmt-salt-vm-formulas:
+    All VM formulas
+
+- qubes-mgmt-salt-extra-formulas:
+    All extra formulas (qubes-mgmt-all-*)
 
 %package config
 Summary:   Qubes+Salt Management base configuration for SaltStack's Salt Infrastructure automation and management system.
