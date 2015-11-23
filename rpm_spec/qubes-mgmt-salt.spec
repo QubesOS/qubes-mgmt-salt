@@ -1,9 +1,8 @@
 %{!?version: %define version %(cat version)}
-%{!?rel: %define rel %(cat rel)}
 
 Name:      qubes-mgmt-salt
 Version:   %{version}
-Release:   %{rel}%{?dist}
+Release:   1%{?dist}
 Summary:   Installs salts configuration files, directory layout and qubesctl
 License:   GPL 2.0
 URL:	   http://www.qubes-os.org/

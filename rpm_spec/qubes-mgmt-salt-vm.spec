@@ -1,9 +1,8 @@
 %{!?version: %define version %(cat version)}
-%{!?rel: %define rel %(cat rel)}
 
 Name:      qubes-mgmt-salt-vm
 Version:   %{version}
-Release:   %{rel}%{?dist}
+Release:   1%{?dist}
 Summary:   Qubes+Salt Management VM dependencies
 License:   GPL 2.0
 URL:	   http://www.qubes-os.org/
