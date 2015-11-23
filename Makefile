@@ -18,7 +18,9 @@
 _self_path := $(shell readlink -m $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 include $(_self_path)/components.conf
 
+# This file is generated from FORMULA* by yaml-dumper in mgmt-salt builder plugin
 include Makefile.vars
+# This file is copied in from mgmt-salt
 include Makefile.install
 
 .PHONY: install-custom
