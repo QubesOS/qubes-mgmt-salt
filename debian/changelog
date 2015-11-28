@@ -1,3 +1,10 @@
+qubes-mgmt-salt (3.1.0-1) wheezy; urgency=medium
+
+  [ Jason Mehring ]
+  * 
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 28 Nov 2015 15:31:07 +0100
+
 qubes-mgmt-salt (3.0.0-1) unstable; urgency=low
 
   * Initial Release.
