@@ -56,7 +56,7 @@ mgmt-salt-copy-templates::
 # the configuration values to a Makefile compatible key+value format to
 # 'Makefile.vars'
 mgmt-salt-create-vars-makefile::
-	@$(eval mgmt_parser_paths = $(_CHROOT_SRC)/FORMULA $(MGMT_PLUGIN_DIR)/FORMULA-DEFAULTS) \
+	@$(eval mgmt_parser_paths = $(MGMT_PLUGIN_DIR)/FORMULA-DEFAULTS $(_CHROOT_SRC)/FORMULA) \
 	$(eval mgmt_parser_outfile = $(_CHROOT_SRC)/Makefile.vars) \
 	$(eval mgmt_parser_environ = VERBOSE) \
 	"$(MGMT_PLUGIN_DIR)yaml-dumper" --env $(mgmt_parser_environ) \

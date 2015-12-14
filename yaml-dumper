@@ -76,10 +76,12 @@ def main(argv):
     args = parser.parse_args()
 
     try:
+        data = ''
         for infile in args.infiles:
-            data = _ordered_load(infile.read(), yaml.SafeLoader)
-            if data:
-                config.update(data)
+            data += infile.read()
+        data = _ordered_load(data, yaml.SafeLoader)
+        if data:
+            config.update(data)
     except (ParserError, ReaderError):
         sys.exit('Parser Error: {0}:'.format(infile))
 
