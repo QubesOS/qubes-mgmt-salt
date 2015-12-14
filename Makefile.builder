@@ -1,5 +1,21 @@
 # vim: filetype=make
 
+MGMT_PLUGIN_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+_CHROOT_SRC = $(CHROOT_DIR)/$(DIST_SRC)
+
+get-mgmt-debian-dir = \
+	$(strip $(if $(wildcard $(ORIG_SRC)/debian.$(PACKAGE_SET)/.), \
+	    debian.$(PACKAGE_SET), \
+	    $(if $(wildcard $(ORIG_SRC)/debian), debian) \
+	))
+
+get-mgmt-rpm-spec = \
+	$(eval _spec_prefix = rpm_spec/qubes-$(COMPONENT)) \
+	$(strip \
+	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix).spec), $(_spec_prefix).spec) \
+	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix)-$(PACKAGE_SET).spec), $(_spec_prefix)-$(PACKAGE_SET).spec) \
+	)
+
 ifndef LOADING_PLUGINS
     SOURCE_COPY_IN := mgmt-salt-copy-in
     ifeq ($(PACKAGE_SET),dom0)
@@ -16,22 +32,6 @@ ifndef LOADING_PLUGINS
         endif
     endif
 endif
-
-MGMT_PLUGIN_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-_CHROOT_SRC = $(CHROOT_DIR)/$(DIST_SRC)
-
-get-mgmt-debian-dir = \
-	$(strip $(if $(wildcard $(ORIG_SRC)/debian.$(PACKAGE_SET)/.), \
-	    debian.$(PACKAGE_SET), \
-	    $(if $(wildcard $(ORIG_SRC)/debian), debian) \
-	))
-
-get-mgmt-rpm-spec = \
-	$(eval _spec_prefix = rpm_spec/qubes-$(COMPONENT)) \
-	$(strip \
-	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix).spec), $(_spec_prefix).spec) \
-	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix)-$(PACKAGE_SET).spec), $(_spec_prefix)-$(PACKAGE_SET).spec) \
-	)
 
 # =========================================================
 # Generic parse-formula targets for all mgmt-salt* packages
