@@ -1,16 +1,11 @@
 # vim: set syntax=yaml ts=2 sw=2 sts=2 et :
 
 package-name:       qubes-mgmt-salt-config
-name:               mgmt-salt-config
-top_level_dir:
-formula-files:
-pillar-files:
-test-formula-files: 
-test-pillar-files: 
-formula_dir:        /
 saltenv:            base
-version:            3.0.0
+version:            3.1.0
 release:            1
+name:               mgmt-salt-config
+formula_dir:        /
 os:                 RedHat, Debian, Ubuntu, Suse, FreeBSD
 os_family:          RedHat, Debian, Suse, FreeBSD
 summary:            Installs salts configuration files, directory layout and qubesctl
