@@ -85,9 +85,11 @@ install-formula:
 ifneq (,$(MGMT_FORMULA_FILES))
 	install -d $(DESTDIR)$(MGMT_FORMULA_DIR)
 	cp -r $(MGMT_FORMULA_FILES) $(DESTDIR)$(MGMT_FORMULA_DIR)/
-	# Place README and LICENSE in each non _* subdirectory
+ifneq (,$(filter $(MGMT_DEFAULT_STATE_DIR)%, $(MGMT_FORMULA_DIR)))
+	# Place README and LICENSE in each non _* subdirectory only if in main /srv/salt tree
 	$(foreach subdir,$(filter-out _%, $(MGMT_FORMULA_FILES)), \
 			cp LICENSE README.rst $(DESTDIR)$(MGMT_FORMULA_DIR)/$(subdir)/;)
+endif
 else
 	@true
 endif
