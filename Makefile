@@ -15,11 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 _self_path := $(shell readlink -m $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 include $(_self_path)/components.conf
 
 # This file is generated from FORMULA* by yaml-dumper in mgmt-salt builder plugin
 include Makefile.vars
+
 # This file is copied in from mgmt-salt
 include Makefile.install
 
