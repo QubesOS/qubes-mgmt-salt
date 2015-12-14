@@ -26,7 +26,10 @@ MGMT_TEST_PILLAR_FILES  ?=
 
 MGMT_TOP_LEVEL_DIR      ?= $(MGMT_NAME)
 MGMT_STATE_NAME         ?= $(MGMT_TOP_LEVEL_DIR)
-MGMT_TEST_STATE_DIR     ?= $(MGMT_SALT_FORMULA_DIR)
+MGMT_FORMULA_DIR        ?= $(MGMT_DEFAULT_STATE_DIR)
+MGMT_PILLAR_DIR         ?= $(MGMT_DEFAULT_PILLAR_DIR)
+MGMT_TEST_STATE_DIR     ?= $(MGMT_DEFAULT_TEST_STATE_DIR)
+MGMT_TEST_PILLAR_DIR    ?= $(MGMT_DEFAULT_TEST_PILLAR_DIR)
 MGMT_SALTENV            ?= $(MGMT_DEFAULT_SALTENV)
 
 MGMT_OS                 ?= RedHat, Debian, Ubuntu, Suse, FreeBSD
@@ -71,7 +74,7 @@ else
 	@true
 endif
 
-install-test-pillar: test_pillar_dir = $(MGMT_SALT_PILLAR_DIR)/$(MGMT_DEFAULT_TESTENV)
+install-test-pillar: test_pillar_dir = $(MGMT_DEFAULT_PILLAR_DIR)/$(MGMT_DEFAULT_TESTENV)
 install-test-pillar:
 ifneq (,$(MGMT_TEST_PILLAR_FILES))
 	install -d $(DESTDIR)$(test_pillar_dir)
@@ -90,6 +93,26 @@ required:
 .PHONY: all
 all: required
 	@true
+
+.PHONY: get-testenv
+get-testenv: required
+	@echo "$(MGMT_DEFAULT_TESTENV)"
+
+.PHONY: get-default_test_dirname
+get-default_test_dir: required
+	@echo "$(MGMT_DEFAULT_TEST_DIRNAME)"
+
+.PHONY: get-default_state_dir
+get-default_state_dir: required
+	@echo "$(MGMT_DEFAULT_STATE_DIR)"
+
+.PHONY: get-default_pillar_dir
+get-default_pillar_dir: required
+	@echo "$(MGMT_DEFAULT_PILLAR_DIR)"
+
+.PHONY: get-default_formula_dir
+get-default_formula_dir: required
+	@echo "$(MGMT_DEFAULT_FORMULA_DIR)"
 
 .PHONY: get-package_name
 get-package_name: required
@@ -111,10 +134,6 @@ get-formula_root: required
 get-saltenv: required
 	@echo "$(MGMT_SALTENV)"
 
-.PHONY: get-testenv
-get-testenv: required
-	@echo "$(MGMT_DEFAULT_TESTENV)"
-
 .PHONY: get-formula_files
 get-formula: required
 	@echo "$(MGMT_FORMULA_FILES)"
@@ -131,25 +150,9 @@ get-test_formula: required
 get-test_pillar: required
 	@echo "$(MGMT_TEST_PILLAR_FILES)"
 
-.PHONY: get-test_dirname
-get-test_dir: required
-	@echo "$(MGMT_TEST_DIRNAME)"
-
 .PHONY: get-test_state_dir
 get-test_state_dir: required
 	@echo "$(MGMT_TEST_STATE_DIR)"
-
-.PHONY: get-salt_state_dir
-get-salt_state_dir: required
-	@echo "$(MGMT_SALT_STATE_DIR)"
-
-.PHONY: get-salt_pillar_dir
-get-salt_pillar_dir: required
-	@echo "$(MGMT_SALT_PILLAR_DIR)"
-
-.PHONY: get-salt_formula_dir
-get-salt_formula_dir: required
-	@echo "$(MGMT_SALT_FORMULA_DIR)"
 
 .PHONY: get-version
 get-version: required
