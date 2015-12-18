@@ -87,8 +87,27 @@ mgmt-salt-debian-prep::
 	    $(shell tar cfz $(orig_file) $(tar_opts) -C $(_CHROOT_SRC) .) \
 	)
 
+# In some packages there may be Debian directories specific for either dom0 and
+# or vm where they would be named debian.dom0 and debian.vm respectively. The
+# mgmt-salt-copy-templates target above copies anything matching *.dom0 or *.vm
+# to their basename minus the .dom0 or .vm extension.
+#
+# In the case of Debian directories, a 'debian.vm' directory will be copied to
+# 'debian'.  This will cause issues with changelog since DEBIANBUILD__DIRS is
+# set to 'debain.vm' and Makefile.debian will use that location to update the
+# changelog, but dpkg-buildpackage uses the 'debian' directory to build.  To
+# prevent incorrect changelogs from being generated, the 'debian/changelog'
+# file is deleted and soft linked to 'debian.vm/changelog', only if
+# 'debian.vm/changelog' exists'.  This is important as Makefile.debain will
+# then also break the hardlink within 'debian.vm/changelog'.
+mgmt-salt-debian-changelog::
+	@$(if $(wildcard $(_CHROOT_SRC)/debian.$(PACKAGE_SET)/changelog), \
+	    $(shell rm -f $(_CHROOT_SRC)/debian/changelog) \
+	    $(shell cd $(_CHROOT_SRC)/debian; ln -sf ../debian.$(PACKAGE_SET)/changelog changelog) \
+	)
+
 # 'SOURCE-COPY-IN' provided by all mgmt-salt* packages
-mgmt-salt-copy-in:: mgmt-salt-copy-templates mgmt-salt-makefiles mgmt-salt-debian-prep
+mgmt-salt-copy-in:: mgmt-salt-copy-templates mgmt-salt-makefiles mgmt-salt-debian-prep mgmt-salt-debian-changelog
 	@true
 
 # 'SOURCE-COPY-IN' for this 'salt-mgmt' package
