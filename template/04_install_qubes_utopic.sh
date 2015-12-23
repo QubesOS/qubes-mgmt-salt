@@ -1,1 +1,1 @@
-04_install_qubes_jessie.sh
+04_install_qubes_qubuntu.sh

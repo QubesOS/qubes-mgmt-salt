@@ -1,1 +1,1 @@
-04_install_qubes_fc20.sh
+04_install_qubes_fedora.sh
