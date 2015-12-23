@@ -37,10 +37,7 @@ Depends:
     qubes-mgmt-salt-dom0-qvm,
     qubes-mgmt-salt-dom0-update
 Recommends:
-    qubes-mgmt-salt-dom0-virtual-machines,
-    qubes-mgmt-salt-dom0-policy-qubesbuilder,
-    qubes-mgmt-salt-dom0-fix-permissions,
-    qubes-mgmt-salt-dom0-template-upgrade
+    qubes-mgmt-salt-dom0-virtual-machines
 Conflicts: qubes-mgmt-salt-vm
 Description: Qubes+Salt Management dom0 dependencies.
 
@@ -48,7 +45,7 @@ Package: qubes-mgmt-salt-vm
 Section: admin
 Architecture: all
 Depends:
-    qubes-mgmt-salt,
+    qubes-mgmt-salt
 Recommends:
     qubes-mgmt-salt-vm-python-pip
 Description: Qubes+Salt Management vm dependencies.
@@ -60,10 +57,7 @@ Depends:
     qubes-mgmt-salt,
     qubes-mgmt-salt-dom0-qvm,
     qubes-mgmt-salt-dom0-update,
-    qubes-mgmt-salt-dom0-virtual-machines,
-    qubes-mgmt-salt-dom0-fix-permissions,
-    qubes-mgmt-salt-dom0-policy-qubesbuilder,
-    qubes-mgmt-salt-dom0-template-upgrade
+    qubes-mgmt-salt-dom0-virtual-machines
 Description: All Qubes+Salt Management dom0 formulas.
 
 Package: qubes-mgmt-salt-vm-formulas
@@ -74,14 +68,9 @@ Depends:
     qubes-mgmt-salt-vm-python-pip
 Description: All Qubes+Salt Management VM formulas
 
-Package: qubes-mgmt-salt-extra-formulas
+Package: qubes-mgmt-salt-shared-formulas
 Section: admin
 Architecture: all
 Depends:
-    qubes-mgmt-salt,
-    qubes-mgmt-salt-all-salt,
-    qubes-mgmt-salt-all-privacy,
-    qubes-mgmt-salt-all-theme,
-    qubes-mgmt-salt-all-vim,
-    qubes-mgmt-salt-all-gnupg
-Description: All Qubes+Salt Management extra (qubes-mgmt-all-*) formulas
+    qubes-mgmt-salt
+Description: All Qubes+Salt Management shared (qubes-mgmt-all-*) formulas
