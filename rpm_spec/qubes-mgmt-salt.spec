@@ -50,20 +50,15 @@ BuildArch: noarch
 %description config
 Qubes+Salt Management base configuration for SaltStack's Salt Infrastructure automation and management system.
 
-%package extra-formulas
-Summary:   All Qubes+Salt Management extra (qubes-mgmt-all-*) formulas
+%package shared-formulas
+Summary:   All Qubes+Salt Management shared (qubes-mgmt-all-*) formulas
 Group:     System administration tools
 BuildArch: noarch
 Requires:  qubes-mgmt-salt
-Requires:  qubes-mgmt-salt-all-salt
-Requires:  qubes-mgmt-salt-all-privacy
-Requires:  qubes-mgmt-salt-all-theme
-Requires:  qubes-mgmt-salt-all-vim
-Requires:  qubes-mgmt-salt-all-gnupg
 Requires(post): /usr/bin/qubesctl
 
-%description extra-formulas
-Qubes+Salt Management extra (qubes-mgmt-all-*) formulas.
+%description shared-formulas
+Qubes+Salt Management shared (qubes-mgmt-all-*) formulas.
 
 %prep
 # we operate on the current directory, so no need to unpack anything
@@ -85,7 +80,7 @@ qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
 qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
-%post extra-formulas
+%post shared-formulas
 qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
 qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
@@ -121,7 +116,7 @@ qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
 /usr/bin/qubesctl
 
-%files extra-formulas
+%files shared-formulas
 %defattr(-,root,root)
 
 %changelog

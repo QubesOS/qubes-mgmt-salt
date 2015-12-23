@@ -26,8 +26,8 @@ Group:     System administration tools
 BuildArch: noarch
 Requires:  qubes-mgmt-salt
 Requires:  qubes-mgmt-salt-vm
-Requires:  qubes-mgmt-salt-vm-python-pip
 Requires(post): /usr/bin/qubesctl
+#Requires:  qubes-mgmt-salt-vm-python-pip
 
 %description formulas
 Qubes+Salt Management VM formulas.

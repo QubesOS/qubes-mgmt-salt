@@ -32,9 +32,6 @@ Requires:  qubes-mgmt-salt-dom0
 Requires:  qubes-mgmt-salt-dom0-qvm
 Requires:  qubes-mgmt-salt-dom0-update
 Requires:  qubes-mgmt-salt-dom0-virtual-machines
-Requires:  qubes-mgmt-salt-dom0-fix-permissions
-Requires:  qubes-mgmt-salt-dom0-policy-qubesbuilder
-Requires:  qubes-mgmt-salt-dom0-template-upgrade
 Requires(post): /usr/bin/qubesctl
 
 %description formulas
