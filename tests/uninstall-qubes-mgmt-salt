@@ -46,6 +46,8 @@ packages=(
  
     # Extra packages:
     # --------------
+    'qubes-mgmt-salt-all-yamlscript-renderer'
+    'qubes-mgmt-salt-all-yamlscript-users'
     'qubes-mgmt-salt-all-salt'
     'qubes-mgmt-salt-all-gnupg'
     'qubes-mgmt-salt-all-privacy'
@@ -71,7 +73,12 @@ which apt-get && {
     REMOVE='apt-get remove -y --purge'
 } || {
     OS='Fedora'
-    REMOVE='yum erase -y'
+    if [ -e /usr/bin/dnf ]; then
+        YUM=dnf
+    else
+        YUM=yum
+    fi
+    REMOVE="$YUM erase -y"
 }
 
 # Attempt to remove all qubes-mgmt related packages

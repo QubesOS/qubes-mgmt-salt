@@ -1,5 +1,21 @@
 # vim: filetype=make
 
+MGMT_PLUGIN_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+_CHROOT_SRC = $(CHROOT_DIR)/$(DIST_SRC)
+
+get-mgmt-debian-dir = \
+	$(strip $(if $(wildcard $(ORIG_SRC)/debian.$(PACKAGE_SET)/.), \
+	    debian.$(PACKAGE_SET), \
+	    $(if $(wildcard $(ORIG_SRC)/debian), debian) \
+	))
+
+get-mgmt-rpm-spec = \
+	$(eval _spec_prefix = rpm_spec/qubes-$(COMPONENT)) \
+	$(strip \
+	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix).spec), $(_spec_prefix).spec) \
+	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix)-$(PACKAGE_SET).spec), $(_spec_prefix)-$(PACKAGE_SET).spec) \
+	)
+
 ifndef LOADING_PLUGINS
     SOURCE_COPY_IN := mgmt-salt-copy-in
     ifeq ($(PACKAGE_SET),dom0)
@@ -16,22 +32,6 @@ ifndef LOADING_PLUGINS
         endif
     endif
 endif
-
-MGMT_PLUGIN_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-_CHROOT_SRC = $(CHROOT_DIR)/$(DIST_SRC)
-
-get-mgmt-debian-dir = \
-	$(strip $(if $(wildcard $(ORIG_SRC)/debian.$(PACKAGE_SET)/.), \
-	    debian.$(PACKAGE_SET), \
-	    $(if $(wildcard $(ORIG_SRC)/debian), debian) \
-	))
-
-get-mgmt-rpm-spec = \
-	$(eval _spec_prefix = rpm_spec/qubes-$(COMPONENT)) \
-	$(strip \
-	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix).spec), $(_spec_prefix).spec) \
-	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix)-$(PACKAGE_SET).spec), $(_spec_prefix)-$(PACKAGE_SET).spec) \
-	)
 
 # =========================================================
 # Generic parse-formula targets for all mgmt-salt* packages
@@ -56,7 +56,7 @@ mgmt-salt-copy-templates::
 # the configuration values to a Makefile compatible key+value format to
 # 'Makefile.vars'
 mgmt-salt-create-vars-makefile::
-	@$(eval mgmt_parser_paths = $(_CHROOT_SRC)/FORMULA $(MGMT_PLUGIN_DIR)/FORMULA-DEFAULTS) \
+	@$(eval mgmt_parser_paths = $(MGMT_PLUGIN_DIR)/FORMULA-DEFAULTS $(_CHROOT_SRC)/FORMULA) \
 	$(eval mgmt_parser_outfile = $(_CHROOT_SRC)/Makefile.vars) \
 	$(eval mgmt_parser_environ = VERBOSE) \
 	"$(MGMT_PLUGIN_DIR)yaml-dumper" --env $(mgmt_parser_environ) \
@@ -87,8 +87,27 @@ mgmt-salt-debian-prep::
 	    $(shell tar cfz $(orig_file) $(tar_opts) -C $(_CHROOT_SRC) .) \
 	)
 
+# In some packages there may be Debian directories specific for either dom0 and
+# or vm where they would be named debian.dom0 and debian.vm respectively. The
+# mgmt-salt-copy-templates target above copies anything matching *.dom0 or *.vm
+# to their basename minus the .dom0 or .vm extension.
+#
+# In the case of Debian directories, a 'debian.vm' directory will be copied to
+# 'debian'.  This will cause issues with changelog since DEBIANBUILD__DIRS is
+# set to 'debain.vm' and Makefile.debian will use that location to update the
+# changelog, but dpkg-buildpackage uses the 'debian' directory to build.  To
+# prevent incorrect changelogs from being generated, the 'debian/changelog'
+# file is deleted and soft linked to 'debian.vm/changelog', only if
+# 'debian.vm/changelog' exists'.  This is important as Makefile.debain will
+# then also break the hardlink within 'debian.vm/changelog'.
+mgmt-salt-debian-changelog::
+	@$(if $(wildcard $(_CHROOT_SRC)/debian.$(PACKAGE_SET)/changelog), \
+	    $(shell rm -f $(_CHROOT_SRC)/debian/changelog) \
+	    $(shell cd $(_CHROOT_SRC)/debian; ln -sf ../debian.$(PACKAGE_SET)/changelog changelog) \
+	)
+
 # 'SOURCE-COPY-IN' provided by all mgmt-salt* packages
-mgmt-salt-copy-in:: mgmt-salt-copy-templates mgmt-salt-makefiles mgmt-salt-debian-prep
+mgmt-salt-copy-in:: mgmt-salt-copy-templates mgmt-salt-makefiles mgmt-salt-debian-prep mgmt-salt-debian-changelog
 	@true
 
 # 'SOURCE-COPY-IN' for this 'salt-mgmt' package
