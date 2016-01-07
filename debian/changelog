@@ -1,3 +1,44 @@
+qubes-mgmt-salt (3.1.1-1) wheezy; urgency=medium
+
+  [ Jason Mehring ]
+  * components - Allow additional components to be passed in from
+    configuration file
+  * BUILDER_PLUGINS:  Add template for fc23 and stretch
+  * Makefile.install:  Rename default VARS to better reflect they are
+    default values
+  * Makefile.install:  Provide a list of most common VARS available for
+    use
+  * Makefile.install: Only place README and LICENSE in top_level_dir if
+    formula_dir is /srv/salt
+  * Makefile.builder:  Move copy-in functions to above of where they are
+    called to prevent them from not being available
+  * yamldumper: Read input files in order they appear on command line
+  * Makefile:  Added a few formatting line feeds
+  * components.conf: Removed mgmt-salt-demo component since it is not
+    used
+  * FORMULA:  Changed version to 3.1.0 and re-ordered fields
+  * components: Make sure there are no dupes in COMPONENTs
+  * template:  Souce Fedora's distribution.sh to install packages using
+    yumInstall
+  * Makefile.builder:  Fix to debian/changelog allow debian.dom0/vm dirs
+  * components:  Moved development components to mgmt-salt-dev repo
+  * tests:  Updated test repo to work with dnf
+  * template: Re-organize BUILDER_PLUGIN templates
+  * template: Added saltstack key for jessie repo since salt is too old
+    in Debian repo
+  * debian: Updated Debian packaging
+  * rpm: Updated rpm packaging; removed all references to packages not
+    used
+  * components: Re-wrote code to merge mgnt components in a more
+    reliable fashion
+  * builder.conf: Rename VAR '_flavor_name' to 'MGMT_SALT_FLAVOR_NAME'
+    to prevent name conflicts
+
+  [ Marek Marczykowski-Górecki ]
+  * Add note when components.conf is included
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 07 Jan 2016 06:28:14 +0100
+
 qubes-mgmt-salt (3.1.0-1) wheezy; urgency=medium
 
   [ Jason Mehring ]
