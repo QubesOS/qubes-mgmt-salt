@@ -1,0 +1,102 @@
+# vim: set syntax=yaml ts=2 sw=2 sts=2 et :
+#
+# The Qubes OS Project, http://www.qubes-os.org
+#
+# Copyright (C) 2016  Marek Marczykowski-Górecki
+#                                 <marmarek@invisiblethingslab.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+
+
+# Merge two structures in depth. This function assumes both have the same
+# structure, which is ok for top files (mapping of mapping of lists).
+{% macro deep_merge(first, second) %}
+
+# first handle mapping (check only the first argument - see assumption above)
+{% if first is mapping %}
+# for each key in the first mapping, check if matching value is present in the
+# second one
+{%- for key, value in first.iteritems() %}
+'{{ key }}':
+  {% if not key in second %}
+# if not - simply output the first value
+  {{ value|yaml }}
+  {% else %}
+# otherwise, merge them recursively
+  {{ deep_merge(value, second[key])|indent(2) }}
+  {% endif %}
+{% endfor %}
+# then output values present only in the second mapping
+{%- for key, value in second.iteritems() if key not in first %}
+'{{ key }}':
+  {{ value|yaml }}
+{% endfor %}
+
+# if it is't mapping, check if it is sequence (list)
+{% elif first is sequence %}
+
+# output all entries from the first list
+{%- for item in first %}
+- {{ item }}
+{% endfor %}
+
+# then entries from the second one, skipping duplicates
+{%- for item in second if item not in first %}
+- {{ item }}
+{% endfor %}
+
+# not mapping, not sequence - don't know how to merge them - output the first
+# value, ignore the second one
+{% else %}
+{{ first }}
+{% endif %}
+{% endmacro %}
+
+# merge_tops macro iterate over provided list of tops. Each entry should be a
+# path to proper salt top file
+{% macro merge_tops(tops) %}
+# output buffer - start with empty mapping
+{% set merged_top = {} %}
+
+# for each top:
+{% for top in tops %}
+# 1. Load it to single_top variable.
+{%- load_yaml as single_top -%}
+{% include top %}
+{%- endload -%}
+# 2. Merge with output buffer (merged_top), saving result in new_merged_top
+{%- load_yaml as new_merged_top -%}
+{{ deep_merge(merged_top, single_top) }}
+{%- endload -%}
+# Some debugging
+{#
+Merging: {{ merged_top }}
+with: {{ single_top }}
+result: {{ new_merged_top }} 
+#}
+
+# 3. Override output buffer with new_merged_top
+{%- set merged_top = new_merged_top -%}
+
+# After processing the last one, return output. Must be here, because
+# merged_top is not available outside of loop scope
+{%- if loop.last %}
+{{ merged_top|yaml }}
+{% endif -%}
+
+{%- endfor -%}
+{% endmacro %}
+

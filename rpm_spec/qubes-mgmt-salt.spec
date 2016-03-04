@@ -112,6 +112,7 @@ qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
 %attr(750, root, root) %dir /srv/salt
 %config(noreplace) /srv/salt/top.sls
+/srv/salt/top.jinja
 /srv/salt/top.sls.old
 
 /usr/bin/qubesctl

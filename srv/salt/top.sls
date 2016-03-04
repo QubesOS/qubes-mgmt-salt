@@ -22,7 +22,17 @@
 
 {%- set default = {'base': {'*': ['topd']}}|yaml(False) %}
 
-{%- if salt.top is defined %}
+{% load_yaml as tops %}
+{% include "tops.yaml" ignore missing %}
+{% endload %}
+
+# If static list of enabled tops is present in "tops.yaml", use it without
+# using salt.top module (it may be not available while using salt-ssh)
+{%- if tops -%}
+{%- from "top.jinja" import merge_tops -%}
+{%- set top = merge_tops(tops) -%}
+# otherwise, try to use salt.top module if present
+{%- elif salt.top is defined %}
   {%- set top = salt.top.get_top('salt://_tops', opts, saltenv=None)|yaml(False) %}
   {#- set status = salt.top.status(show_full_context())|yaml(False) #}
 {%- endif %}
