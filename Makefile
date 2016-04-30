@@ -35,6 +35,19 @@ install-custom::
 	cp -Tr etc $(DESTDIR)/etc
 	cp -Tr srv $(DESTDIR)/srv
 	
+.PHONY: install-vm
+install-vm:
+	install -d $(DESTDIR)/usr/lib/qubes-vm-connector/ssh-wrapper
+	install ssh-wrapper $(DESTDIR)/usr/lib/qubes-vm-connector/ssh-wrapper/ssh
+	ln -s ssh $(DESTDIR)/usr/lib/qubes-vm-connector/ssh-wrapper/scp
+	ln -s /bin/true $(DESTDIR)/usr/lib/qubes-vm-connector/ssh-wrapper/ssh-keygen
+	install -d $(DESTDIR)/etc/qubes-rpc
+	install qubes.SaltLinuxVM $(DESTDIR)/etc/qubes-rpc
+
+.PHONY: install-dom0
+install-dom0:
+	python setup.py install -O1 --root $(DESTDIR)
+
 .PHONY: get-sources
 get-sources: GIT_REPOS := $(addprefix $(SRC_DIR)/,$(MGMT_SALT_COMPONENTS) mgmt-salt-app-saltstack)
 get-sources:

@@ -32,6 +32,15 @@ Requires(post): /usr/bin/qubesctl
 %description formulas
 Qubes+Salt Management VM formulas.
 
+%package connector
+Summary:    Interface for managing VM from dom0
+Group:     System administration tools
+BuildArch: noarch
+Requires:  salt-ssh
+
+%description connector
+Interface for managing VM from dom0
+
 %prep
 # we operate on the current directory, so no need to unpack anything
 # symlink is to generate useful debuginfo packages
@@ -42,6 +51,7 @@ ln -sf . %{name}-%{version}
 %build
 
 %install
+make install-vm DESTDIR=%{buildroot}
 
 %post
 qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
@@ -56,5 +66,10 @@ qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
 %files formulas
 %defattr(-,root,root)
+
+%files connector
+%defattr(-,root,root)
+/etc/qubes-rpc/qubes.SaltLinuxVM
+/usr/lib/qubes-vm-connector/ssh-wrapper
 
 %changelog

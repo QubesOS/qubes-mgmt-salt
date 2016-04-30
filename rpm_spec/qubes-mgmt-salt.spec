@@ -60,6 +60,15 @@ Requires(post): /usr/bin/qubesctl
 %description shared-formulas
 Qubes+Salt Management shared (qubes-mgmt-all-*) formulas.
 
+%package admin-tools
+Summary:    Management tools integrating dom0 and VM management
+Group:     System administration tools
+BuildArch: noarch
+Requires:  qubes-mgmt-salt
+
+%description admin-tools
+Tools to integrate dom0 and VM management into a single qubesctl tool.
+
 %prep
 # we operate on the current directory, so no need to unpack anything
 # symlink is to generate useful debuginfo packages
@@ -71,6 +80,7 @@ ln -sf . %{name}-%{version}
 
 %install
 make install DESTDIR=%{buildroot} LIBDIR=%{_libdir} BINDIR=%{_bindir} SBINDIR=%{_sbindir} SYSCONFDIR=%{_sysconfdir}
+make install-dom0 DESTDIR=%{buildroot}
 
 %post
 qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
@@ -115,7 +125,13 @@ qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 /srv/salt/top.jinja
 /srv/salt/top.sls.old
 
+%files admin-tools
 /usr/bin/qubesctl
+%dir %{python_sitelib}/qubessalt-*egg-info
+%{python_sitelib}/qubessalt-*egg-info/*
+%dir %{python_sitelib}/qubessalt
+%{python_sitelib}/qubessalt/__init__.py*
+
 
 %files shared-formulas
 %defattr(-,root,root)

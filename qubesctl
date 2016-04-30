@@ -3,17 +3,91 @@
 Directly call a salt command in the modules, does not require a running salt
 minion to run.
 '''
-
-try:
-    import qubes.mgmt.patches
-except ImportError:
-    pass
+import argparse
 
 import sys
-sys.argv.insert(1, '--local')
+import subprocess
+import qubessalt
+import qubes.qubes
 
-from salt.scripts import salt_call
 
+def main(args=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--show-output', action='store_true',
+        help='Show output of management commands')
+    parser.add_argument('--force-color', action='store_true',
+        help='Force color output, allow control characters from VM, UNSAFE')
+    parser.add_argument('--skip-dom0', action='store_true',
+        help='Skip dom0 condifuration (VM creation etc)')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--targets', action='store',
+        help='Coma separated list of VMs to target')
+    group.add_argument('--templates', action='store_true',
+        help='Target all templates')
+    group.add_argument('--app', action='store_true',
+        help='Target all AppVMs')
+    group.add_argument('--all', action='store_true',
+        help='Target all non-disposable VMs (TemplateVMs and AppVMs)')
+    parser.add_argument('command',
+        help='Salt command to execute (for example: state.highstate)',
+        nargs=argparse.REMAINDER)
+    args = parser.parse_args(args)
+
+    if not args.skip_dom0:
+        try:
+            # TODO handle args.show_output - if false, log to some file
+            subprocess.check_call(['qubesctl', '--dom0-only'] + args.command)
+        except subprocess.CalledProcessError:
+            print >>sys.stderr, "DOM0 configuration failed, not continuing"
+            return 1
+
+    # Load VM list only after dom0 salt call - some new VMs might be created
+    qc = qubes.qubes.QubesVmCollection()
+    qc.lock_db_for_reading()
+    qc.load()
+    qc.unlock_db()
+
+    targets = []
+    if args.templates:
+        targets = [vm for vm in qc.values() if vm.is_template()]
+    elif args.app:
+        targets = [vm for vm in qc.values() if vm.is_appvm()]
+    elif args.targets:
+        names = args.targets.split(',')
+        targets = [vm for vm in qc.values() if vm.name in names]
+    elif args.all:
+        # all but DispVMs
+        targets = [vm for vm in qc.values() if not vm.is_disposablevm()]
+
+    # remove dom0 - already handled
+    if qc[0] in targets:
+        targets.remove(qc[0])
+
+    if args.show_output and args.force_color:
+        args.command.insert(0, '--force-color')
+
+    # templates first
+    vms_to_go = [vm for vm in targets if vm.is_template()]
+    runner = qubessalt.ManageVMRunner(qc, vms_to_go, args.command,
+        show_output=args.show_output, force_color=args.force_color)
+    runner.run()
+    # then non-templates (AppVMs)
+    vms_to_go = [vm for vm in targets if not vm.is_template()]
+    runner = qubessalt.ManageVMRunner(qc, vms_to_go, args.command,
+        show_output=args.show_output, force_color=args.force_color)
+    runner.run()
+
+    # TODO: return meaningful exit code
 
 if __name__ == '__main__':
-    salt_call() 
+    # --dom0-only is a passthrough to salt-call
+    if len(sys.argv) > 1 and sys.argv[1] == '--dom0-only':
+        try:
+            import qubes.mgmt.patches
+        except ImportError:
+            pass
+        from salt.scripts import salt_call
+        sys.argv[1] = '--local'
+        salt_call()
+    else:
+        main()
