@@ -5,6 +5,7 @@
 #export DH_VERBOSE=1
 
 export DESTDIR=$(shell pwd)/debian/qubes-mgmt-salt-config
+export DESTDIR_VM=$(shell pwd)/debian/qubes-mgmt-salt-vm-connector
 
 %:
 	dh $@
@@ -14,6 +15,7 @@ override_dh_auto_build:
 
 override_dh_auto_install:
 	make install DESTDIR=$(DESTDIR) BINDIR=/usr/bin SYSCONFDIR=/etc
+	make install-vm DESTDIR=$(DESTDIR_VM) BINDIR=/usr/bin SYSCONFDIR=/etc
 
 override_dh_fixperms:
 	dh_fixperms -a -Xsrv -Xminion.d

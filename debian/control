@@ -68,6 +68,13 @@ Depends:
     qubes-mgmt-salt-vm-python-pip
 Description: All Qubes+Salt Management VM formulas
 
+Package: qubes-mgmt-salt-vm-connector
+Section: admin
+Architecture: all
+Depends:
+    salt-ssh
+Description: Interface for managing VM from dom0
+
 Package: qubes-mgmt-salt-shared-formulas
 Section: admin
 Architecture: all
