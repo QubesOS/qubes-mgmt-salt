@@ -1,3 +1,21 @@
+qubes-mgmt-salt (3.2.0-1) wheezy; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Render top.sls based on plain list of tops (if present)
+  * Add python-yaml to build dependencies
+
+  [ M. Vefa Bicakci ]
+  * builder.conf: Add python-yaml or PyYAML depending on host
+    distribution
+
+  [ Marek Marczykowski-Górecki ]
+  * Extend qubesctl to configure also VMs
+  * Add debian packaging for vm-connector
+  * Drop +salt template flavor
+  * dom0: initialize minion_id
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 18 May 2016 02:51:42 +0200
+
 qubes-mgmt-salt (3.1.1-1) wheezy; urgency=medium
 
   [ Jason Mehring ]
