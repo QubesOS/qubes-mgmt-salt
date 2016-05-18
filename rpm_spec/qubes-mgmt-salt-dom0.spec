@@ -49,6 +49,9 @@ ln -sf . %{name}-%{version}
 %install
 
 %post
+if [ ! -r /etc/salt/minion_id ]; then
+    echo -n `hostname` > /etc/salt/minion_id
+fi
 qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
 qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
