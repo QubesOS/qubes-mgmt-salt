@@ -32,6 +32,8 @@ import sys
 import time
 import yaml
 import qubes.qubes
+import salt.client
+import salt.config
 
 
 class ManageVM(object):
@@ -193,6 +195,11 @@ class ManageVMRunner(object):
         self.max_concurrency = max_concurrency
         self.show_output = show_output
         self.force_color = force_color
+        self._opts = salt.config.minion_config('/etc/salt/minion')
+        self._opts['file_client'] = 'local'
+
+        # this do patch already imported salt modules
+        import qubes.mgmt.patches
 
     def collect_result(self, result_tuple):
         name, result = result_tuple
@@ -209,13 +216,11 @@ class ManageVMRunner(object):
             print name + ": " + result
 
     def has_config(self, vm):
-        p = subprocess.Popen(['qubesctl', '--dom0-only', '--out=yaml',
-            '-l', 'quiet',
-            '--id={}'.format(vm.name), 'state.show_top'],
-            stdout=subprocess.PIPE
-        )
-        (stdout, _) = p.communicate()
-        return stdout != 'local: {}\n'
+        opts = self._opts.copy()
+        opts['id'] = vm.name
+        caller = salt.client.Caller(mopts=opts)
+        top = caller.function('state.show_top')
+        return bool(top)
 
     def run(self):
         pool = multiprocessing.Pool(self.max_concurrency)
