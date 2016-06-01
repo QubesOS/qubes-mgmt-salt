@@ -82,7 +82,7 @@ mgmt-salt-debian-prep::
 	    $(eval version    = $(shell $(DEBIAN_PARSER) changelog --package-version $(changelog))) \
 	    $(eval package    = $(shell $(DEBIAN_PARSER) changelog --package-name $(changelog))) \
 	    $(eval orig_file  = $(_CHROOT_SRC)/../$(package)_$(version).orig.tar.gz) \
-	    $(eval tar_opts   = --exclude-vcs --exclude=./pkgs --exclude=./*.vm --exclude=./*.dom0 --exclude=./debian* --exclude=./rpm_spec) \
+	    $(eval tar_opts   = --exclude-vcs --exclude=./pkgs --exclude=./*.vm --exclude=./*.dom0 --exclude=./debian.*) \
 	    -$(shell $(MGMT_PLUGIN_DIR)/debian-quilt $(ORIG_SRC)/series-debian-vm.conf $(_CHROOT_SRC)/debian/patches) \
 	    $(shell tar cfz $(orig_file) $(tar_opts) -C $(_CHROOT_SRC) .) \
 	)
