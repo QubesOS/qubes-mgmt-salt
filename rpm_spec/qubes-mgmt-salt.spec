@@ -14,7 +14,7 @@ Requires:  salt-minion
 Requires:  qubes-mgmt-salt-base
 BuildRequires: PyYAML
 BuildRequires: tree
-Requires(post): /usr/bin/qubesctl
+Requires(post): /usr/bin/salt-call
 
 %define _builddir %(pwd)
 
@@ -46,6 +46,7 @@ Requires:  salt
 Requires:  salt-minion
 BuildRequires: PyYAML
 BuildArch: noarch
+Requires(post): /usr/bin/salt-call
 
 %description config
 Qubes+Salt Management base configuration for SaltStack's Salt Infrastructure automation and management system.
@@ -55,7 +56,7 @@ Summary:   All Qubes+Salt Management shared (qubes-mgmt-all-*) formulas
 Group:     System administration tools
 BuildArch: noarch
 Requires:  qubes-mgmt-salt
-Requires(post): /usr/bin/qubesctl
+Requires(post): /usr/bin/salt-call
 
 %description shared-formulas
 Qubes+Salt Management shared (qubes-mgmt-all-*) formulas.
@@ -83,16 +84,16 @@ make install DESTDIR=%{buildroot} LIBDIR=%{_libdir} BINDIR=%{_bindir} SBINDIR=%{
 make install-dom0 DESTDIR=%{buildroot}
 
 %post
-qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
-qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
+salt-call --local saltutil.clear_cache -l quiet --out quiet > /dev/null || true
+salt-call --local saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
 %post config
-qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
-qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
+salt-call --local saltutil.clear_cache -l quiet --out quiet > /dev/null || true
+salt-call --local saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
 %post shared-formulas
-qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
-qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
+salt-call --local saltutil.clear_cache -l quiet --out quiet > /dev/null || true
+salt-call --local saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
 %files
 %defattr(-,root,root)
