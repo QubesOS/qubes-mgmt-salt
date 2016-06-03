@@ -7,7 +7,7 @@
 # --> qubesctl saltutil.refresh_pillar
 #
 
-{%- set default = {'base': {'*': ['topd']}}|yaml(False) %}
+{%- set default = {'base': {'*': ['topd.config']}}|yaml(False) %}
 
 {%- if salt.top is defined %}
   {%- set top = salt.top.get_top('salt://_tops', opts, saltenv=None)|yaml(False) %}
