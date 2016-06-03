@@ -48,10 +48,10 @@ ln -sf . %{name}-%{version}
 
 %install
 
+mkdir -p $RPM_BUILD_ROOT/etc/salt
+echo -n dom0 > $RPM_BUILD_ROOT/etc/salt/minion_id
+
 %post
-if [ ! -r /etc/salt/minion_id ] || grep -qx noname /etc/salt/minion_id; then
-    echo -n dom0 > /etc/salt/minion_id
-fi
 qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
 qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
@@ -61,6 +61,7 @@ qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
 %files
 %defattr(-,root,root)
+%config(noreplace) /etc/salt/minion_id
 
 %files formulas
 %defattr(-,root,root)
