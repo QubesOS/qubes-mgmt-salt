@@ -20,9 +20,6 @@
 case "${1}" in
     configure)
         # Update Salt Configuration
-        if [ ! -r /etc/salt/minion_id ] || grep -qx noname /etc/salt/minion_id; then
-            echo -n dom0 > /etc/salt/minion_id
-        fi
 
         qubesctl state.sls config -l quiet --out quiet > /dev/null || true
         qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
