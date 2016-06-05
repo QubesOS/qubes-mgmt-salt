@@ -34,6 +34,7 @@ import yaml
 import qubes.qubes
 import salt.client
 import salt.config
+import qubes.mgmt.patches
 
 
 class ManageVM(object):
