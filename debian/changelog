@@ -1,3 +1,19 @@
+qubes-mgmt-salt (3.2.1-1) wheezy; urgency=medium
+
+  * dom0: really initialize minion_id to 'dom0'
+  * qubesctl: speedup check whether VM has any config to be applied
+  * debian: exclude a little less from "orig" tarball
+  * travis: initial version
+  * fix default pillar top
+  * initialize minion_id earlier
+  * rpm: use salt-call --local instead of qubesctl
+  * fixup! initialize minion_id earlier
+  * sync default minion.d/f_defaults.conf with final generated one
+  * Drop 'state.sls config' call
+  * qubesctl: apply salt backports
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 07 Jun 2016 06:04:27 +0200
+
 qubes-mgmt-salt (3.2.0-1) wheezy; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
