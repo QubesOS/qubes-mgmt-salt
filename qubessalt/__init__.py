@@ -22,6 +22,7 @@
 # USA.
 #
 import argparse
+import logging
 import multiprocessing
 import os
 import pipes
@@ -36,12 +37,24 @@ import salt.client
 import salt.config
 import qubes.mgmt.patches
 
+FORMAT_LOG = '%(asctime)s %(message)s'
+LOGPATH = '/var/log/qubes'
+
+formatter_log = logging.Formatter(FORMAT_LOG)
 
 class ManageVM(object):
     def __init__(self, qc, vm, mgmt_template=None):
         super(ManageVM, self).__init__()
         self.vm = vm
         self.qc = qc
+        self.log = logging.getLogger('qubessalt.vm.' + vm.name)
+        handler_log = logging.FileHandler(
+            os.path.join(LOGPATH, 'mgmt-{}.log'.format(vm.name)),
+            encoding='utf-8')
+        handler_log.setFormatter(formatter_log)
+        self.log.addHandler(handler_log)
+
+        self.log.propagate = False
         if mgmt_template is not None:
             self.mgmt_template = mgmt_template
         else:
@@ -95,6 +108,7 @@ class ManageVM(object):
         return output_dir
 
     def salt_call(self, command='state.highstate', return_output=False):
+        self.log.info('calling \'{}\'...'.format(command))
         self.qc.lock_db_for_writing()
         self.qc.load()
         tpl = self.mgmt_template
@@ -141,13 +155,15 @@ class ManageVM(object):
             p = dispvm.run_service('qubes.SaltLinuxVM', passio_popen=True,
                 gui=False)
             (stdout, _) = p.communicate(self.vm.name + '\n' + command + '\n')
+            for line in stdout.splitlines():
+                self.log.info('output: %s', line)
+            self.log.info('exit code: %d', p.returncode)
             if return_output and stdout:
                 lines = stdout.splitlines()
                 if lines[0].count(self.vm.name + ':') == 1:
                     lines = lines[1:]
                 return_data = lines
             else:
-                # TODO consider saving output to some log file
                 return_data = "OK" if p.returncode == 0 else "ERROR"
             if self.vm.is_running() and not initially_running:
                 self.vm.shutdown()
