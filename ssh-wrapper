@@ -29,10 +29,29 @@ import sys
 
 def ssh(args):
     assert args[1] == '/bin/sh'
-    os.execl('/usr/bin/qrexec-client-vm',
-        'qrexec-client-vm', args[0], 'qubes.VMShell')
-    return 1
+    # WARNING: this doesn't support interactive communication, just sending
+    # script through stdin in one go and return its output
+    stdin_data = sys.stdin.read()
+    # Currently when managing VM through  qubesctl  (so, wrapped  salt-ssh ),
+    # it checks for  scp binary presence in the target VM. In our case it
+    # doesn't make sense, since our wrapper uses qubes.Filecopy qrexec
+    # service instead - so scp isn't required at all.
 
+    # This check is hardcoded in salt thin minion wrapper, so probably not
+    # easy to disable. But it is possible to simulate scp binary
+    # presence, by adding additional directory to PATH with a dummy scp file.
+    # So lets go this way, instead of requiring scp being installed in all
+    # the templates.
+    stdin_data = (
+        "mkdir -p /tmp/salt-shim-sandbox\n"
+        "ln -s /bin/true /tmp/salt-shim-sandbox/scp\n"
+        "export PATH=\"$PATH:/tmp/salt-shim-sandbox\"\n"
+        + stdin_data
+    )
+    p = subprocess.Popen(['qrexec-client-vm', args[0], 'qubes.VMShell'],
+        stdin=subprocess.PIPE)
+    p.communicate(stdin_data)
+    return p.returncode
 
 def scp(args):
     assert len(args) == 2 and args[1].count(':') == 1
