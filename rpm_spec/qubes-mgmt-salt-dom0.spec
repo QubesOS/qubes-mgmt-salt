@@ -15,7 +15,6 @@ Requires:  qubes-mgmt-salt-dom0-update
 Requires:  qubes-mgmt-salt-dom0-virtual-machines
 BuildRequires: PyYAML
 BuildRequires: tree
-Requires(post): /usr/bin/qubesctl
 Conflicts:  qubes-mgmt-salt-vm
 
 %define _builddir %(pwd)
@@ -32,7 +31,6 @@ Requires:  qubes-mgmt-salt-dom0
 Requires:  qubes-mgmt-salt-dom0-qvm
 Requires:  qubes-mgmt-salt-dom0-update
 Requires:  qubes-mgmt-salt-dom0-virtual-machines
-Requires(post): /usr/bin/qubesctl
 
 %description formulas
 Qubes+Salt Management dom0 formulas.
@@ -50,14 +48,6 @@ ln -sf . %{name}-%{version}
 
 mkdir -p $RPM_BUILD_ROOT/etc/salt
 echo -n dom0 > $RPM_BUILD_ROOT/etc/salt/minion_id
-
-%post
-qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
-qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
-
-%post formulas
-qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
-qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
 %files
 %defattr(-,root,root)

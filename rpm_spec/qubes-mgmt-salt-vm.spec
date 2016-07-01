@@ -26,7 +26,6 @@ Group:     System administration tools
 BuildArch: noarch
 Requires:  qubes-mgmt-salt
 Requires:  qubes-mgmt-salt-vm
-Requires(post): /usr/bin/qubesctl
 #Requires:  qubes-mgmt-salt-vm-python-pip
 
 %description formulas
@@ -52,14 +51,6 @@ ln -sf . %{name}-%{version}
 
 %install
 make install-vm DESTDIR=%{buildroot}
-
-%post
-qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
-qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
-
-%post formulas
-qubesctl saltutil.clear_cache -l quiet --out quiet > /dev/null || true
-qubesctl saltutil.sync_all refresh=true -l quiet --out quiet > /dev/null || true
 
 %files
 %defattr(-,root,root)
