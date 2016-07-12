@@ -194,9 +194,12 @@ def run_one(vmname, command, show_output):
     if vm is None:
         return vmname, "ERROR (vm not found)"
     runner = ManageVM(qc, vm)
-    result = runner.salt_call(
-        ' '.join([pipes.quote(word) for word in command]),
-        return_output=show_output)
+    try:
+        result = runner.salt_call(
+            ' '.join([pipes.quote(word) for word in command]),
+            return_output=show_output)
+    except Exception as e:
+        return vmname, "ERROR (exception {})".format(str(e))
     return vm.name, result
 
 
