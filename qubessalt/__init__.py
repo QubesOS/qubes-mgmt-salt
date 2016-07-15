@@ -21,7 +21,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
 # USA.
 #
-import argparse
 import logging
 import multiprocessing
 import os
@@ -32,10 +31,11 @@ import subprocess
 import sys
 import time
 import yaml
-import qubes.qubes
 import salt.client
 import salt.config
+import qubes.exc
 import qubes.mgmt.patches
+import qubes.vm.dispvm
 
 FORMAT_LOG = '%(asctime)s %(message)s'
 LOGPATH = '/var/log/qubes'
@@ -43,10 +43,10 @@ LOGPATH = '/var/log/qubes'
 formatter_log = logging.Formatter(FORMAT_LOG)
 
 class ManageVM(object):
-    def __init__(self, qc, vm, mgmt_template=None):
+    def __init__(self, app, vm, mgmt_template=None, mgmt_dispvm):
         super(ManageVM, self).__init__()
         self.vm = vm
-        self.qc = qc
+        self.app = app
         self.log = logging.getLogger('qubessalt.vm.' + vm.name)
         handler_log = logging.FileHandler(
             os.path.join(LOGPATH, 'mgmt-{}.log'.format(vm.name)),
@@ -58,7 +58,7 @@ class ManageVM(object):
         if mgmt_template is not None:
             self.mgmt_template = mgmt_template
         else:
-            self.mgmt_template = self.qc.get_default_template()
+            self.mgmt_template = self.app.default_template()
 
     def prepare_salt_config_for_vm(self):
         tmpdir = tempfile.mkdtemp()
@@ -75,7 +75,7 @@ class ManageVM(object):
         pillar_data = pillar_data['local']
         # remove source pillar files
         # TODO: remove also pillar modules
-        for env, roots in pillar_data['master']['pillar_roots'].iteritems():
+        for _, roots in pillar_data['master']['pillar_roots'].iteritems():
             for root in roots:
                 # do not use os.path.join on purpose - root is absolute path
                 pillar_path = tmpdir + root
@@ -108,31 +108,25 @@ class ManageVM(object):
         return output_dir
 
     def salt_call(self, command='state.highstate', return_output=False):
-        self.log.info('calling \'{}\'...'.format(command))
-        self.qc.lock_db_for_writing()
-        self.qc.load()
+        self.log.info('calling \'%s\'...', command)
         tpl = self.mgmt_template
 
         name = 'disp-mgmt-{}'.format(self.vm.name)
         # name is limited to 31 chars
         if len(name) > 31:
             name = name[:31]
-        dispvm = self.qc.get_vm_by_name(name)
-        if dispvm is None:
-            # FIXME: this should be DisposableVm type in core3
-            dispvm = self.qc.add_new_vm('QubesAppVm',
-                name=name,
-                label=qubes.qubes.QubesVmLabels['red'],
-                template=tpl,
+        try:
+            dispvm = self.app.domains[name]
+        except KeyError:
+            dispvm = qubes.vm.dispvm.DispVM.from_appvm(
+                appvmtpl,
                 netvm=None,
-                uses_default_netvm=False,
                 internal=True)
             create = True
-            self.qc.save()
+            self.app.save()
         else:
             create = False
         qrexec_policy(dispvm.name, self.vm.name, True)
-        self.qc.unlock_db()
         return_data = "NO RESULT"
         try:
             initially_running = self.vm.is_running()
@@ -149,7 +143,7 @@ class ManageVM(object):
                 gui=False)
             shutil.rmtree(salt_config)
             if retcode != 0:
-                raise qubes.QubesException(
+                raise qubes.exc.QubesException(
                     "Failed to copy Salt configuration to {}".
                     format(dispvm.name))
             p = dispvm.run_service('qubes.SaltLinuxVM', passio_popen=True,
@@ -172,28 +166,17 @@ class ManageVM(object):
                     time.sleep(1)
         finally:
             qrexec_policy(dispvm.name, self.vm.name, False)
-            try:
-                dispvm.force_shutdown()
-            except qubes.qubes.QubesException:
-                pass
-            dispvm.remove_from_disk()
-            self.qc.lock_db_for_writing()
-            self.qc.load()
-            self.qc.pop(dispvm.qid)
-            self.qc.save()
-            self.qc.unlock_db()
+            dispvm.cleanup
         return return_data
 
 
 def run_one(vmname, command, show_output):
-    qc = qubes.qubes.QubesVmCollection()
-    qc.lock_db_for_reading()
-    qc.load()
-    qc.unlock_db()
-    vm = qc.get_vm_by_name(vmname)
-    if vm is None:
+    app = qubes.Qubes()
+    try:
+        vm = app.domains[vmname]
+    except KeyError:
         return vmname, "ERROR (vm not found)"
-    runner = ManageVM(qc, vm)
+    runner = ManageVM(app, vm)
     try:
         result = runner.salt_call(
             ' '.join([pipes.quote(word) for word in command]),
@@ -206,11 +189,11 @@ def run_one(vmname, command, show_output):
 class ManageVMRunner(object):
     """Call salt in multiple VMs at the same time"""
 
-    def __init__(self, qc, vms, command, max_concurrency=4, show_output=False,
+    def __init__(self, app, vms, command, max_concurrency=4, show_output=False,
             force_color=False):
         super(ManageVMRunner, self).__init__()
         self.vms = vms
-        self.qc = qc
+        self.app = app
         self.command = command
         self.max_concurrency = max_concurrency
         self.show_output = show_output
@@ -219,7 +202,7 @@ class ManageVMRunner(object):
         self._opts['file_client'] = 'local'
 
         # this do patch already imported salt modules
-        import qubes.mgmt.patches
+        import qubes.mgmt.patches  # NOQA
 
     def collect_result(self, result_tuple):
         name, result = result_tuple
