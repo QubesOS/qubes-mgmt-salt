@@ -44,7 +44,7 @@ def ssh(args):
     # the templates.
     stdin_data = (
         "mkdir -p /tmp/salt-shim-sandbox\n"
-        "ln -s /bin/true /tmp/salt-shim-sandbox/scp\n"
+        "ln -sf /bin/true /tmp/salt-shim-sandbox/scp\n"
         "export PATH=\"$PATH:/tmp/salt-shim-sandbox\"\n"
         + stdin_data
     )
