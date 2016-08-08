@@ -2,7 +2,7 @@
 
 package-name:       qubes-mgmt-salt-config
 saltenv:            base
-version:            3.2.3
+version:            3.2.4
 release:            1
 name:               mgmt-salt-config
 formula_dir:        /

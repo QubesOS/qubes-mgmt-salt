@@ -1,3 +1,9 @@
+qubes-mgmt-salt (3.2.4-1) wheezy; urgency=medium
+
+  * ssh-wrapper: don't fail if dummy scp already exists
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 08 Aug 2016 14:37:39 +0200
+
 qubes-mgmt-salt (3.2.3-1) wheezy; urgency=medium
 
   * qubesctl: slightly improve error reporting
