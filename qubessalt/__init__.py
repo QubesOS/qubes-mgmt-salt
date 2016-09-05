@@ -43,7 +43,7 @@ LOGPATH = '/var/log/qubes'
 formatter_log = logging.Formatter(FORMAT_LOG)
 
 class ManageVM(object):
-    def __init__(self, app, vm, mgmt_template=None, mgmt_dispvm):
+    def __init__(self, app, vm, mgmt_template=None):
         super(ManageVM, self).__init__()
         self.vm = vm
         self.app = app
@@ -109,7 +109,7 @@ class ManageVM(object):
 
     def salt_call(self, command='state.highstate', return_output=False):
         self.log.info('calling \'%s\'...', command)
-        tpl = self.mgmt_template
+        appvmtpl = self.mgmt_template
 
         name = 'disp-mgmt-{}'.format(self.vm.name)
         # name is limited to 31 chars
@@ -166,7 +166,7 @@ class ManageVM(object):
                     time.sleep(1)
         finally:
             qrexec_policy(dispvm.name, self.vm.name, False)
-            dispvm.cleanup
+            dispvm.cleanup()
         return return_data
 
 
@@ -181,7 +181,7 @@ def run_one(vmname, command, show_output):
         result = runner.salt_call(
             ' '.join([pipes.quote(word) for word in command]),
             return_output=show_output)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         return vmname, "ERROR (exception {})".format(str(e))
     return vm.name, result
 
@@ -202,7 +202,7 @@ class ManageVMRunner(object):
         self._opts['file_client'] = 'local'
 
         # this do patch already imported salt modules
-        import qubes.mgmt.patches  # NOQA
+        import qubes.mgmt.patches
 
     def collect_result(self, result_tuple):
         name, result = result_tuple
