@@ -58,7 +58,7 @@ class ManageVM(object):
         if mgmt_template is not None:
             self.mgmt_template = mgmt_template
         else:
-            self.mgmt_template = self.app.default_template()
+            self.mgmt_template = self.app.default_dispvm
 
     def prepare_salt_config_for_vm(self):
         tmpdir = tempfile.mkdtemp()
@@ -120,18 +120,17 @@ class ManageVM(object):
         except KeyError:
             dispvm = qubes.vm.dispvm.DispVM.from_appvm(
                 appvmtpl,
+                name=name,
                 netvm=None,
                 internal=True)
             create = True
-            self.app.save()
+            self.app = dispvm.app
         else:
             create = False
         qrexec_policy(dispvm.name, self.vm.name, True)
         return_data = "NO RESULT"
         try:
             initially_running = self.vm.is_running()
-            if create:
-                dispvm.create_on_disk(verbose=False)
             if not dispvm.is_running():
                 dispvm.start(start_guid=False)
             # Copy whole Salt configuration
