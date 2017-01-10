@@ -89,9 +89,6 @@ make install-dom0 DESTDIR=%{buildroot}
 
 %files config
 %defattr(-,root,root)
-%attr(750, root, root) %dir /etc/salt
-%attr(750, root, root) %dir /etc/salt/minion.d
-%attr(750, root, root) %dir /etc/salt/spm.repos.d
 %config(noreplace) /etc/salt/minion.d/f_defaults.conf
 /etc/salt/minion.dist
 /etc/salt/minion.dom0.conf
