@@ -57,14 +57,13 @@ def scp(args):
     assert len(args) == 2 and args[1].count(':') == 1
     src_path = args[0]
     (dst_host, dst_path) = args[1].split(':')
-    subprocess.check_call(['qvm-copy-to-vm', dst_host, src_path])
+    source_content = open(src_path, 'rb').read()
     p = subprocess.Popen(['qrexec-client-vm', dst_host, 'qubes.VMShell'],
         stdin=subprocess.PIPE
     )
-    p.communicate('sudo mv "/home/user/QubesIncoming/{}/{}" "{}"\n'.format(
-        socket.gethostname(),
-        os.path.basename(src_path),
-        dst_path
+    p.communicate('cat > "{}"\n{}'.format(
+        dst_path,
+        source_content
     ))
     if p.returncode != 0:
         raise RuntimeError('Failed to write target file {}'.format(dst_path))
