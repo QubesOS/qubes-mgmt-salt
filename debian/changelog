@@ -1,3 +1,12 @@
+qubes-mgmt-salt (4.0.1-1) unstable; urgency=medium
+
+  * travis: drop debootstrap workaround
+  * rpm: don't own salt directories
+  * ssh-wrapper: don't use qvm-copy-to-vm
+  * Drop leftovers of +salt template flavor
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 06 Apr 2017 14:35:23 +0200
+
 qubes-mgmt-salt (4.0.0-1) wheezy; urgency=medium
 
   [ Bahtiar `kalkin-` Gadimov ]
