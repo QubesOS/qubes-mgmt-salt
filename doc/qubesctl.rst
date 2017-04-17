@@ -1,0 +1,46 @@
+=========
+qubesctl
+=========
+
+NAME
+====
+qubesctl - directly call salt commands from dom0
+
+qubesctl should be run instead of salt-call --local, and accepts the
+same arguments as that tool.
+
+SYNOPSIS
+========
+| qubesctl [options]
+
+OPTIONS
+=======
+-h, --help
+    Show this help message and exit
+
+--show-output
+Show output of management commands
+
+--force-colour
+Show output in colour, and allow control characters from qubes.
+This option is UNSAFE
+
+--skip-dom0
+Skip dom0 configuration.
+
+--targets <qubes>
+Comma separated list of qubes to target
+
+--templates
+Target all templates
+
+--app
+Target all AppVMs
+
+--all
+Target all non disposable VMs, (Templates and AppVMs)
+
+
+AUTHORS
+=======
+| unman <unman@thirdeyesecurity.org> 

@@ -25,6 +25,9 @@ include Makefile.vars
 # This file is copied in from mgmt-salt
 include Makefile.install
 
+build:
+	make manpages -C doc
+
 .PHONY: install-custom
 install-custom:: 
 	# Install qubesctl
@@ -47,6 +50,7 @@ install-vm:
 .PHONY: install-dom0
 install-dom0:
 	python setup.py install -O1 --root $(DESTDIR)
+	make install -C doc
 
 .PHONY: get-sources
 get-sources: GIT_REPOS := $(addprefix $(SRC_DIR)/,$(MGMT_SALT_COMPONENTS) mgmt-salt-app-saltstack)

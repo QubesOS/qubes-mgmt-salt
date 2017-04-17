@@ -14,6 +14,7 @@ Requires:  salt-minion
 Requires:  qubes-mgmt-salt-base
 BuildRequires: PyYAML
 BuildRequires: tree
+BuildRequires: pandoc
 
 %define _builddir %(pwd)
 
@@ -82,6 +83,9 @@ make install-dom0 DESTDIR=%{buildroot}
 
 %files
 %defattr(-,root,root)
+%attr(766, root, root)
+%{_mandir}/man1/qubesctl.1*
+
 
 %files config
 %defattr(-,root,root)
