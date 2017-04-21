@@ -1,3 +1,17 @@
+qubes-mgmt-salt (3.2.5-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Drop leftovers of +salt template flavor
+
+  [ unman ]
+  * Fix some typos in qubesctl help
+  * Provide manpage for qubesctl
+
+  [ Marek Marczykowski-Górecki ]
+  * travis: drop debootstrap workaround
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 21 Apr 2017 23:41:07 +0200
+
 qubes-mgmt-salt (3.2.4-1) wheezy; urgency=medium
 
   * ssh-wrapper: don't fail if dummy scp already exists
