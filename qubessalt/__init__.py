@@ -33,9 +33,9 @@ import time
 import yaml
 import salt.client
 import salt.config
-import qubes.exc
-import qubes.mgmt.patches
-import qubes.vm.dispvm
+import qubesadmin.exc
+import qubesadmin.vm
+import qubessaltpatches
 
 FORMAT_LOG = '%(asctime)s %(message)s'
 LOGPATH = '/var/log/qubes'
@@ -118,7 +118,7 @@ class ManageVM(object):
         try:
             dispvm = self.app.domains[name]
         except KeyError:
-            dispvm = qubes.vm.dispvm.DispVM.from_appvm(
+            dispvm = qubesadmin.vm.DispVM.from_appvm(
                 appvmtpl,
                 name=name,
                 netvm=None,
@@ -142,7 +142,7 @@ class ManageVM(object):
                 gui=False)
             shutil.rmtree(salt_config)
             if retcode != 0:
-                raise qubes.exc.QubesException(
+                raise qubesadmin.exc.QubesException(
                     "Failed to copy Salt configuration to {}".
                     format(dispvm.name))
             p = dispvm.run_service('qubes.SaltLinuxVM', passio_popen=True,
@@ -170,7 +170,7 @@ class ManageVM(object):
 
 
 def run_one(vmname, command, show_output):
-    app = qubes.Qubes()
+    app = qubesadmin.Qubes()
     try:
         vm = app.domains[vmname]
     except KeyError:
@@ -201,7 +201,7 @@ class ManageVMRunner(object):
         self._opts['file_client'] = 'local'
 
         # this do patch already imported salt modules
-        import qubes.mgmt.patches
+        import qubessaltpatches
 
     def collect_result(self, result_tuple):
         name, result = result_tuple
@@ -215,7 +215,7 @@ class ManageVMRunner(object):
             sys.stdout.write('\n'.join(['  ' + line for line in result]))
             sys.stdout.write('\n')
         else:
-            print name + ": " + result
+            print(name + ": " + result)
 
     def has_config(self, vm):
         opts = self._opts.copy()

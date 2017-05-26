@@ -3,14 +3,14 @@
 Directly call a salt command in the modules, does not require a running salt
 minion to run.
 '''
+from __future__ import print_function
 import argparse
 
 import sys
 import subprocess
 import qubessalt
-import qubes
-import qubes.vm.templatevm
-import qubes.vm.appvm
+import qubesadmin
+import qubesadmin.vm
 
 
 def main(args=None):  # pylint: disable=missing-docstring
@@ -40,26 +40,26 @@ def main(args=None):  # pylint: disable=missing-docstring
             # TODO handle args.show_output - if false, log to some file
             subprocess.check_call(['qubesctl', '--dom0-only'] + args.command)
         except subprocess.CalledProcessError:
-            print >>sys.stderr, "DOM0 configuration failed, not continuing"
+            print("DOM0 configuration failed, not continuing", file=sys.stderr)
             return 1
 
-    app = qubes.Qubes()
+    app = qubesadmin.Qubes()
     # Load VM list only after dom0 salt call - some new VMs might be created
 
     targets = []
     if args.templates:
         targets = [vm for vm in app.domains.values()
-                   if isinstance(vm, qubes.vm.templatevm.TemplateVM)]
+                   if isinstance(vm, qubesadmin.vm.TemplateVM)]
     elif args.app:
         targets = [vm for vm in app.domains.values()
-                   if isinstance(vm, qubes.vm.appvm.AppVM)]
+                   if isinstance(vm, qubesadmin.vm.AppVM)]
     elif args.targets:
         names = args.targets.split(',')
         targets = [vm for vm in app.domains.values() if vm.name in names]
     elif args.all:
         # all but DispVMs
         targets = [vm for vm in app.domains.values() if not
-                isinstance(vm, qubes.vm.dispvm.DispVM)]
+                isinstance(vm, qubesadmin.vm.DispVM)]
 
     # remove dom0 - already handled
     targets = [vm for vm in targets if vm.name != 'dom0']
@@ -69,13 +69,13 @@ def main(args=None):  # pylint: disable=missing-docstring
 
     # templates first
     vms_to_go = [vm for vm in targets
-                 if isinstance(vm, qubes.vm.templatevm.TemplateVM)]
+                 if isinstance(vm, qubesadmin.vm.TemplateVM)]
     runner = qubessalt.ManageVMRunner(app, vms_to_go, args.command,
         show_output=args.show_output, force_color=args.force_color)
     runner.run()
     # then non-templates (AppVMs)
     vms_to_go = [vm for vm in targets
-                 if not isinstance(vm, qubes.vm.templatevm.TemplateVM)]
+                 if not isinstance(vm, qubesadmin.vm.TemplateVM)]
     runner = qubessalt.ManageVMRunner(app, vms_to_go, args.command,
         show_output=args.show_output, force_color=args.force_color)
     runner.run()
