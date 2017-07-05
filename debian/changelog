@@ -1,3 +1,15 @@
+qubes-mgmt-salt (4.0.2-1) unstable; urgency=medium
+
+  [ unman ]
+  * Fix some typos in qubesctl help
+  * Provide manpage for qubesctl
+
+  [ Marek Marczykowski-Górecki ]
+  * Migrate qubesctl to Admin API (part 1)
+  * travis: switch to Qubes 4.0
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 05 Jul 2017 14:33:05 +0200
+
 qubes-mgmt-salt (4.0.1-1) unstable; urgency=medium
 
   * travis: drop debootstrap workaround
