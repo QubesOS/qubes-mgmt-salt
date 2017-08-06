@@ -21,8 +21,6 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 import argparse
-import os
-import socket
 import subprocess
 import sys
 
@@ -48,9 +46,15 @@ def ssh(args):
         "export PATH=\"$PATH:/tmp/salt-shim-sandbox\"\n"
         + stdin_data
     )
-    p = subprocess.Popen(['qrexec-client-vm', args[0], 'qubes.VMShell'],
+    p = subprocess.Popen(['qrexec-client-vm', args[0], 'qubes.VMRootShell'],
         stdin=subprocess.PIPE)
     p.communicate(stdin_data)
+    # if qubes.VMRootShell service not supported, fallback to qubes.VMShell and
+    # hope it will have appropriate permissions
+    if p.returncode == 127:
+        p = subprocess.Popen(['qrexec-client-vm', args[0], 'qubes.VMShell'],
+            stdin=subprocess.PIPE)
+        p.communicate(stdin_data)
     return p.returncode
 
 def scp(args):
@@ -58,13 +62,20 @@ def scp(args):
     src_path = args[0]
     (dst_host, dst_path) = args[1].split(':')
     source_content = open(src_path, 'rb').read()
-    p = subprocess.Popen(['qrexec-client-vm', dst_host, 'qubes.VMShell'],
-        stdin=subprocess.PIPE
-    )
+    p = subprocess.Popen(['qrexec-client-vm', dst_host, 'qubes.VMRootShell'],
+        stdin=subprocess.PIPE)
     p.communicate('cat > "{}"\n{}'.format(
         dst_path,
         source_content
     ))
+    # if qubes.VMRootShell service not supported, fallback to qubes.VMShell and
+    # hope it will have appropriate permissions
+    if p.returncode == 127:
+        p = subprocess.Popen(['qrexec-client-vm', dst_host, 'qubes.VMShell'],
+            stdin=subprocess.PIPE)
+        p.communicate('cat > "{}"\n{}'.format(
+            dst_path,
+            source_content))
     if p.returncode != 0:
         raise RuntimeError('Failed to write target file {}'.format(dst_path))
     return 0
@@ -76,8 +87,8 @@ def parse_opts(args):
     parser.add_argument('--version', '-V', action='store_true')
     (opts, args) = parser.parse_known_args(args)
     if opts.version:
-        print 'OpenSSH_6.6.1p1 qubes.VMShell wrapper, ' \
-              'OpenSSL 1.0.1k-fips 8 Jan 2015'
+        print('OpenSSH_6.6.1p1 qubes.VMShell wrapper, '
+              'OpenSSL 1.0.1k-fips 8 Jan 2015')
         sys.exit(0)
     return args
 

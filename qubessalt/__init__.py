@@ -240,7 +240,7 @@ class ManageVMRunner(object):
 
 
 def qrexec_policy(src, dst, allow):
-    for service in ('qubes.Filecopy', 'qubes.VMShell'):
+    for service in ('qubes.Filecopy', 'qubes.VMShell', 'qubes.VMRootShell'):
         with open('/etc/qubes-rpc/policy/{}'.format(service), 'r+') as policy:
             policy_rules = policy.readlines()
             line = "{} {} allow,user=root\n".format(src, dst)
