@@ -75,7 +75,7 @@ class ManageVM(object):
         pillar_data = pillar_data['local']
         # remove source pillar files
         # TODO: remove also pillar modules
-        for env, roots in pillar_data['master']['pillar_roots'].iteritems():
+        for _, roots in pillar_data['master']['pillar_roots'].items():
             for root in roots:
                 # do not use os.path.join on purpose - root is absolute path
                 pillar_path = tmpdir + root
@@ -88,7 +88,7 @@ class ManageVM(object):
             if opt in pillar_data['master'].keys():
                 master_conf[opt] = pillar_data['master'][opt]
         with open(os.path.join(output_dir, 'master'), 'w') as f:
-            f.write(yaml.dump(master_conf))
+            f.write(yaml.safe_dump(master_conf))
 
         # remove unneded pillar entries
         for entry in ['master', 'salt']:
@@ -99,10 +99,10 @@ class ManageVM(object):
         pillar_dir = os.path.join(output_dir, 'pillar')
         os.mkdir(pillar_dir)
         with open(os.path.join(pillar_dir, 'combined.sls'), 'w') as f:
-            f.write(yaml.dump(pillar_data))
+            f.write(yaml.safe_dump(pillar_data))
         # TODO only selected environments?
         with open(os.path.join(pillar_dir, 'top.sls'), 'w') as f:
-            f.write(yaml.dump(
+            f.write(yaml.safe_dump(
                 {'base':
                     {self.vm.name: ['combined']}}))
         return output_dir
