@@ -118,35 +118,32 @@ class ManageVM(object):
         try:
             dispvm = self.app.domains[name]
         except KeyError:
-            dispvm = qubesadmin.vm.DispVM.from_appvm(
-                appvmtpl,
-                name=name,
-                netvm=None,
-                internal=True)
-            create = True
-            self.app = dispvm.app
-        else:
-            create = False
+            dispvm = self.app.add_new_vm('DispVM',
+                template=appvmtpl,
+                label=appvmtpl.label,
+                name=name)
+            dispvm.features['internal'] = True
+            dispvm.features['gui'] = False
+            dispvm.netvm = None
+            dispvm.auto_cleanup = True
         qrexec_policy(dispvm.name, self.vm.name, True)
         return_data = "NO RESULT"
         try:
             initially_running = self.vm.is_running()
             if not dispvm.is_running():
-                dispvm.start(start_guid=False)
+                dispvm.start()
             # Copy whole Salt configuration
             salt_config = self.prepare_salt_config_for_vm()
             retcode = dispvm.run_service(
                 'qubes.Filecopy',
                 localcmd='/usr/lib/qubes/qfile-dom0-agent {}'.format(
-                    salt_config),
-                gui=False)
+                    salt_config)).wait()
             shutil.rmtree(salt_config)
             if retcode != 0:
                 raise qubesadmin.exc.QubesException(
                     "Failed to copy Salt configuration to {}".
                     format(dispvm.name))
-            p = dispvm.run_service('qubes.SaltLinuxVM', passio_popen=True,
-                gui=False)
+            p = dispvm.run_service('qubes.SaltLinuxVM')
             (stdout, _) = p.communicate(self.vm.name + '\n' + command + '\n')
             for line in stdout.splitlines():
                 self.log.info('output: %s', line)
@@ -165,7 +162,10 @@ class ManageVM(object):
                     time.sleep(1)
         finally:
             qrexec_policy(dispvm.name, self.vm.name, False)
-            dispvm.cleanup()
+            try:
+                dispvm.kill()
+            except qubesadmin.exc.QubesVMNotStartedError:
+                pass
         return return_data
 
 
