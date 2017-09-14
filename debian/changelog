@@ -1,3 +1,13 @@
+qubes-mgmt-salt (4.0.3-1) unstable; urgency=medium
+
+  * Adjust default minion configuration, so master config is included in
+    pillars
+  * minor fixes to qubessalt module used by qubesctl
+  * qubessalt/qubesctl: fix DispVM creation and starting
+  * qubesctl: prefer qubes.VMRootShell service
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 14 Sep 2017 02:46:48 +0200
+
 qubes-mgmt-salt (4.0.2-1) unstable; urgency=medium
 
   [ unman ]
