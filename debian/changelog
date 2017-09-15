@@ -1,3 +1,10 @@
+qubes-mgmt-salt (4.0.4-1) unstable; urgency=medium
+
+  * Make minion.dom0.conf really used
+  * Force 'systemd' service module in dom0
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 15 Sep 2017 13:49:05 +0200
+
 qubes-mgmt-salt (4.0.3-1) unstable; urgency=medium
 
   * Adjust default minion configuration, so master config is included in
