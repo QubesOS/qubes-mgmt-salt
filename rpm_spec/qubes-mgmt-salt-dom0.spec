@@ -46,12 +46,14 @@ ln -sf . %{name}-%{version}
 
 %install
 
-mkdir -p $RPM_BUILD_ROOT/etc/salt
+mkdir -p $RPM_BUILD_ROOT/etc/salt/minion.d
 echo -n dom0 > $RPM_BUILD_ROOT/etc/salt/minion_id
+ln -s ../minion.dom0.conf $RPM_BUILD_ROOT/etc/salt/minion.d/
 
 %files
 %defattr(-,root,root)
 %config(noreplace) /etc/salt/minion_id
+%config(noreplace) /etc/salt/minion.d/minion.dom0.conf
 
 %files formulas
 %defattr(-,root,root)
