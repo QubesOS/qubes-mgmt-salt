@@ -49,17 +49,17 @@ def main(args=None):  # pylint: disable=missing-docstring
     targets = []
     if args.templates:
         targets = [vm for vm in app.domains.values()
-                   if isinstance(vm, qubesadmin.vm.TemplateVM)]
+                   if vm.klass == 'TemplateVM']
     elif args.app:
         targets = [vm for vm in app.domains.values()
-                   if isinstance(vm, qubesadmin.vm.AppVM)]
+                   if vm.klass == 'AppVM']
     elif args.targets:
         names = args.targets.split(',')
         targets = [vm for vm in app.domains.values() if vm.name in names]
     elif args.all:
         # all but DispVMs
         targets = [vm for vm in app.domains.values() if not
-                isinstance(vm, qubesadmin.vm.DispVM)]
+                vm.klass == 'DispVM']
 
     # remove dom0 - already handled
     targets = [vm for vm in targets if vm.name != 'dom0']
@@ -69,13 +69,13 @@ def main(args=None):  # pylint: disable=missing-docstring
 
     # templates first
     vms_to_go = [vm for vm in targets
-                 if isinstance(vm, qubesadmin.vm.TemplateVM)]
+                 if vm.klass == 'TemplateVM']
     runner = qubessalt.ManageVMRunner(app, vms_to_go, args.command,
         show_output=args.show_output, force_color=args.force_color)
     runner.run()
     # then non-templates (AppVMs)
     vms_to_go = [vm for vm in targets
-                 if not isinstance(vm, qubesadmin.vm.TemplateVM)]
+                 if not vm.klass == 'TemplateVM']
     runner = qubessalt.ManageVMRunner(app, vms_to_go, args.command,
         show_output=args.show_output, force_color=args.force_color)
     runner.run()
