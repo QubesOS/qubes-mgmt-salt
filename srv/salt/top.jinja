@@ -68,8 +68,10 @@
 # merge_tops macro iterate over provided list of tops. Each entry should be a
 # path to proper salt top file
 {% macro merge_tops(tops) %}
-# output buffer - start with empty mapping
-{% set merged_top = {} %}
+# output buffer - start with empty mapping. Use single element array, because
+# of variable's scope issue (value set inside loop isn't visible outside, or
+# even in another loop iteration).
+{% set merged_top = [{}] %}
 
 # for each top:
 {% for top in tops %}
@@ -79,24 +81,23 @@
 {%- endload -%}
 # 2. Merge with output buffer (merged_top), saving result in new_merged_top
 {%- load_yaml as new_merged_top -%}
-{{ deep_merge(merged_top, single_top) }}
+{{ deep_merge(merged_top[0], single_top) }}
 {%- endload -%}
 # Some debugging
 {#
-Merging: {{ merged_top }}
+Merging: {{ merged_top[0] }}
 with: {{ single_top }}
 result: {{ new_merged_top }} 
 #}
 
 # 3. Override output buffer with new_merged_top
-{%- set merged_top = new_merged_top -%}
-
-# After processing the last one, return output. Must be here, because
-# merged_top is not available outside of loop scope
-{%- if loop.last %}
-{{ merged_top|yaml }}
-{% endif -%}
+{%- set _ = merged_top.pop() -%}
+{%- set _ = merged_top.append(new_merged_top) -%}
 
 {%- endfor -%}
+
+# After processing the last one, return output.
+{{ merged_top[0]|yaml }}
+
 {% endmacro %}
 
