@@ -20,7 +20,7 @@
 #        and cause conflicts with tops_d/* top configurations; therefore
 #        create any custom tops within the tops_d directory.
 
-{%- set default = {'base': {'*': ['topd']}}|yaml(False) %}
+{%- set default = {'base': {'*': ['topd']}}|yaml %}
 
 {% load_yaml as tops %}
 {% include "tops.yaml" ignore missing %}
@@ -33,8 +33,8 @@
 {%- set top = merge_tops(tops) -%}
 # otherwise, try to use salt.top module if present
 {%- elif salt.top is defined %}
-  {%- set top = salt.top.get_top('salt://_tops', opts, saltenv=None)|yaml(False) %}
-  {#- set status = salt.top.status(show_full_context())|yaml(False) #}
+  {%- set top = salt.top.get_top('salt://_tops', opts, saltenv=None)|yaml %}
+  {#- set status = salt.top.status(show_full_context())|yaml #}
 {%- endif %}
 
 {{ top if top is defined else default }}
