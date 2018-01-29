@@ -1,7 +1,6 @@
-%{!?version: %define version %(cat version)}
 
 Name:      qubes-mgmt-salt-dom0
-Version:   %{version}
+Version:   @VERSION@
 Release:   1%{?dist}
 Summary:   Qubes+Salt Management dom0 dependencies
 License:   GPL 2.0
@@ -17,7 +16,8 @@ BuildRequires: PyYAML
 BuildRequires: tree
 Conflicts:  qubes-mgmt-salt-vm
 
-%define _builddir %(pwd)
+
+Source0: qubes-mgmt-salt-%{version}.tar.gz
 
 %description
 Qubes+Salt Management dom0 dependencies.
@@ -36,11 +36,7 @@ Requires:  qubes-mgmt-salt-dom0-virtual-machines
 Qubes+Salt Management dom0 formulas.
 
 %prep
-# we operate on the current directory, so no need to unpack anything
-# symlink is to generate useful debuginfo packages
-rm -f %{name}-%{version}
-ln -sf . %{name}-%{version}
-%setup -T -D
+%setup -q -n qubes-mgmt-salt-%{version}
 
 %build
 

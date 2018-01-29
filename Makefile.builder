@@ -12,8 +12,8 @@ get-mgmt-debian-dir = \
 get-mgmt-rpm-spec = \
 	$(eval _spec_prefix = rpm_spec/qubes-$(COMPONENT)) \
 	$(strip \
-	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix).spec), $(_spec_prefix).spec) \
-	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix)-$(PACKAGE_SET).spec), $(_spec_prefix)-$(PACKAGE_SET).spec) \
+	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix).spec.in), $(_spec_prefix).spec.in) \
+	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix)-$(PACKAGE_SET).spec.in), $(_spec_prefix)-$(PACKAGE_SET).spec.in) \
 	)
 
 ifndef LOADING_PLUGINS
@@ -22,13 +22,13 @@ ifndef LOADING_PLUGINS
         ifneq ($(filter $(DISTRIBUTION), debian qubuntu),)
             DEBIAN_BUILD_DIRS := $(call get-mgmt-debian-dir)
         else
-            RPM_SPEC_FILES := $(call get-mgmt-rpm-spec)
+            RPM_SPEC_FILES := $(patsubst %.spec.in,%.spec,$(call get-mgmt-rpm-spec))
         endif
     else ifeq ($(PACKAGE_SET),vm)
         ifneq ($(filter $(DISTRIBUTION), debian qubuntu),)
             DEBIAN_BUILD_DIRS := $(call get-mgmt-debian-dir)
         else
-            RPM_SPEC_FILES := $(call get-mgmt-rpm-spec)
+            RPM_SPEC_FILES := $(patsubst %.spec.in,%.spec,$(call get-mgmt-rpm-spec))
         endif
     endif
 endif

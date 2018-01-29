@@ -1,7 +1,6 @@
-%{!?version: %define version %(cat version)}
 
 Name:      qubes-mgmt-salt-vm
-Version:   %{version}
+Version:   @VERSION@
 Release:   1%{?dist}
 Summary:   Qubes+Salt Management VM dependencies
 License:   GPL 2.0
@@ -15,7 +14,8 @@ BuildRequires: tree
 Requires(post): /usr/bin/qubesctl
 Conflicts:  qubes-mgmt-salt-dom0
 
-%define _builddir %(pwd)
+
+Source0: qubes-mgmt-salt-%{version}.tar.gz
 
 %description
 Qubes+Salt Management VM dependencies.
@@ -41,11 +41,7 @@ Requires:  salt-ssh
 Interface for managing VM from dom0
 
 %prep
-# we operate on the current directory, so no need to unpack anything
-# symlink is to generate useful debuginfo packages
-rm -f %{name}-%{version}
-ln -sf . %{name}-%{version}
-%setup -T -D
+%setup -q -n qubes-mgmt-salt-%{version}
 
 %build
 
