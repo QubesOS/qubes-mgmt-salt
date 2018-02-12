@@ -1,3 +1,16 @@
+qubes-mgmt-salt (3.2.6-1) unstable; urgency=medium
+
+  * ssh-wrapper: don't use qvm-copy-to-vm
+  * rpm: don't own salt directories
+  * Adjust default minion configuration, so master config is included in
+    pillars
+  * minor fixes to qubessalt module used by qubesctl
+  * Force 'systemd' service module in dom0
+  * Use more reliable "global variable" method in jinja template
+  * Don't pass argument to yaml filter in jinja2
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 12 Feb 2018 16:50:22 +0100
+
 qubes-mgmt-salt (3.2.5-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
