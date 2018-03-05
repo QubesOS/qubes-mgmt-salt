@@ -21,6 +21,10 @@ def main(args=None):  # pylint: disable=missing-docstring
         help='Force color output, allow control characters from VM, UNSAFE')
     parser.add_argument('--skip-dom0', action='store_true',
         help='Skip dom0 configuration (VM creation etc)')
+    parser.add_argument('--max-concurrency', action='store',
+        help='Maximum number of VMs configured simultaneously '
+             '(default: %(default)d)',
+        default=4)
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--targets', action='store',
         help='Comma separated list of VMs to target')
@@ -71,13 +75,15 @@ def main(args=None):  # pylint: disable=missing-docstring
     vms_to_go = [vm for vm in targets
                  if vm.klass == 'TemplateVM']
     runner = qubessalt.ManageVMRunner(app, vms_to_go, args.command,
-        show_output=args.show_output, force_color=args.force_color)
+        show_output=args.show_output, force_color=args.force_color,
+        max_concurrency=args.max_concurrency)
     runner.run()
     # then non-templates (AppVMs)
     vms_to_go = [vm for vm in targets
                  if not vm.klass == 'TemplateVM']
     runner = qubessalt.ManageVMRunner(app, vms_to_go, args.command,
-        show_output=args.show_output, force_color=args.force_color)
+        show_output=args.show_output, force_color=args.force_color,
+        max_concurrency=args.max_concurrency)
     runner.run()
 
     # TODO: return meaningful exit code

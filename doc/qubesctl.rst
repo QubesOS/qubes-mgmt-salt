@@ -40,6 +40,9 @@ Target all AppVMs
 --all
 Target all non disposable VMs, (Templates and AppVMs)
 
+--max-concurrency <number>
+Maximum number of VMs configured simultaneously. Default: 4
+
 
 AUTHORS
 =======
