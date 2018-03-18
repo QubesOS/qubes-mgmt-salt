@@ -12,8 +12,8 @@ get-mgmt-debian-dir = \
 get-mgmt-rpm-spec = \
 	$(eval _spec_prefix = rpm_spec/qubes-$(COMPONENT)) \
 	$(strip \
-	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix).spec.in), $(_spec_prefix).spec.in) \
-	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix)-$(PACKAGE_SET).spec.in), $(_spec_prefix)-$(PACKAGE_SET).spec.in) \
+	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix).spec.in), $(_spec_prefix).spec) \
+	    $(if $(wildcard $(ORIG_SRC)/$(_spec_prefix)-$(PACKAGE_SET).spec.in), $(_spec_prefix)-$(PACKAGE_SET).spec) \
 	)
 
 ifndef LOADING_PLUGINS
