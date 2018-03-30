@@ -24,7 +24,7 @@ def main(args=None):  # pylint: disable=missing-docstring
     parser.add_argument('--max-concurrency', action='store',
         help='Maximum number of VMs configured simultaneously '
              '(default: %(default)d)',
-        default=4)
+        type=int, default=4)
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--targets', action='store',
         help='Comma separated list of VMs to target')
