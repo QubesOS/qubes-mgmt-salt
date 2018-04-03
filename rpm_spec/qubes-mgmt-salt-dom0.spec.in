@@ -55,3 +55,4 @@ ln -s ../minion.dom0.conf $RPM_BUILD_ROOT/etc/salt/minion.d/
 %defattr(-,root,root)
 
 %changelog
+@CHANGELOG@

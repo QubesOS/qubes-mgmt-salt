@@ -60,3 +60,4 @@ make install-vm DESTDIR=%{buildroot}
 /usr/lib/qubes-vm-connector/ssh-wrapper
 
 %changelog
+@CHANGELOG@
