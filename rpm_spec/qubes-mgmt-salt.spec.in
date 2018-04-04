@@ -72,6 +72,7 @@ Tools to integrate dom0 and VM management into a single qubesctl tool.
 %install
 make install DESTDIR=%{buildroot} LIBDIR=%{_libdir} BINDIR=%{_bindir} SBINDIR=%{_sbindir} SYSCONFDIR=%{_sysconfdir}
 make install-dom0 DESTDIR=%{buildroot}
+rm -rf %{buildroot}/srv/formulas/.gitignore
 
 %files
 %defattr(-,root,root)
@@ -88,7 +89,6 @@ make install-dom0 DESTDIR=%{buildroot}
 /etc/salt/spm.repos.d/local.repo
 
 %attr(750, root, root) %dir /srv/formulas
-/srv/formulas/.gitignore
 
 %attr(750, root, root) %dir /srv/pillar
 %config(noreplace) /srv/pillar/top.sls
