@@ -1,7 +1,5 @@
-%{!?version: %define version %(cat version)}
-
 Name:      qubes-mgmt-salt
-Version:   %{version}
+Version:   @VERSION@
 Release:   1%{?dist}
 Summary:   Installs salts configuration files, directory layout and qubesctl
 License:   GPL 2.0
@@ -16,7 +14,7 @@ BuildRequires: PyYAML
 BuildRequires: tree
 BuildRequires: pandoc
 
-%define _builddir %(pwd)
+Source0: %{name}-%{version}.tar.gz
 
 %description
 Installs salts configuration files, directory layout and qubesctl
@@ -69,23 +67,17 @@ Requires:  qubes-mgmt-salt
 Tools to integrate dom0 and VM management into a single qubesctl tool.
 
 %prep
-# we operate on the current directory, so no need to unpack anything
-# symlink is to generate useful debuginfo packages
-rm -f %{name}-%{version}
-ln -sf . %{name}-%{version}
-%setup -T -D
-
-%build
+%setup -q
 
 %install
 make install DESTDIR=%{buildroot} LIBDIR=%{_libdir} BINDIR=%{_bindir} SBINDIR=%{_sbindir} SYSCONFDIR=%{_sysconfdir}
 make install-dom0 DESTDIR=%{buildroot}
+rm -rf %{buildroot}/srv/formulas/.gitignore
 
 %files
 %defattr(-,root,root)
 %attr(766, root, root)
 %{_mandir}/man1/qubesctl.1*
-
 
 %files config
 %defattr(-,root,root)
@@ -97,7 +89,6 @@ make install-dom0 DESTDIR=%{buildroot}
 /etc/salt/spm.repos.d/local.repo
 
 %attr(750, root, root) %dir /srv/formulas
-/srv/formulas/.gitignore
 
 %attr(750, root, root) %dir /srv/pillar
 %config(noreplace) /srv/pillar/top.sls
@@ -124,3 +115,4 @@ make install-dom0 DESTDIR=%{buildroot}
 %defattr(-,root,root)
 
 %changelog
+@CHANGELOG@
