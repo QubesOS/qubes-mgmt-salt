@@ -13,6 +13,7 @@ Requires:  qubes-mgmt-salt-base
 BuildRequires: PyYAML
 BuildRequires: tree
 BuildRequires: pandoc
+BuildRequires: python-setuptools
 
 Source0: %{name}-%{version}.tar.gz
 
