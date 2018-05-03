@@ -1,3 +1,17 @@
+qubes-mgmt-salt (4.0.9-1) unstable; urgency=medium
+
+  [ Frédéric Pierret ]
+  * Create .spec.in and Source0
+  * Makefile.builder: update for .spec.in
+  * spec.in: add changelog placeholder
+  * spec.in: remove .gitignore
+
+  [ Marek Marczykowski-Górecki ]
+  * travis: update fedora version
+  * rpm: add missing BR: python-setuptools
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 03 May 2018 04:15:44 +0200
+
 qubes-mgmt-salt (4.0.8-1) unstable; urgency=medium
 
   * Fix handling qubesctl --max-concurrency option
