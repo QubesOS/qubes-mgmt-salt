@@ -1,3 +1,12 @@
+qubes-mgmt-salt (4.0.10-1) unstable; urgency=medium
+
+  * travis: add centos7
+  * builder plugin: fix handling old format rpm packages
+  * rpm: make python2 choice explicit
+  * travis: update Fedora versions
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 09 Oct 2018 05:55:33 +0200
+
 qubes-mgmt-salt (4.0.9-1) unstable; urgency=medium
 
   [ Frédéric Pierret ]
