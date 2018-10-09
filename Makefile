@@ -49,7 +49,7 @@ install-vm:
 
 .PHONY: install-dom0
 install-dom0:
-	python setup.py install -O1 --root $(DESTDIR)
+	python2 setup.py install -O1 --root $(DESTDIR)
 	make install -C doc
 
 .PHONY: get-sources

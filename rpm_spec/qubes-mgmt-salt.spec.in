@@ -14,6 +14,7 @@ BuildRequires: PyYAML
 BuildRequires: tree
 BuildRequires: pandoc
 BuildRequires: python-setuptools
+BuildRequires: python2-devel
 
 Source0: %{name}-%{version}.tar.gz
 
@@ -106,10 +107,10 @@ rm -rf %{buildroot}/srv/formulas/.gitignore
 
 %files admin-tools
 /usr/bin/qubesctl
-%dir %{python_sitelib}/qubessalt-*egg-info
-%{python_sitelib}/qubessalt-*egg-info/*
-%dir %{python_sitelib}/qubessalt
-%{python_sitelib}/qubessalt/__init__.py*
+%dir %{python2_sitelib}/qubessalt-*egg-info
+%{python2_sitelib}/qubessalt-*egg-info/*
+%dir %{python2_sitelib}/qubessalt
+%{python2_sitelib}/qubessalt/__init__.py*
 
 
 %files shared-formulas
