@@ -30,6 +30,10 @@ import shutil
 import subprocess
 import sys
 import time
+
+import grp
+
+import fcntl
 import yaml
 import salt.client
 import salt.config
@@ -241,13 +245,35 @@ class ManageVMRunner(object):
 
 def qrexec_policy(src, dst, allow):
     for service in ('qubes.Filecopy', 'qubes.VMShell', 'qubes.VMRootShell'):
-        with open('/etc/qubes-rpc/policy/{}'.format(service), 'r+') as policy:
-            policy_rules = policy.readlines()
-            line = "{} {} allow,user=root\n".format(src, dst)
-            if allow:
-                policy_rules.insert(0, line)
-            else:
-                policy_rules.remove(line)
-            policy.truncate(0)
-            policy.seek(0)
-            policy.write(''.join(policy_rules))
+        path = '/etc/qubes-rpc/policy/{}'.format(service)
+        while True:
+            with open(path, 'r+') as policy:
+                # take the lock here, it's released by closing the file
+                fcntl.lockf(policy.fileno(), fcntl.LOCK_EX)
+                # While we were waiting for lock, someone could have unlink()ed
+                # (or rename()d) our file out of the filesystem. We have to
+                # ensure we got lock on something linked to filesystem.
+                # If not, try again.
+                if os.fstat(policy.fileno()) != os.stat(path):
+                    continue
+
+                policy_rules = policy.readlines()
+                line = "{} {} allow,user=root\n".format(src, dst)
+                if allow:
+                    policy_rules.insert(0, line)
+                else:
+                    policy_rules.remove(line)
+
+                with tempfile.NamedTemporaryFile(
+                        prefix=path, delete=False) as policy_new:
+                    policy_new.write(''.join(policy_rules))
+                    policy_new.flush()
+                    try:
+                        os.chown(policy_new.name, -1,
+                            grp.getgrnam('qubes').gr_gid)
+                        os.chmod(policy_new.name, 0o660)
+                    except KeyError:  # group 'qubes' not found
+                        # don't change mode if no 'qubes' group in the system
+                        pass
+                os.rename(policy_new.name, path)
+            break
