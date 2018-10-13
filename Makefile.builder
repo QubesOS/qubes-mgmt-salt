@@ -74,17 +74,10 @@ mgmt-salt-copy-master-makefile::
 mgmt-salt-makefiles:: mgmt-salt-copy-master-makefile mgmt-salt-create-vars-makefile
 	@true
 
-# Applies any Debian patches, then creates a Debian 
-# <package_name>_<version>.orig.tar.gz file to represent upstream orig file
+# Applies any Debian patches
 mgmt-salt-debian-prep::
 	@$(if $(filter $(DISTRIBUTION), debian qubuntu), \
-	    $(eval changelog  = $(ORIG_SRC)/$(DEBIAN_BUILD_DIRS)/changelog) \
-	    $(eval version    = $(shell $(DEBIAN_PARSER) changelog --package-version $(changelog))) \
-	    $(eval package    = $(shell $(DEBIAN_PARSER) changelog --package-name $(changelog))) \
-	    $(eval orig_file  = $(_CHROOT_SRC)/../$(package)_$(version).orig.tar.gz) \
-	    $(eval tar_opts   = --exclude-vcs --exclude=./pkgs --exclude=./*.vm --exclude=./*.dom0 --exclude=./debian.*) \
 	    -$(shell $(MGMT_PLUGIN_DIR)/debian-quilt $(ORIG_SRC)/series-debian-vm.conf $(_CHROOT_SRC)/debian/patches) \
-	    $(shell tar cfz $(orig_file) $(tar_opts) -C $(_CHROOT_SRC) .) \
 	)
 
 # In some packages there may be Debian directories specific for either dom0 and
