@@ -1,3 +1,10 @@
+qubes-mgmt-salt (4.0.11-1) unstable; urgency=medium
+
+  * Fix qrexec policy modification
+  * debian: don't create orig.tar.gz manually
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 24 Oct 2018 02:10:21 +0200
+
 qubes-mgmt-salt (4.0.10-1) unstable; urgency=medium
 
   * travis: add centos7
