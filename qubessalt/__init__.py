@@ -179,8 +179,8 @@ def run_one(vmname, command, show_output):
         vm = app.domains[vmname]
     except KeyError:
         return vmname, "ERROR (vm not found)"
-    runner = ManageVM(app, vm)
     try:
+        runner = ManageVM(app, vm)
         result = runner.salt_call(
             ' '.join([pipes.quote(word) for word in command]),
             return_output=show_output)
