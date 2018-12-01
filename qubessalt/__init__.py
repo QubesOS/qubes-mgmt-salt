@@ -62,7 +62,17 @@ class ManageVM(object):
         if mgmt_template is not None:
             self.mgmt_template = mgmt_template
         else:
-            self.mgmt_template = self.app.default_dispvm
+            try:
+                self.mgmt_template = vm.management_dispvm
+            except AttributeError:
+                # old core
+                self.mgmt_template = self.app.default_dispvm
+
+        if self.mgmt_template is None:
+            raise qubesadmin.exc.QubesException(
+                'DVM template for management not selected. '
+                'Execute \'sudo qubesctl state.sls qvm.default-mgmt-dvm\' or '
+                'create it manually and set management_dispvm property.')
 
     def prepare_salt_config_for_vm(self):
         tmpdir = tempfile.mkdtemp()
