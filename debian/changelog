@@ -1,3 +1,11 @@
+qubes-mgmt-salt (4.0.12-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * qubesctl: fix error reporting
+  * qubesctl: use 'management_dispvm' property if available
+
+ -- Simon Gaiser <simon@invisiblethingslab.com>  Mon, 03 Dec 2018 18:45:02 +0100
+
 qubes-mgmt-salt (4.0.11-1) unstable; urgency=medium
 
   * Fix qrexec policy modification
