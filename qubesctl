@@ -77,14 +77,14 @@ def main(args=None):  # pylint: disable=missing-docstring
     runner = qubessalt.ManageVMRunner(app, vms_to_go, args.command,
         show_output=args.show_output, force_color=args.force_color,
         max_concurrency=args.max_concurrency)
-    runner.run()
+    exit_code = runner.run()
     # then non-templates (AppVMs)
     vms_to_go = [vm for vm in targets
                  if not vm.klass == 'TemplateVM']
     runner = qubessalt.ManageVMRunner(app, vms_to_go, args.command,
         show_output=args.show_output, force_color=args.force_color,
         max_concurrency=args.max_concurrency)
-    runner.run()
+    return max(exit_code, runner.run())
 
     # TODO: return meaningful exit code
 
@@ -99,4 +99,4 @@ if __name__ == '__main__':
         sys.argv[1] = '--local'
         salt_call()
     else:
-        main()
+        sys.exit(main())

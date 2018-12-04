@@ -122,6 +122,7 @@ class ManageVM(object):
         return output_dir
 
     def salt_call(self, command='state.highstate', return_output=False):
+        exit_code = 0
         self.log.info('calling \'%s\'...', command)
         appvmtpl = self.mgmt_template
 
@@ -169,6 +170,7 @@ class ManageVM(object):
                 return_data = lines
             else:
                 return_data = "OK" if p.returncode == 0 else "ERROR"
+            exit_code = p.returncode
             if self.vm.is_running() and not initially_running:
                 self.vm.shutdown()
                 # FIXME: convert to self.vm.shutdown(wait=True) in core3
@@ -180,7 +182,7 @@ class ManageVM(object):
                 dispvm.kill()
             except qubesadmin.exc.QubesVMNotStartedError:
                 pass
-        return return_data
+        return exit_code, return_data
 
 
 def run_one(vmname, command, show_output):
@@ -188,15 +190,15 @@ def run_one(vmname, command, show_output):
     try:
         vm = app.domains[vmname]
     except KeyError:
-        return vmname, "ERROR (vm not found)"
+        return vmname, 2, "ERROR (vm not found)"
     try:
         runner = ManageVM(app, vm)
-        result = runner.salt_call(
+        exit_code, result = runner.salt_call(
             ' '.join([pipes.quote(word) for word in command]),
             return_output=show_output)
     except Exception as e:  # pylint: disable=broad-except
-        return vmname, "ERROR (exception {})".format(str(e))
-    return vm.name, result
+        return vmname, 1, "ERROR (exception {})".format(str(e))
+    return vm.name, exit_code, result
 
 
 class ManageVMRunner(object):
@@ -211,6 +213,7 @@ class ManageVMRunner(object):
         self.max_concurrency = max_concurrency
         self.show_output = show_output
         self.force_color = force_color
+        self.exit_code = 0
         self._opts = salt.config.minion_config('/etc/salt/minion')
         self._opts['file_client'] = 'local'
 
@@ -218,7 +221,8 @@ class ManageVMRunner(object):
         import qubessaltpatches
 
     def collect_result(self, result_tuple):
-        name, result = result_tuple
+        name, exit_code, result = result_tuple
+        self.exit_code = max(self.exit_code, exit_code)
         if self.show_output and isinstance(result, list):
             sys.stdout.write(name + ":\n")
             # removing control characters, unless colors are enabled
@@ -248,9 +252,10 @@ class ManageVMRunner(object):
                     callback=self.collect_result
                 )
             else:
-                self.collect_result((vm.name, "SKIP (nothing to do)"))
+                self.collect_result((vm.name, 0, "SKIP (nothing to do)"))
         pool.close()
         pool.join()
+        return self.exit_code
 
 
 def qrexec_policy(src, dst, allow):
