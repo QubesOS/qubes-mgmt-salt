@@ -1,3 +1,9 @@
+qubes-mgmt-salt (4.0.13-1) unstable; urgency=medium
+
+  * Fix reporting salt-ssh exit code
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 09 Dec 2018 18:46:42 +0100
+
 qubes-mgmt-salt (4.0.12-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
