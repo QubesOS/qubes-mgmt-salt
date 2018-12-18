@@ -246,7 +246,7 @@ class ManageVMRunner(object):
         pool = multiprocessing.Pool(self.max_concurrency)
         for vm in self.vms:
             # TODO: add some override for this check
-            if self.has_config(vm):
+            if 'state.highstate' not in self.command or self.has_config(vm):
                 pool.apply_async(run_one,
                     (vm.name, self.command, self.show_output),
                     callback=self.collect_result
