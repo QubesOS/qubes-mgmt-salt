@@ -86,8 +86,6 @@ def main(args=None):  # pylint: disable=missing-docstring
         max_concurrency=args.max_concurrency)
     return max(exit_code, runner.run())
 
-    # TODO: return meaningful exit code
-
 if __name__ == '__main__':
     # --dom0-only is a passthrough to salt-call
     if len(sys.argv) > 1 and sys.argv[1] == '--dom0-only':
