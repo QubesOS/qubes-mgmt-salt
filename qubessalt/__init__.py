@@ -105,7 +105,7 @@ class ManageVM(object):
             f.write(yaml.safe_dump(master_conf))
 
         # remove unneded pillar entries
-        for entry in ['master', 'salt']:
+        for entry in ('master',):
             if entry in pillar_data.keys():
                 del pillar_data[entry]
 
