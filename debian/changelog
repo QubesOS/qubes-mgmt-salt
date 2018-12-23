@@ -1,3 +1,11 @@
+qubes-mgmt-salt (4.0.14-1) wheezy; urgency=medium
+
+  * Do not exclude 'salt' pillar
+  * Remove outdated comment
+  * Skip VMs based on empty top file only for state.highstate command
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 23 Dec 2018 01:07:51 +0100
+
 qubes-mgmt-salt (4.0.13-1) unstable; urgency=medium
 
   * Fix reporting salt-ssh exit code
