@@ -52,8 +52,9 @@ class ManageVM(object):
         self.vm = vm
         self.app = app
         self.log = logging.getLogger('qubessalt.vm.' + vm.name)
+        self.log_path = os.path.join(LOGPATH, 'mgmt-{}.log'.format(vm.name))
         handler_log = logging.FileHandler(
-            os.path.join(LOGPATH, 'mgmt-{}.log'.format(vm.name)),
+            self.log_path,
             encoding='utf-8')
         handler_log.setFormatter(formatter_log)
         self.log.addHandler(handler_log)
@@ -168,8 +169,16 @@ class ManageVM(object):
                 if lines[0].count(self.vm.name + ':') == 1:
                     lines = lines[1:]
                 return_data = lines
+            elif p.returncode == 127:
+                return_data = "ERROR (missing qubes-mgmt-salt-vm-connector " \
+                    "package in {!s} (template of {!s}))".format(
+                        getattr(self.mgmt_template, 'template',
+                            self.mgmt_template),
+                        self.mgmt_template)
             else:
-                return_data = "OK" if p.returncode == 0 else "ERROR"
+                return_data = "OK" if p.returncode == 0 else \
+                    "ERROR (exit code {}, details in {})".format(
+                        p.returncode,     self.log_path)
             exit_code = p.returncode
             if self.vm.is_running() and not initially_running:
                 self.vm.shutdown()
@@ -180,7 +189,8 @@ class ManageVM(object):
             qrexec_policy(dispvm.name, self.vm.name, False)
             try:
                 dispvm.kill()
-            except qubesadmin.exc.QubesVMNotStartedError:
+            except (qubesadmin.exc.QubesVMNotStartedError,
+                    qubesadmin.exc.QubesDaemonNoResponseError):
                 pass
         return exit_code, return_data
 
