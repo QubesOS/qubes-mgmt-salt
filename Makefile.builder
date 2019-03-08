@@ -99,8 +99,14 @@ mgmt-salt-debian-changelog::
 	    $(shell cd $(_CHROOT_SRC)/debian; ln -sf ../debian.$(PACKAGE_SET)/changelog changelog) \
 	)
 
+# regenerage source tarball, to include just copied in files
+mgmt-salt-regererate-tarball::
+	$(if $(GIT_TARBALL_NAME), \
+		$(BUILDER_DIR)/scripts/create-archive $(CHROOT_DIR)$(DIST_SRC) $(GIT_TARBALL_NAME))
+	@true
+
 # 'SOURCE-COPY-IN' provided by all mgmt-salt* packages
-mgmt-salt-copy-in:: mgmt-salt-copy-templates mgmt-salt-makefiles mgmt-salt-debian-prep mgmt-salt-debian-changelog
+mgmt-salt-copy-in:: mgmt-salt-copy-templates mgmt-salt-makefiles mgmt-salt-debian-prep mgmt-salt-debian-changelog mgmt-salt-regererate-tarball
 	@true
 
 # 'SOURCE-COPY-IN' for this 'salt-mgmt' package
