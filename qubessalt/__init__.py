@@ -39,7 +39,10 @@ import salt.client
 import salt.config
 import qubesadmin.exc
 import qubesadmin.vm
-import qubessaltpatches
+try:
+    import qubessaltpatches
+except ImportError:
+    pass
 
 FORMAT_LOG = '%(asctime)s %(message)s'
 LOGPATH = '/var/log/qubes'
@@ -228,7 +231,10 @@ class ManageVMRunner(object):
         self._opts['file_client'] = 'local'
 
         # this do patch already imported salt modules
-        import qubessaltpatches
+        try:
+            import qubessaltpatches
+        except ImportError:
+            pass
 
     def collect_result(self, result_tuple):
         name, exit_code, result = result_tuple
