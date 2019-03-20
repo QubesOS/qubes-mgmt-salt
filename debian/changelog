@@ -1,3 +1,17 @@
+qubes-mgmt-salt (4.0.16-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Regenerate source tarball after copying in relevant files
+
+  [ Frédéric Pierret (fepitre) ]
+  * Handle non existing qubessaltpatches in case where mgmt-salt-base-
+    overrides is not needed anymore
+
+  [ Marek Marczykowski-Górecki ]
+  * Wipe salt temporary files after applying state in a VM
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 20 Mar 2019 22:36:52 +0100
+
 qubes-mgmt-salt (4.0.15-1) unstable; urgency=medium
 
   * qubesctl: improve error reporting
