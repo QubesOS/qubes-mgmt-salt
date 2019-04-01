@@ -44,6 +44,7 @@ Summary:   Qubes+Salt Management base configuration for SaltStack's Salt Infrast
 Group:     System administration tools
 Requires:  salt
 Requires:  salt-minion
+Conflicts:  qubes-mgmt-salt-base-top < 4.1.0
 BuildRequires: PyYAML
 BuildArch: noarch
 
