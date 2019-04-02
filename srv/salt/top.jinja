@@ -50,12 +50,12 @@
 
 # output all entries from the first list
 {%- for item in first %}
-- {{ item }}
+- {{ item|yaml }}
 {% endfor %}
 
 # then entries from the second one, skipping duplicates
 {%- for item in second if item not in first %}
-- {{ item }}
+- {{ item|yaml }}
 {% endfor %}
 
 # not mapping, not sequence - don't know how to merge them - output the first
