@@ -1,3 +1,11 @@
+qubes-mgmt-salt (4.0.17-1) unstable; urgency=medium
+
+  * Make qubesctl explicit python2
+  * Make ssh-wrapper python3 script
+  * travis: update Fedora,Debian versions, switch to xenial
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 07 Apr 2019 21:59:31 +0200
+
 qubes-mgmt-salt (4.0.16-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
