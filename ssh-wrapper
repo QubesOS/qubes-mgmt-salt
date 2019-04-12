@@ -29,7 +29,7 @@ def ssh(args):
     assert args[1] == '/bin/sh'
     # WARNING: this doesn't support interactive communication, just sending
     # script through stdin in one go and return its output
-    stdin_data = sys.stdin.read()
+    stdin_data = sys.stdin.buffer.read()
     # Currently when managing VM through  qubesctl  (so, wrapped  salt-ssh ),
     # it checks for  scp binary presence in the target VM. In our case it
     # doesn't make sense, since our wrapper uses qubes.Filecopy qrexec
@@ -41,9 +41,9 @@ def ssh(args):
     # So lets go this way, instead of requiring scp being installed in all
     # the templates.
     stdin_data = (
-        "mkdir -p /tmp/salt-shim-sandbox\n"
-        "ln -sf /bin/true /tmp/salt-shim-sandbox/scp\n"
-        "export PATH=\"$PATH:/tmp/salt-shim-sandbox\"\n"
+        b"mkdir -p /tmp/salt-shim-sandbox\n"
+        b"ln -sf /bin/true /tmp/salt-shim-sandbox/scp\n"
+        b"export PATH=\"$PATH:/tmp/salt-shim-sandbox\"\n"
         + stdin_data
     )
     p = subprocess.Popen(['qrexec-client-vm', args[0], 'qubes.VMRootShell'],
@@ -64,18 +64,13 @@ def scp(args):
     source_content = open(src_path, 'rb').read()
     p = subprocess.Popen(['qrexec-client-vm', dst_host, 'qubes.VMRootShell'],
         stdin=subprocess.PIPE)
-    p.communicate('cat > "{}"\n{}'.format(
-        dst_path,
-        source_content
-    ))
+    p.communicate('cat > "{}"\n'.format(dst_path).encode() + source_content)
     # if qubes.VMRootShell service not supported, fallback to qubes.VMShell and
     # hope it will have appropriate permissions
     if p.returncode == 127:
         p = subprocess.Popen(['qrexec-client-vm', dst_host, 'qubes.VMShell'],
             stdin=subprocess.PIPE)
-        p.communicate('cat > "{}"\n{}'.format(
-            dst_path,
-            source_content))
+        p.communicate('cat > "{}"\n'.format(dst_path).encode() + source_content)
     if p.returncode != 0:
         raise RuntimeError('Failed to write target file {}'.format(dst_path))
     return 0
