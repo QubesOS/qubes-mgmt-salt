@@ -1,3 +1,12 @@
+qubes-mgmt-salt (4.1.1-1) unstable; urgency=medium
+
+  * Make qubesctl explicit python2
+  * Make ssh-wrapper python3 script
+  * travis: update for R4.1
+  * Really make ssh-wrapper a python3 script
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 08 Jun 2019 12:39:57 +0200
+
 qubes-mgmt-salt (4.1.0-1) unstable; urgency=medium
 
   * Explicitly load pillar tops
