@@ -30,9 +30,12 @@ read salt_command
 
 rm -rf /srv
 mv /home/user/QubesIncoming/dom0/srv /srv
+mkdir -p /etc/salt
 if [ -f /srv/master ]; then
   mv /srv/master /etc/salt/
 fi
+# do not fail if 'salt' user doesn't exit, we run as root
+echo 'verify_env: False' >> /etc/salt/master
 (cd /srv/salt; find _tops -type f -o -type l| sed -e 's/^/- /' > tops.yaml)
 cat > /etc/salt/roster <<EOF
 $target_vm:
