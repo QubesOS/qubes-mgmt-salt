@@ -29,7 +29,7 @@
 {% if first is mapping %}
 # for each key in the first mapping, check if matching value is present in the
 # second one
-{%- for key, value in first.iteritems() %}
+{%- for key, value in first.items() %}
 '{{ key }}':
   {% if not key in second %}
 # if not - simply output the first value
@@ -40,7 +40,7 @@
   {% endif %}
 {% endfor %}
 # then output values present only in the second mapping
-{%- for key, value in second.iteritems() if key not in first %}
+{%- for key, value in second.items() if key not in first %}
 '{{ key }}':
   {{ value|yaml }}
 {% endfor %}
