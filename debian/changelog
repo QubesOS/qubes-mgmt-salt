@@ -1,3 +1,12 @@
+qubes-mgmt-salt (4.0.19-1) unstable; urgency=medium
+
+  * Fix startup_states minion option
+  * Fix jinja-based top file merging
+  * Make top.jinja compatible with python3
+  * Do not fail if 'salt' user does not exist in disp-mgmt-* VM
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 20 Jul 2019 03:49:27 +0200
+
 qubes-mgmt-salt (4.0.18-1) unstable; urgency=medium
 
   * Really make ssh-wrapper a python3 script
