@@ -1,3 +1,10 @@
+qubes-mgmt-salt (4.1.2-1) unstable; urgency=medium
+
+  * Make top.jinja compatible with python3
+  * Do not fail if 'salt' user does not exist in disp-mgmt-* VM
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 11 Aug 2019 06:55:15 +0200
+
 qubes-mgmt-salt (4.1.1-1) unstable; urgency=medium
 
   * Make qubesctl explicit python2
