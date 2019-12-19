@@ -50,7 +50,7 @@ LOGPATH = '/var/log/qubes'
 formatter_log = logging.Formatter(FORMAT_LOG)
 
 class ManageVM(object):
-    def __init__(self, app, vm, mgmt_template=None):
+    def __init__(self, app, vm, mgmt_template=None, force_color=False):
         super(ManageVM, self).__init__()
         self.vm = vm
         self.app = app
@@ -61,6 +61,7 @@ class ManageVM(object):
             encoding='utf-8')
         handler_log.setFormatter(formatter_log)
         self.log.addHandler(handler_log)
+        self.force_color = force_color
 
         self.log.propagate = False
         if mgmt_template is not None:
@@ -163,15 +164,23 @@ class ManageVM(object):
                     "Failed to copy Salt configuration to {}".
                     format(dispvm.name))
             p = dispvm.run_service('qubes.SaltLinuxVM')
-            (stdout, _) = p.communicate(self.vm.name + '\n' + command + '\n')
-            for line in stdout.splitlines():
+            (untrusted_stdout, _) = p.communicate(self.vm.name + '\n' + command + '\n')
+            untrusted_stdout = untrusted_stdout.decode('ascii', errors='ignore')
+            if not self.force_color:
+                # removing control characters, unless colors are enabled
+                stdout_lines = [
+                    ''.join([c for c in line if ord(c) >= 0x20 and ord(c) <= 0x7e])
+                    for line in untrusted_stdout.splitlines()]
+            else:
+                stdout_lines = untrusted_stdout.splitlines()
+
+            for line in stdout_lines:
                 self.log.info('output: %s', line)
             self.log.info('exit code: %d', p.returncode)
-            if return_output and stdout:
-                lines = stdout.splitlines()
-                if lines[0].count(self.vm.name + ':') == 1:
-                    lines = lines[1:]
-                return_data = lines
+            if return_output and stdout_lines:
+                if stdout_lines[0].count(self.vm.name + ':') == 1:
+                    stdout_lines = stdout_lines[1:]
+                return_data = stdout_lines
             elif p.returncode == 127:
                 return_data = "ERROR (missing qubes-mgmt-salt-vm-connector " \
                     "package in {!s} (template of {!s}))".format(
@@ -198,14 +207,14 @@ class ManageVM(object):
         return exit_code, return_data
 
 
-def run_one(vmname, command, show_output):
+def run_one(vmname, command, show_output, force_color):
     app = qubesadmin.Qubes()
     try:
         vm = app.domains[vmname]
     except KeyError:
         return vmname, 2, "ERROR (vm not found)"
     try:
-        runner = ManageVM(app, vm)
+        runner = ManageVM(app, vm, force_color=force_color)
         exit_code, result = runner.salt_call(
             ' '.join([pipes.quote(word) for word in command]),
             return_output=show_output)
@@ -241,11 +250,6 @@ class ManageVMRunner(object):
         self.exit_code = max(self.exit_code, exit_code)
         if self.show_output and isinstance(result, list):
             sys.stdout.write(name + ":\n")
-            # removing control characters, unless colors are enabled
-            if not self.force_color:
-                result = [
-                    ''.join([c for c in line if ord(c) >= 0x20]) for line in
-                    result]
             sys.stdout.write('\n'.join(['  ' + line for line in result]))
             sys.stdout.write('\n')
         else:
@@ -264,7 +268,7 @@ class ManageVMRunner(object):
             # TODO: add some override for this check
             if 'state.highstate' not in self.command or self.has_config(vm):
                 pool.apply_async(run_one,
-                    (vm.name, self.command, self.show_output),
+                    (vm.name, self.command, self.show_output, self.force_color),
                     callback=self.collect_result
                 )
             else:
