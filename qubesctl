@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 '''
 Directly call a salt command in the modules, does not require a running salt
 minion to run.

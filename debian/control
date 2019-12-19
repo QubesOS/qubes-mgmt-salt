@@ -5,7 +5,7 @@ Maintainer: Jason Mehring <nrgaway@gmail.com>
 Build-Depends: 
     debhelper (>= 9~),
     quilt,
-    python-yaml,
+    python3-yaml,
     tree
 Standards-Version: 3.9.5
 Homepage: http://www.qubes-os.org

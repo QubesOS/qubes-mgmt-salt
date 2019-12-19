@@ -1,4 +1,3 @@
-#!/usr/bin/python2
 # coding=utf-8
 #
 # The Qubes OS Project, http://www.qubes-os.org
@@ -90,7 +89,7 @@ class ManageVM(object):
                 '--id={}'.format(self.vm.name), '--output=yaml',
                 'pillar.items'], stdout=subprocess.PIPE)
         (pillar_items_output, _) = p.communicate()
-        pillar_data = yaml.safe_load(pillar_items_output)
+        pillar_data = yaml.safe_load(pillar_items_output.decode())
         pillar_data = pillar_data['local']
         # remove source pillar files
         # TODO: remove also pillar modules
@@ -164,7 +163,8 @@ class ManageVM(object):
                     "Failed to copy Salt configuration to {}".
                     format(dispvm.name))
             p = dispvm.run_service('qubes.SaltLinuxVM')
-            (untrusted_stdout, _) = p.communicate(self.vm.name + '\n' + command + '\n')
+            (untrusted_stdout, _) = p.communicate(
+                    (self.vm.name + '\n' + command + '\n').encode())
             untrusted_stdout = untrusted_stdout.decode('ascii', errors='ignore')
             if not self.force_color:
                 # removing control characters, unless colors are enabled
@@ -300,7 +300,7 @@ def qrexec_policy(src, dst, allow):
                     policy_rules.remove(line)
 
                 with tempfile.NamedTemporaryFile(
-                        prefix=path, delete=False) as policy_new:
+                        prefix=path, delete=False, mode='w+') as policy_new:
                     policy_new.write(''.join(policy_rules))
                     policy_new.flush()
                     try:

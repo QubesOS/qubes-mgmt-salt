@@ -10,11 +10,11 @@ BuildArch: noarch
 Requires:  salt >= 2015.5
 Requires:  salt-minion
 Requires:  qubes-mgmt-salt-base
-BuildRequires: PyYAML
+BuildRequires: python3-pyyaml
 BuildRequires: tree
 BuildRequires: pandoc
-BuildRequires: python-setuptools
-BuildRequires: python2-devel
+BuildRequires: python3-setuptools
+BuildRequires: python3-devel
 
 Source0: %{name}-%{version}.tar.gz
 
@@ -45,7 +45,7 @@ Group:     System administration tools
 Requires:  salt
 Requires:  salt-minion
 Conflicts:  qubes-mgmt-salt-base-top < 4.1.0
-BuildRequires: PyYAML
+BuildRequires: python3-pyyaml
 BuildArch: noarch
 
 %description config
@@ -108,10 +108,11 @@ rm -rf %{buildroot}/srv/formulas/.gitignore
 
 %files admin-tools
 /usr/bin/qubesctl
-%dir %{python2_sitelib}/qubessalt-*egg-info
-%{python2_sitelib}/qubessalt-*egg-info/*
-%dir %{python2_sitelib}/qubessalt
-%{python2_sitelib}/qubessalt/__init__.py*
+%dir %{python3_sitelib}/qubessalt-*egg-info
+%{python3_sitelib}/qubessalt-*egg-info/*
+%dir %{python3_sitelib}/qubessalt
+%{python3_sitelib}/qubessalt/__init__.py*
+%{python3_sitelib}/qubessalt/__pycache__/*
 
 
 %files shared-formulas
