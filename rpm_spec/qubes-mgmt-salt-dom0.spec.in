@@ -16,6 +16,10 @@ BuildRequires: python3-pyyaml
 BuildRequires: tree
 Conflicts:  qubes-mgmt-salt-vm
 
+# workaround for saltstack/salt#53570
+# until we have salt >= 2019.2.2 in dom0
+Requires: python3-pip
+
 
 Source0: qubes-mgmt-salt-%{version}.tar.gz
 
