@@ -1,3 +1,17 @@
+qubes-mgmt-salt (4.1.3-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * travis: switch to bionic
+
+  [ Marek Marczykowski-Górecki ]
+  * Filter out control characters in log too
+  * Remove unused import
+  * Switch to Python 3
+  * travis: switch dom0 to fc31, update VM versions
+  * Add workaround for salt bug
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 05 Jan 2020 13:12:46 +0100
+
 qubes-mgmt-salt (4.1.2-1) unstable; urgency=medium
 
   * Make top.jinja compatible with python3
