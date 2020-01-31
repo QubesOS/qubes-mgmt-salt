@@ -1,3 +1,13 @@
+qubes-mgmt-salt (4.0.20-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * travis: switch to bionic
+
+  [ Marek Marczykowski-Górecki ]
+  * Filter out control characters in log too
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 31 Jan 2020 04:01:59 +0100
+
 qubes-mgmt-salt (4.0.19-1) unstable; urgency=medium
 
   * Fix startup_states minion option
