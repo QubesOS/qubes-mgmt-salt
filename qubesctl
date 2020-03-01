@@ -1,8 +1,8 @@
 #!/usr/bin/python3
-'''
+"""
 Directly call a salt command in the modules, does not require a running salt
 minion to run.
-'''
+"""
 from __future__ import print_function
 import argparse
 
@@ -16,27 +16,30 @@ import qubesadmin.vm
 def main(args=None):  # pylint: disable=missing-docstring
     parser = argparse.ArgumentParser()
     parser.add_argument('--show-output', action='store_true',
-        help='Show output of management commands')
+                        help='Show output of management commands')
     parser.add_argument('--force-color', action='store_true',
-        help='Force color output, allow control characters from VM, UNSAFE')
+                        help='Force color output, allow control characters '
+                             'from VM, UNSAFE')
     parser.add_argument('--skip-dom0', action='store_true',
-        help='Skip dom0 configuration (VM creation etc)')
+                        help='Skip dom0 configuration (VM creation etc)')
     parser.add_argument('--max-concurrency', action='store',
-        help='Maximum number of VMs configured simultaneously '
-             '(default: %(default)d)',
-        type=int, default=4)
+                        help='Maximum number of VMs configured simultaneously '
+                             '(default: %(default)d)',
+                        type=int, default=4)
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--targets', action='store',
-        help='Comma separated list of VMs to target')
+                       help='Comma separated list of VMs to target')
     group.add_argument('--templates', action='store_true',
-        help='Target all templates')
+                       help='Target all templates')
     group.add_argument('--app', action='store_true',
-        help='Target all AppVMs')
+                       help='Target all AppVMs')
     group.add_argument('--all', action='store_true',
-        help='Target all non-disposable VMs (TemplateVMs and AppVMs)')
+                       help='Target all non-disposable VMs (TemplateVMs and '
+                            'AppVMs)')
     parser.add_argument('command',
-        help='Salt command to execute (for example: state.highstate)',
-        nargs=argparse.REMAINDER)
+                        help='Salt command to execute (for example: '
+                             'state.highstate)',
+                        nargs=argparse.REMAINDER)
     args = parser.parse_args(args)
 
     if not args.skip_dom0:
@@ -63,7 +66,7 @@ def main(args=None):  # pylint: disable=missing-docstring
     elif args.all:
         # all but DispVMs
         targets = [vm for vm in app.domains.values() if not
-                vm.klass == 'DispVM']
+        vm.klass == 'DispVM']
 
     # remove dom0 - already handled
     targets = [vm for vm in targets if vm.name != 'dom0']
@@ -75,16 +78,19 @@ def main(args=None):  # pylint: disable=missing-docstring
     vms_to_go = [vm for vm in targets
                  if vm.klass == 'TemplateVM']
     runner = qubessalt.ManageVMRunner(app, vms_to_go, args.command,
-        show_output=args.show_output, force_color=args.force_color,
-        max_concurrency=args.max_concurrency)
+                                      show_output=args.show_output,
+                                      force_color=args.force_color,
+                                      max_concurrency=args.max_concurrency)
     exit_code = runner.run()
     # then non-templates (AppVMs)
     vms_to_go = [vm for vm in targets
                  if not vm.klass == 'TemplateVM']
     runner = qubessalt.ManageVMRunner(app, vms_to_go, args.command,
-        show_output=args.show_output, force_color=args.force_color,
-        max_concurrency=args.max_concurrency)
+                                      show_output=args.show_output,
+                                      force_color=args.force_color,
+                                      max_concurrency=args.max_concurrency)
     return max(exit_code, runner.run())
+
 
 if __name__ == '__main__':
     # --dom0-only is a passthrough to salt-call
@@ -94,6 +100,7 @@ if __name__ == '__main__':
         except ImportError:
             pass
         from salt.scripts import salt_call
+
         sys.argv[1] = '--local'
         salt_call()
     else:
