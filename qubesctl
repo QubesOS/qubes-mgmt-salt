@@ -30,7 +30,9 @@ def main(args=None):  # pylint: disable=missing-docstring
     group.add_argument('--targets', action='store',
                        help='Comma separated list of VMs to target')
     group.add_argument('--templates', action='store_true',
-                       help='Target all templates')
+                       help='Target all TemplatesVMs')
+    group.add_argument('--standalones', action='store_true',
+                       help='Target all StandaloneVMs')
     group.add_argument('--app', action='store_true',
                        help='Target all AppVMs')
     group.add_argument('--all', action='store_true',
@@ -55,18 +57,21 @@ def main(args=None):  # pylint: disable=missing-docstring
 
     targets = []
     if args.templates:
+        targets += [vm for vm in app.domains.values()
+                    if vm.klass == 'TemplateVM']
+    if args.standalones:
+        targets += [vm for vm in app.domains.values()
+                    if vm.klass == 'StandaloneVM']
+    if args.app:
+        targets += [vm for vm in app.domains.values()
+                    if vm.klass == 'AppVM']
+    if args.all:
+        # all but DispVMs
         targets = [vm for vm in app.domains.values()
-                   if vm.klass == 'TemplateVM']
-    elif args.app:
-        targets = [vm for vm in app.domains.values()
-                   if vm.klass == 'AppVM']
+                   if not vm.klass == 'DispVM']
     elif args.targets:
         names = args.targets.split(',')
         targets = [vm for vm in app.domains.values() if vm.name in names]
-    elif args.all:
-        # all but DispVMs
-        targets = [vm for vm in app.domains.values() if not
-        vm.klass == 'DispVM']
 
     # remove dom0 - already handled
     targets = [vm for vm in targets if vm.name != 'dom0']
