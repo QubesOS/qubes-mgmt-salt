@@ -176,10 +176,16 @@ class ManageVM(object):
 
             for line in stdout_lines:
                 self.log.info('output: %s', line)
+            if stdout_lines[0].count(self.vm.name + ':') == 1:
+                stdout_lines = stdout_lines[1:]
             self.log.info('exit code: %d', p.returncode)
-            if return_output and stdout_lines:
-                if stdout_lines[0].count(self.vm.name + ':') == 1:
-                    stdout_lines = stdout_lines[1:]
+            exit_code = p.returncode
+            if exit_code == 0 and command.startswith('state.') and not stdout_lines:
+                # heuristic to detect silent failures - salt-ssh may exit with
+                # 0 in those cases
+                exit_code = 1
+                return_data = "ERROR (exit code 0, but no changes summary)"
+            elif return_output and stdout_lines:
                 return_data = stdout_lines
             elif p.returncode == 127:
                 return_data = "ERROR (missing qubes-mgmt-salt-vm-connector " \
@@ -191,7 +197,6 @@ class ManageVM(object):
                 return_data = "OK" if p.returncode == 0 else \
                     "ERROR (exit code {}, details in {})".format(
                         p.returncode,     self.log_path)
-            exit_code = p.returncode
             if self.vm.is_running() and not initially_running:
                 self.vm.shutdown()
                 # FIXME: convert to self.vm.shutdown(wait=True) in core3
