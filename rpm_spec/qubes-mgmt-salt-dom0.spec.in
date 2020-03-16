@@ -20,6 +20,9 @@ Conflicts:  qubes-mgmt-salt-vm
 # until we have salt >= 2019.2.2 in dom0
 Requires: python3-pip
 
+# Prevent specific R4.0 overrides to remain
+# during migration process
+Obsoletes: qubes-mgmt-salt-base-overrides < 4.1.0
 
 Source0: qubes-mgmt-salt-%{version}.tar.gz
 
