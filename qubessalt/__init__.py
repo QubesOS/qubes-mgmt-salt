@@ -185,6 +185,7 @@ class ManageVM(object):
                 # 0 in those cases
                 exit_code = 1
                 return_data = "ERROR (exit code 0, but no changes summary)"
+                self.log.info('missing changes summary, considering it a failure')
             elif return_output and stdout_lines:
                 return_data = stdout_lines
             elif p.returncode == 127:
