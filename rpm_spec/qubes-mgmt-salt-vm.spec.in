@@ -9,7 +9,11 @@ URL:	   http://www.qubes-os.org/
 Group:     System administration tools
 BuildArch: noarch
 Requires:  qubes-mgmt-salt
+%if 0%{?rhel} == 7
+BuildRequires: python%{python3_pkgversion}-PyYAML
+%else
 BuildRequires: python%{python3_pkgversion}-pyyaml
+%endif
 BuildRequires: tree
 Requires(post): /usr/bin/qubesctl
 Conflicts:  qubes-mgmt-salt-dom0
