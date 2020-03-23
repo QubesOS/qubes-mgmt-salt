@@ -12,13 +12,13 @@ Requires:  qubes-mgmt-salt
 Requires:  qubes-mgmt-salt-dom0-qvm
 Requires:  qubes-mgmt-salt-dom0-update
 Requires:  qubes-mgmt-salt-dom0-virtual-machines
-BuildRequires: python3-pyyaml
+BuildRequires: python%{python3_pkgversion}-pyyaml
 BuildRequires: tree
 Conflicts:  qubes-mgmt-salt-vm
 
 # workaround for saltstack/salt#53570
 # until we have salt >= 2019.2.2 in dom0
-Requires: python3-pip
+Requires: python%{python3_pkgversion}-pip
 
 # Prevent specific R4.0 overrides to remain
 # during migration process

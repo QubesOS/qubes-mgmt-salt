@@ -10,11 +10,11 @@ BuildArch: noarch
 Requires:  salt >= 2015.5
 Requires:  salt-minion
 Requires:  qubes-mgmt-salt-base
-BuildRequires: python3-pyyaml
+BuildRequires: python%{python3_pkgversion}-pyyaml
 BuildRequires: tree
 BuildRequires: pandoc
-BuildRequires: python3-setuptools
-BuildRequires: python3-devel
+BuildRequires: python%{python3_pkgversion}-setuptools
+BuildRequires: python%{python3_pkgversion}-devel
 
 Source0: %{name}-%{version}.tar.gz
 
@@ -45,7 +45,7 @@ Group:     System administration tools
 Requires:  salt
 Requires:  salt-minion
 Conflicts:  qubes-mgmt-salt-base-top < 4.1.0
-BuildRequires: python3-pyyaml
+BuildRequires: python%{python3_pkgversion}-pyyaml
 BuildArch: noarch
 
 %description config
