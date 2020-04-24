@@ -1,3 +1,11 @@
+qubes-mgmt-salt (4.0.22-1) unstable; urgency=medium
+
+  * Drop PyYAML build dependency
+  * Build qubes-mgmt-admin-tools package only for dom0
+  * Restore creating $(DESTDIR) in install-custom
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 24 Apr 2020 04:32:37 +0200
+
 qubes-mgmt-salt (4.0.21-1) unstable; urgency=medium
 
   [ Marek Marczykowski-Górecki ]
