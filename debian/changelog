@@ -1,3 +1,10 @@
+qubes-mgmt-salt (4.1.6-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * travis: import from qubes-continuous-integration
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 24 Apr 2020 04:36:59 +0200
+
 qubes-mgmt-salt (4.1.5-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
