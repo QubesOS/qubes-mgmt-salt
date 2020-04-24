@@ -30,10 +30,6 @@ build:
 
 .PHONY: install-custom
 install-custom:: 
-	# Install qubesctl
-	@install -d -m 0755 $(DESTDIR)$(BINDIR)
-	@install -p -m 0755 qubesctl $(DESTDIR)$(BINDIR)
-	
 	# Install /etc/salt/* and /srv/*
 	cp -Tr etc $(DESTDIR)/etc
 	cp -Tr srv $(DESTDIR)/srv
@@ -51,6 +47,9 @@ install-vm:
 install-dom0:
 	python2 setup.py install -O1 --root $(DESTDIR)
 	make install -C doc
+	# Install qubesctl
+	install -d -m 0755 $(DESTDIR)$(BINDIR)
+	install -p -m 0755 qubesctl $(DESTDIR)$(BINDIR)
 
 .PHONY: get-sources
 get-sources: GIT_REPOS := $(addprefix $(SRC_DIR)/,$(MGMT_SALT_COMPONENTS) mgmt-salt-app-saltstack)

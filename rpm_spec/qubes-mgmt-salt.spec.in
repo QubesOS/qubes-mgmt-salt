@@ -1,3 +1,10 @@
+# build admin-tools package only on dom0 version (it's python2)
+%if 0%{?fedora} == 25
+%global with_admintools 1
+%else
+%global with_admintools 0
+%endif
+
 Name:      qubes-mgmt-salt
 Version:   @VERSION@
 Release:   1%{?dist}
@@ -12,8 +19,10 @@ Requires:  salt-minion
 Requires:  qubes-mgmt-salt-base
 BuildRequires: tree
 BuildRequires: pandoc
+%if %{with_admintools}
 BuildRequires: python-setuptools
 BuildRequires: python2-devel
+%endif
 
 Source0: %{name}-%{version}.tar.gz
 
@@ -57,6 +66,7 @@ Requires:  qubes-mgmt-salt
 %description shared-formulas
 Qubes+Salt Management shared (qubes-mgmt-all-*) formulas.
 
+%if %{with_admintools}
 %package admin-tools
 Summary:    Management tools integrating dom0 and VM management
 Group:     System administration tools
@@ -65,19 +75,21 @@ Requires:  qubes-mgmt-salt
 
 %description admin-tools
 Tools to integrate dom0 and VM management into a single qubesctl tool.
+%endif
 
 %prep
 %setup -q
 
 %install
 make install DESTDIR=%{buildroot} LIBDIR=%{_libdir} BINDIR=%{_bindir} SBINDIR=%{_sbindir} SYSCONFDIR=%{_sysconfdir}
-make install-dom0 DESTDIR=%{buildroot}
+%if %{with_admintools}
+make install-dom0 DESTDIR=%{buildroot} BINDIR=%{_bindir} SBINDIR=%{_sbindir}
+%endif
 rm -rf %{buildroot}/srv/formulas/.gitignore
 
 %files
 %defattr(-,root,root)
 %attr(766, root, root)
-%{_mandir}/man1/qubesctl.1*
 
 %files config
 %defattr(-,root,root)
@@ -103,13 +115,15 @@ rm -rf %{buildroot}/srv/formulas/.gitignore
 /srv/salt/top.jinja
 /srv/salt/top.sls.old
 
+%if %{with_admintools}
 %files admin-tools
 /usr/bin/qubesctl
+%{_mandir}/man1/qubesctl.1*
 %dir %{python2_sitelib}/qubessalt-*egg-info
 %{python2_sitelib}/qubessalt-*egg-info/*
 %dir %{python2_sitelib}/qubessalt
 %{python2_sitelib}/qubessalt/__init__.py*
-
+%endif
 
 %files shared-formulas
 %defattr(-,root,root)
