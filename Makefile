@@ -30,6 +30,7 @@ build:
 
 .PHONY: install-custom
 install-custom:: 
+	install -d -m 0755 $(DESTDIR)
 	# Install /etc/salt/* and /srv/*
 	cp -Tr etc $(DESTDIR)/etc
 	cp -Tr srv $(DESTDIR)/srv
