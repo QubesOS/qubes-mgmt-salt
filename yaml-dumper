@@ -1,15 +1,15 @@
-#!/usr/bin/python2 -O
+#!/usr/bin/python3 -O
 # -*- coding: utf-8 -*-`
 #
 # vim: set ts=4 sw=4 sts=4 et :
-'''
+"""
 :maintainer:    Jason Mehring <nrgaway@gmail.com>
 :maturity:      new
 :depends:       none
 :platform:      all
 
 Dump a YAML configuration file to key = value pairs
-'''
+"""
 
 import argparse
 import collections

@@ -10,7 +10,14 @@ BuildArch: noarch
 Requires:  salt >= 2015.5
 Requires:  salt-minion
 Requires:  qubes-mgmt-salt-base
+%if 0%{?fedora} == 25
 BuildRequires: PyYAML
+%endif
+%if 0%{?rhel} == 7
+BuildRequires: python%{python3_pkgversion}-PyYAML
+%else
+BuildRequires: python%{python3_pkgversion}-pyyaml
+%endif
 BuildRequires: tree
 BuildRequires: pandoc
 BuildRequires: python-setuptools
@@ -44,7 +51,14 @@ Summary:   Qubes+Salt Management base configuration for SaltStack's Salt Infrast
 Group:     System administration tools
 Requires:  salt
 Requires:  salt-minion
+%if 0%{?fedora} == 25
 BuildRequires: PyYAML
+%endif
+%if 0%{?rhel} == 7
+BuildRequires: python%{python3_pkgversion}-PyYAML
+%else
+BuildRequires: python%{python3_pkgversion}-pyyaml
+%endif
 BuildArch: noarch
 
 %description config
