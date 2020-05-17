@@ -285,26 +285,51 @@ class ManageVMRunner(object):
 
 
 def qrexec_policy(src, dst, allow):
-    for service in ('qubes.Filecopy', 'qubes.VMShell', 'qubes.VMRootShell'):
-        path = '/etc/qubes-rpc/policy/{}'.format(service)
-        while True:
-            with open(path, 'r+') as policy:
-                # take the lock here, it's released by closing the file
-                fcntl.lockf(policy.fileno(), fcntl.LOCK_EX)
-                # While we were waiting for lock, someone could have unlink()ed
-                # (or rename()d) our file out of the filesystem. We have to
-                # ensure we got lock on something linked to filesystem.
-                # If not, try again.
+    while True:
+        path = '/etc/qubes/policy.d/50-qubesctl-salt.policy'
+        # Mode is a bit tricky here. We want to *atomically*:
+        # - open an existing file for reading (do not truncate it)
+        # - if the file does not exist - create it
+        # The above means neither 'r+' (fails on non-existing file)
+        # nor 'w+' (truncates existing file) works.
+        # 'a+' fits here, although is a bit weird.
+        with open(path, 'a+') as policy:
+            # take the lock here, it's released by closing the file
+            fcntl.lockf(policy.fileno(), fcntl.LOCK_EX)
+            # While we were waiting for lock, someone could have unlink()ed
+            # (or rename()d) our file out of the filesystem. We have to
+            # ensure we got lock on something linked to filesystem.
+            # If not, try again.
+
+            try:
                 if os.fstat(policy.fileno()) != os.stat(path):
                     continue
+            except FileNotFoundError:
+                continue
 
-                policy_rules = policy.readlines()
-                line = "{} {} allow,user=root\n".format(src, dst)
+            policy.seek(0)
+            policy_rules = policy.readlines()
+            if not policy_rules:
+                policy_rules = [
+                    '# DO NOT EDIT: automatically generated file\n',
+                    '# This file is managed by qubesctl tool\n',
+                ]
+            services = ('qubes.Filecopy', 'qubes.VMShell', 'qubes.VMRootShell')
+            for service in services:
+                line = "{} * {} {} allow user=root\n".format(service, src, dst)
                 if allow:
-                    policy_rules.insert(0, line)
+                    policy_rules.append(line)
                 else:
-                    policy_rules.remove(line)
+                    try:
+                        policy_rules.remove(line)
+                    except ValueError:
+                        # already removed
+                        pass
 
+            # if only comments left, remove the file
+            if not [l for l in policy_rules if not l.startswith('#')]:
+                os.unlink(path)
+            else:
                 with tempfile.NamedTemporaryFile(
                         prefix=path, delete=False, mode='w+') as policy_new:
                     policy_new.write(''.join(policy_rules))
@@ -317,4 +342,4 @@ def qrexec_policy(src, dst, allow):
                         # don't change mode if no 'qubes' group in the system
                         pass
                 os.rename(policy_new.name, path)
-            break
+        break
