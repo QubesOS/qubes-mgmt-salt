@@ -73,6 +73,8 @@ Summary:    Management tools integrating dom0 and VM management
 Group:     System administration tools
 BuildArch: noarch
 Requires:  qubes-mgmt-salt
+# doesn't work with old Admin API policy layout
+Conflicts: qubes-core-dom0 < 4.1.12
 
 %description admin-tools
 Tools to integrate dom0 and VM management into a single qubesctl tool.
