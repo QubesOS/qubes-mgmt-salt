@@ -1,3 +1,10 @@
+qubes-mgmt-salt (4.1.7-1) unstable; urgency=medium
+
+  * Modify qubesctl to use the new policy format
+  * rpm: add specific version dependency for qubes-core-dom0
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 24 May 2020 04:37:44 +0200
+
 qubes-mgmt-salt (4.1.6-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
