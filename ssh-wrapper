@@ -26,10 +26,20 @@ import sys
 
 
 def ssh(args):
-    assert args[1] == '/bin/sh'
     # WARNING: this doesn't support interactive communication, just sending
     # script through stdin in one go and return its output
-    stdin_data = sys.stdin.buffer.read()
+    start_string = "/bin/sh  << 'EOF'\n"
+    end_string = '\nEOF'
+    if args[1] == '/bin/sh':
+        stdin_data = sys.stdin.buffer.read()
+    elif args[1].startswith(start_string) and args[1].endswith(end_string):
+        stdin_data = args[1].encode('ascii', 'strict')
+        if stdin_data.find(b'\nEOF\n') != -1:
+            raise ValueError('input is not single heredoc')
+        stdin_data = stdin_data[len(start_string):1 - len(end_string)]
+    else:
+        raise ValueError('do not know how to handle our input')
+
     # Currently when managing VM through  qubesctl  (so, wrapped  salt-ssh ),
     # it checks for  scp binary presence in the target VM. In our case it
     # doesn't make sense, since our wrapper uses qubes.Filecopy qrexec
@@ -41,9 +51,9 @@ def ssh(args):
     # So lets go this way, instead of requiring scp being installed in all
     # the templates.
     stdin_data = (
-        b"mkdir -p /tmp/salt-shim-sandbox\n"
-        b"ln -sf /bin/true /tmp/salt-shim-sandbox/scp\n"
-        b"export PATH=\"$PATH:/tmp/salt-shim-sandbox\"\n"
+        b"mkdir -p /run/salt-shim-sandbox\n"
+        b"ln -sf /bin/true /run/salt-shim-sandbox/scp\n"
+        b"export PATH=\"$PATH:/run/salt-shim-sandbox\"\n"
         + stdin_data
     )
     p = subprocess.Popen(['qrexec-client-vm', args[0], 'qubes.VMRootShell'],
