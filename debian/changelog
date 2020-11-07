@@ -1,3 +1,13 @@
+qubes-mgmt-salt (4.1.8-1) unstable; urgency=medium
+
+  [ Demi Marie Obenour ]
+  * Support newer Salt versions
+
+  [ Marek Marczykowski-Górecki ]
+  * Do not open-code EOF marker twice
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 07 Nov 2020 17:20:58 +0100
+
 qubes-mgmt-salt (4.1.7-1) unstable; urgency=medium
 
   * Modify qubesctl to use the new policy format
