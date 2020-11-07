@@ -34,7 +34,7 @@ def ssh(args):
         stdin_data = sys.stdin.buffer.read()
     elif args[1].startswith(start_string) and args[1].endswith(end_string):
         stdin_data = args[1].encode('ascii', 'strict')
-        if stdin_data.find(b'\nEOF\n') != -1:
+        if stdin_data.find((end_string + '\n').encode()) != -1:
             raise ValueError('input is not single heredoc')
         stdin_data = stdin_data[len(start_string):1 - len(end_string)]
     else:
