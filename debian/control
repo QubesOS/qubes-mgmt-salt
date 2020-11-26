@@ -64,8 +64,7 @@ Package: qubes-mgmt-salt-vm-formulas
 Section: admin
 Architecture: all
 Depends:
-    qubes-mgmt-salt,
-    qubes-mgmt-salt-vm-python-pip
+    qubes-mgmt-salt
 Description: All Qubes+Salt Management VM formulas
 
 Package: qubes-mgmt-salt-vm-connector
