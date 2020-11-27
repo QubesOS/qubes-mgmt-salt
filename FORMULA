@@ -21,11 +21,5 @@ description: |
   - qubes-mgmt-salt-dom0-formulas:
       All dom0 formulas
 
-  - qubes-mgmt-salt-vm:
-      qubes-mgmt-salt + VM depends
-     
-  - qubes-mgmt-salt-vm-formulas:
-      All VM formulas
-
   - qubes-mgmt-salt-extra-formulas:   
       All extra formulas (qubes-mgmt-all-*)

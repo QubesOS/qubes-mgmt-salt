@@ -41,15 +41,6 @@ Recommends:
 Conflicts: qubes-mgmt-salt-vm
 Description: Qubes+Salt Management dom0 dependencies.
 
-Package: qubes-mgmt-salt-vm
-Section: admin
-Architecture: all
-Depends:
-    qubes-mgmt-salt
-Recommends:
-    qubes-mgmt-salt-vm-python-pip
-Description: Qubes+Salt Management vm dependencies.
-
 Package: qubes-mgmt-salt-dom0-formulas
 Section: admin
 Architecture: all
@@ -60,23 +51,9 @@ Depends:
     qubes-mgmt-salt-dom0-virtual-machines
 Description: All Qubes+Salt Management dom0 formulas.
 
-Package: qubes-mgmt-salt-vm-formulas
-Section: admin
-Architecture: all
-Depends:
-    qubes-mgmt-salt
-Description: All Qubes+Salt Management VM formulas
-
 Package: qubes-mgmt-salt-vm-connector
 Section: admin
 Architecture: all
 Depends:
     salt-ssh
 Description: Interface for managing VM from dom0
-
-Package: qubes-mgmt-salt-shared-formulas
-Section: admin
-Architecture: all
-Depends:
-    qubes-mgmt-salt
-Description: All Qubes+Salt Management shared (qubes-mgmt-all-*) formulas
