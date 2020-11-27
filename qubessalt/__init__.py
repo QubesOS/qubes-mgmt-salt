@@ -162,7 +162,7 @@ class ManageVM(object):
                 raise qubesadmin.exc.QubesException(
                     "Failed to copy Salt configuration to {}".
                     format(dispvm.name))
-            p = dispvm.run_service('qubes.SaltLinuxVM')
+            p = dispvm.run_service('qubes.SaltLinuxVM', user='root')
             (untrusted_stdout, _) = p.communicate(
                     (self.vm.name + '\n' + command + '\n').encode())
             untrusted_stdout = untrusted_stdout.decode('ascii', errors='ignore')
