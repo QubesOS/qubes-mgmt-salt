@@ -1,3 +1,18 @@
+qubes-mgmt-salt (4.1.9-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * Add .gitlab-ci.yml
+
+  [ Marek Marczykowski-Górecki ]
+  * gitlab-ci: exclude install dom0 packages in vm
+  * debian: drop dependency on qubes-mgmt-salt-vm-python-pip
+  * Drop unused VM packages
+
+  [ Demi Marie Obenour ]
+  * Invoke qubes.SaltLinuxVM as root
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 03 Dec 2020 16:56:37 +0100
+
 qubes-mgmt-salt (4.1.8-1) unstable; urgency=medium
 
   [ Demi Marie Obenour ]
