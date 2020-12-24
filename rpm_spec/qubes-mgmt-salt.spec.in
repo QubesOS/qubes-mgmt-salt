@@ -83,8 +83,8 @@ Tools to integrate dom0 and VM management into a single qubesctl tool.
 %setup -q
 
 %install
-make install DESTDIR=%{buildroot} LIBDIR=%{_libdir} BINDIR=%{_bindir} SBINDIR=%{_sbindir} SYSCONFDIR=%{_sysconfdir}
-make install-dom0 DESTDIR=%{buildroot}
+make install DESTDIR=%{buildroot} LIBDIR=%{_libdir} BINDIR=%{_bindir} SBINDIR=%{_sbindir} SYSCONFDIR=%{_sysconfdir} PYTHON=%{__python3}
+make install-dom0 DESTDIR=%{buildroot} PYTHON=%{__python3}
 rm -rf %{buildroot}/srv/formulas/.gitignore
 
 %files

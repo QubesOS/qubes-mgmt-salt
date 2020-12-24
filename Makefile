@@ -25,6 +25,8 @@ include Makefile.vars
 # This file is copied in from mgmt-salt
 include Makefile.install
 
+PYTHON ?= python3
+
 build:
 	make manpages -C doc
 
@@ -49,7 +51,7 @@ install-vm:
 
 .PHONY: install-dom0
 install-dom0:
-	python3 setup.py install -O1 --root $(DESTDIR)
+	$(PYTHON) setup.py install -O1 --root $(DESTDIR)
 	make install -C doc
 
 .PHONY: get-sources
