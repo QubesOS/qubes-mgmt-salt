@@ -37,8 +37,8 @@ install-custom::
 	@install -p -m 0755 qubesctl $(DESTDIR)$(BINDIR)
 	
 	# Install /etc/salt/* and /srv/*
-	cp -Tr etc $(DESTDIR)/etc
-	cp -Tr srv $(DESTDIR)/srv
+	umask 022; cp -Tr etc $(DESTDIR)/etc
+	umask 022; cp -Tr srv $(DESTDIR)/srv
 	
 .PHONY: install-vm
 install-vm:
