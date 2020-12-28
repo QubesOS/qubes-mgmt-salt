@@ -1,3 +1,10 @@
+qubes-mgmt-salt (4.1.10-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * Fix build with python3 for CentOS
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 28 Dec 2020 16:59:14 +0100
+
 qubes-mgmt-salt (4.1.9-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
