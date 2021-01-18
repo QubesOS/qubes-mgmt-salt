@@ -165,7 +165,8 @@ class ManageVM(object):
             p = dispvm.run_service('qubes.SaltLinuxVM', user='root')
             (untrusted_stdout, untrusted_stderr) = p.communicate(
                     (self.vm.name + '\n' + command + '\n').encode())
-            untrusted_stdout = untrusted_stdout.decode('ascii', errors='ignore') + untrusted_stderr.decode('ascii', errors='ignore')
+            untrusted_stdout = untrusted_stdout.decode('ascii', errors='ignore') + \
+                               untrusted_stderr.decode('ascii', errors='ignore')
             if not self.force_color:
                 # removing control characters, unless colors are enabled
                 stdout_lines = [
