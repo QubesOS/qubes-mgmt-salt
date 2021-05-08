@@ -14,10 +14,10 @@ BuildRequires: python%{python3_pkgversion}-PyYAML
 %else
 BuildRequires: python%{python3_pkgversion}-pyyaml
 %endif
+BuildRequires: make
 BuildRequires: tree
 Requires(post): /usr/bin/qubesctl
 Conflicts:  qubes-mgmt-salt-dom0
-
 
 Source0: qubes-mgmt-salt-%{version}.tar.gz
 

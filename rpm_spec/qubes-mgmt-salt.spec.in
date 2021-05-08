@@ -15,6 +15,7 @@ BuildRequires: python%{python3_pkgversion}-PyYAML
 %else
 BuildRequires: python%{python3_pkgversion}-pyyaml
 %endif
+BuildRequires: make
 BuildRequires: tree
 BuildRequires: pandoc
 BuildRequires: python%{python3_pkgversion}-setuptools
