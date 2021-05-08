@@ -9,10 +9,10 @@ URL:	   http://www.qubes-os.org/
 Group:     System administration tools
 BuildArch: noarch
 Requires:  qubes-mgmt-salt
+BuildRequires: make
 BuildRequires: tree
 Requires(post): /usr/bin/qubesctl
 Conflicts:  qubes-mgmt-salt-dom0
-
 
 Source0: qubes-mgmt-salt-%{version}.tar.gz
 

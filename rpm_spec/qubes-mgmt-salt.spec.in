@@ -17,6 +17,7 @@ BuildArch: noarch
 Requires:  salt >= 2015.5
 Requires:  salt-minion
 Requires:  qubes-mgmt-salt-base
+BuildRequires: make
 BuildRequires: tree
 BuildRequires: pandoc
 %if %{with_admintools}
