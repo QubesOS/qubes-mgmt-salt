@@ -1,3 +1,26 @@
+qubes-mgmt-salt (4.1.11-1) unstable; urgency=medium
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix reproducibility - explicit umask set
+
+  [ keyandthegate ]
+  * Don't throw away salt stderr
+
+  [ Marek Marczykowski-Górecki ]
+  * Break long line
+
+  [ ctrlaltf24 ]
+  * removed templates apps and standalones from the muturally exclusive
+    group
+
+  [ Frédéric Pierret (fepitre) ]
+  * spec: add BR make
+
+  [ Marek Marczykowski-Górecki ]
+  * Apply workaround for highstate rendering failure
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 11 May 2021 02:41:41 +0200
+
 qubes-mgmt-salt (4.1.10-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
