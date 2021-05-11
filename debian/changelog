@@ -1,3 +1,17 @@
+qubes-mgmt-salt (4.0.25-1) unstable; urgency=medium
+
+  [ ctrlaltf24 ]
+  * removed templates apps and standalones from the muturally exclusive
+    group
+
+  [ Frédéric Pierret (fepitre) ]
+  * spec: add BR make
+
+  [ Marek Marczykowski-Górecki ]
+  * Apply workaround for highstate rendering failure
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Tue, 11 May 2021 05:25:24 +0200
+
 qubes-mgmt-salt (4.0.24-1) unstable; urgency=medium
 
   [ Demi Marie Obenour ]
