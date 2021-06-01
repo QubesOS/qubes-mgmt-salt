@@ -44,6 +44,8 @@ EOF
 export PATH="/usr/lib/qubes-vm-connector/ssh-wrapper:$PATH"
 
 # workaround for saltstack/salt#60003
-sed -i -e 's/if cached_client is None:/if cached_client is None or cached_client.opts["cachedir"] != self.opts["cachedir"]:/' \
-        /usr/lib/python3*/site-packages/salt/utils/jinja.py
+if [ -e /etc/fedora-release ]; then
+    sed -i -e 's/if cached_client is None:/if cached_client is None or cached_client.opts["cachedir"] != self.opts["cachedir"]:/' \
+            /usr/lib/python3*/site-packages/salt/utils/jinja.py
+fi
 salt-ssh -w "$target_vm" $salt_command
