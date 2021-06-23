@@ -1,3 +1,10 @@
+qubes-mgmt-salt (4.0.26-1) unstable; urgency=medium
+
+  [ Demi Marie Obenour ]
+  * Only apply Salt workaround on Fedora qubes
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 23 Jun 2021 03:22:41 +0200
+
 qubes-mgmt-salt (4.0.25-1) unstable; urgency=medium
 
   [ ctrlaltf24 ]
