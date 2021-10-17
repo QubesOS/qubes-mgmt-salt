@@ -14,6 +14,7 @@ Requires:  qubes-mgmt-salt-dom0-update
 Requires:  qubes-mgmt-salt-dom0-virtual-machines
 BuildRequires: python%{python3_pkgversion}-pyyaml
 BuildRequires: tree
+BuildRequires: make
 Conflicts:  qubes-mgmt-salt-vm
 
 # workaround for saltstack/salt#53570
