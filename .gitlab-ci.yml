@@ -7,5 +7,5 @@ include:
     file: '/r4.1/gitlab-vm.yml'
 
 variables:
-  TRAVIS_INSTALL_EXCLUDE: "qubes-mgmt-salt qubes-mgmt-salt-dom0 qubes-mgmt-salt-dom0-formulas"
+  TRAVIS_INSTALL_EXCLUDE: "qubes-mgmt-salt-dom0 qubes-mgmt-salt-dom0-formulas"
   TRAVIS_INSTALL_EXCLUDE_DOM0: ""
