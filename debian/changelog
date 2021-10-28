@@ -1,3 +1,13 @@
+qubes-mgmt-salt (4.1.13-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * spec: add BR make
+
+  [ Marek Marczykowski-Górecki ]
+  * ci: don't skip 'qubes-mgmt-salt' common package in VM
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 28 Oct 2021 03:40:17 +0200
+
 qubes-mgmt-salt (4.1.12-1) unstable; urgency=medium
 
   [ Demi Marie Obenour ]
