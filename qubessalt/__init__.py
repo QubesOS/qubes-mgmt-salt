@@ -287,7 +287,7 @@ class ManageVMRunner(object):
 
 def qrexec_policy(src, dst, allow):
     while True:
-        path = '/etc/qubes/policy.d/50-qubesctl-salt.policy'
+        path = '/etc/qubes/policy.d/30-qubesctl-salt.policy'
         # Mode is a bit tricky here. We want to *atomically*:
         # - open an existing file for reading (do not truncate it)
         # - if the file does not exist - create it
