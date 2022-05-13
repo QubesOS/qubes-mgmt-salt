@@ -1,3 +1,13 @@
+qubes-mgmt-salt (4.1.14-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * Drop Travis CI
+
+  [ Marek Marczykowski-Górecki ]
+  * Place VMRootShell policy file before loading legacy policy
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Fri, 13 May 2022 05:08:29 +0200
+
 qubes-mgmt-salt (4.1.13-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
