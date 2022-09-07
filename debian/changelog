@@ -1,3 +1,16 @@
+qubes-mgmt-salt (4.1.15-1) unstable; urgency=medium
+
+  [ Frédéric Pierret (fepitre) ]
+  * Drop Travis CI
+  * Remove deprecated content
+  * Add Qubes Builder v2 integration
+
+  [ Marek Marczykowski-Górecki ]
+  * Move applying salt 60003 bug into dom0 part
+  * Apply salt 60003 bug workaround for salt 3005 too
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Wed, 07 Sep 2022 23:05:50 +0200
+
 qubes-mgmt-salt (4.1.14-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
