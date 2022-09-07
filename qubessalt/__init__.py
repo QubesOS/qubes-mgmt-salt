@@ -155,6 +155,7 @@ class ManageVM(object):
             salt_fixup = b"""
 if [ -e /etc/fedora-release ]; then
     sed -i -e 's/if cached_client is None:/if cached_client is None or cached_client.opts["cachedir"] != self.opts["cachedir"]:/' \\
+        -e 's/not hasattr(cached_client, "opts")/\\0 or cached_client.opts["cachedir"] != self.opts["cachedir"]/' \\
             /usr/lib/python3*/site-packages/salt/utils/jinja.py
 fi
 """
