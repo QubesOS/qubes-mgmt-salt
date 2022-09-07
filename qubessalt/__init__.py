@@ -151,6 +151,23 @@ class ManageVM(object):
             initially_running = self.vm.is_running()
             if not dispvm.is_running():
                 dispvm.start()
+            # Workaround for https://github.com/saltstack/salt/issues/60003
+            salt_fixup = b"""
+if [ -e /etc/fedora-release ]; then
+    sed -i -e 's/if cached_client is None:/if cached_client is None or cached_client.opts["cachedir"] != self.opts["cachedir"]:/' \\
+            /usr/lib/python3*/site-packages/salt/utils/jinja.py
+fi
+"""
+            fixup_proc = dispvm.run_service('qubes.VMRootShell', user='root')
+            (untrusted_stdout, untrusted_stderr) = fixup_proc.communicate(salt_fixup)
+            if fixup_proc.returncode != 0:
+                stderr = '|'.join(''.join(
+                    [c for c in line if 0x20 <= ord(c) <= 0x7e])
+                    for line in untrusted_stderr
+                                  .decode('ascii', errors='ignore')
+                                  .splitlines())
+                self.log.warning('Failed to apply salt#60003 workaround: %s',
+                                 stderr)
             # Copy whole Salt configuration
             salt_config = self.prepare_salt_config_for_vm()
             retcode = dispvm.run_service(
