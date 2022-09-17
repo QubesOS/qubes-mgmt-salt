@@ -1,3 +1,9 @@
+qubes-mgmt-salt (4.1.16-1) unstable; urgency=medium
+
+  * Backport fix for saltstack/salt#62636
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 17 Sep 2022 04:53:13 +0200
+
 qubes-mgmt-salt (4.1.15-1) unstable; urgency=medium
 
   [ Frédéric Pierret (fepitre) ]
