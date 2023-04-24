@@ -176,7 +176,7 @@ fi
             retcode = dispvm.run_service(
                 'qubes.Filecopy',
                 localcmd='/usr/lib/qubes/qfile-dom0-agent {}'.format(
-                    salt_config)).wait()
+                    pipes.quote(salt_config))).wait()
             shutil.rmtree(salt_config)
             if retcode != 0:
                 raise qubesadmin.exc.QubesException(

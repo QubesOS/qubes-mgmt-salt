@@ -29,7 +29,15 @@ read target_vm
 read salt_command
 
 rm -rf /srv
-mv /home/user/QubesIncoming/dom0/srv /srv
+user=$(qubesdb-read /default-user)
+eval "dir=~$user/QubesIncoming/dom0/srv"
+if [[ "${dir:0:1}" = '/' ]]; then
+    mv "$dir" /srv
+else
+    echo "User $user does not exist" >&2
+    exit 1
+fi
+
 mkdir -p /etc/salt
 if [ -f /srv/master ]; then
   mv /srv/master /etc/salt/
