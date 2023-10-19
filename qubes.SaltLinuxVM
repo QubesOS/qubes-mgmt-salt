@@ -51,4 +51,7 @@ $target_vm:
 EOF
 export PATH="/usr/lib/qubes-vm-connector/ssh-wrapper:$PATH"
 
-salt-ssh -w "$target_vm" $salt_command
+# Ensure the arguments for salt-ssh are tokenized correctly.
+# Without this parsing, the salt_command is just split on whitespace.
+# E.g.: test.echo 'foo bar' -> ['test.echo', "'foo", "bar'"]
+eval "salt-ssh -w $target_vm $salt_command"
