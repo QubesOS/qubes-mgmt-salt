@@ -23,7 +23,7 @@
 import logging
 import multiprocessing
 import os
-import pipes
+import shlex
 import tempfile
 import shutil
 import subprocess
@@ -176,7 +176,7 @@ fi
             retcode = dispvm.run_service(
                 'qubes.Filecopy',
                 localcmd='/usr/lib/qubes/qfile-dom0-agent {}'.format(
-                    pipes.quote(salt_config))).wait()
+                    shlex.quote(salt_config))).wait()
             shutil.rmtree(salt_config)
             if retcode != 0:
                 raise qubesadmin.exc.QubesException(
@@ -243,7 +243,7 @@ def run_one(vmname, command, show_output, force_color):
     try:
         runner = ManageVM(app, vm, force_color=force_color)
         exit_code, result = runner.salt_call(
-            ' '.join([pipes.quote(word) for word in command]),
+            ' '.join([shlex.quote(word) for word in command]),
             return_output=show_output)
     except Exception as e:  # pylint: disable=broad-except
         return vmname, 1, "ERROR (exception {})".format(str(e))
