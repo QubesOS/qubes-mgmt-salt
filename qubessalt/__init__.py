@@ -249,11 +249,12 @@ def has_config(vm):
 
 
 def run_one(vmname, command, show_output, force_color, skip_top_check):
-    try:
-        if not skip_top_check and 'state.highstate' in command and not has_config(vmname):
-            return vmname, 0, "SKIP (nothing to do)"
-    except Exception as err:  # pylint: disable=broad-except
-        return vmname, 1, f"ERROR (exception {err})"
+    if not skip_top_check and 'state.highstate' in command:
+        try:
+            if not has_config(vmname):
+                return vmname, 0, "SKIP (nothing to do)"
+        except Exception as err:  # pylint: disable=broad-except
+            return vmname, 1, f"ERROR (exception {err})"
     app = qubesadmin.Qubes()
     try:
         vm = app.domains[vmname]
