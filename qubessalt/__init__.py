@@ -234,7 +234,27 @@ fi
         return exit_code, return_data
 
 
+def load_opts():
+    opts = salt.config.minion_config('/etc/salt/minion')
+    opts['file_client'] = 'local'
+    return opts
+
+
+def has_config(vm):
+    opts = load_opts()
+    opts['id'] = vm
+    caller = salt.client.Caller(mopts=opts)
+    top = caller.cmd('state.show_top', queue=False, concurrent=True)
+    return bool(top)
+
+
 def run_one(vmname, command, show_output, force_color):
+    # TODO: add some override for this check
+    try:
+        if 'state.highstate' in command and not has_config(vmname):
+            return vmname, 0, "SKIP (nothing to do)"
+    except Exception as err:  # pylint: disable=broad-except
+        return vmname, 1, f"ERROR (exception {err})"
     app = qubesadmin.Qubes()
     try:
         vm = app.domains[vmname]
@@ -263,8 +283,6 @@ class ManageVMRunner(object):
         self.show_output = show_output
         self.force_color = force_color
         self.exit_code = 0
-        self._opts = salt.config.minion_config('/etc/salt/minion')
-        self._opts['file_client'] = 'local'
 
         # this do patch already imported salt modules
         try:
@@ -282,24 +300,13 @@ class ManageVMRunner(object):
         else:
             print(name + ": " + result)
 
-    def has_config(self, vm):
-        opts = self._opts.copy()
-        opts['id'] = vm.name
-        caller = salt.client.Caller(mopts=opts)
-        top = caller.function('state.show_top')
-        return bool(top)
-
     def run(self):
         pool = multiprocessing.Pool(self.max_concurrency)
         for vm in self.vms:
-            # TODO: add some override for this check
-            if 'state.highstate' not in self.command or self.has_config(vm):
-                pool.apply_async(run_one,
-                    (vm.name, self.command, self.show_output, self.force_color),
-                    callback=self.collect_result
-                )
-            else:
-                self.collect_result((vm.name, 0, "SKIP (nothing to do)"))
+            pool.apply_async(run_one,
+                (vm.name, self.command, self.show_output, self.force_color),
+                callback=self.collect_result
+            )
         pool.close()
         pool.join()
         return self.exit_code
