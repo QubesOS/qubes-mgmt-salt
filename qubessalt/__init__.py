@@ -248,10 +248,9 @@ def has_config(vm):
     return bool(top)
 
 
-def run_one(vmname, command, show_output, force_color):
-    # TODO: add some override for this check
+def run_one(vmname, command, show_output, force_color, skip_top_check):
     try:
-        if 'state.highstate' in command and not has_config(vmname):
+        if not skip_top_check and 'state.highstate' in command and not has_config(vmname):
             return vmname, 0, "SKIP (nothing to do)"
     except Exception as err:  # pylint: disable=broad-except
         return vmname, 1, f"ERROR (exception {err})"
@@ -274,7 +273,7 @@ class ManageVMRunner(object):
     """Call salt in multiple VMs at the same time"""
 
     def __init__(self, app, vms, command, max_concurrency=4, show_output=False,
-            force_color=False):
+            force_color=False, skip_top_check=False):
         super(ManageVMRunner, self).__init__()
         self.vms = vms
         self.app = app
@@ -282,6 +281,7 @@ class ManageVMRunner(object):
         self.max_concurrency = max_concurrency
         self.show_output = show_output
         self.force_color = force_color
+        self.skip_top_check = skip_top_check
         self.exit_code = 0
 
         # this do patch already imported salt modules
@@ -304,7 +304,8 @@ class ManageVMRunner(object):
         pool = multiprocessing.Pool(self.max_concurrency)
         for vm in self.vms:
             pool.apply_async(run_one,
-                (vm.name, self.command, self.show_output, self.force_color),
+                (vm.name, self.command, self.show_output, self.force_color,
+                    self.skip_top_check),
                 callback=self.collect_result
             )
         pool.close()

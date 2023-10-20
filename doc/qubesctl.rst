@@ -43,6 +43,8 @@ Target all non disposable VMs, (Templates and AppVMs)
 --max-concurrency <number>
 Maximum number of VMs configured simultaneously. Default: 4
 
+--skip-top-check
+Do not skip targeted qubes during a highstate if it appears they are not targeted by any state.
 
 AUTHORS
 =======
