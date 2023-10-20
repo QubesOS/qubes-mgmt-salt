@@ -21,7 +21,7 @@ OPTIONS
 --show-output
 Show output of management commands
 
---force-colour
+--force-color
 Show output in colour, and allow control characters from qubes.
 This option is UNSAFE
 
