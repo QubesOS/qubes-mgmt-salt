@@ -26,6 +26,9 @@ def main(args=None):  # pylint: disable=missing-docstring
                         help='Maximum number of VMs configured simultaneously '
                              '(default: %(default)d)',
                         type=int, default=4)
+    parser.add_argument('--skip-top-check', action='store_true',
+                        help='Do not skip targeted qubes during a highstate if '
+                             'it appears they are not targeted by any state')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--targets', action='store',
                        help='Comma separated list of VMs to target')
@@ -85,7 +88,8 @@ def main(args=None):  # pylint: disable=missing-docstring
     runner = qubessalt.ManageVMRunner(app, vms_to_go, args.command,
                                       show_output=args.show_output,
                                       force_color=args.force_color,
-                                      max_concurrency=args.max_concurrency)
+                                      max_concurrency=args.max_concurrency,
+                                      skip_top_check=args.skip_top_check)
     exit_code = runner.run()
     # then non-templates (AppVMs)
     vms_to_go = [vm for vm in targets
@@ -93,7 +97,8 @@ def main(args=None):  # pylint: disable=missing-docstring
     runner = qubessalt.ManageVMRunner(app, vms_to_go, args.command,
                                       show_output=args.show_output,
                                       force_color=args.force_color,
-                                      max_concurrency=args.max_concurrency)
+                                      max_concurrency=args.max_concurrency,
+                                      skip_top_check=args.skip_top_check)
     return max(exit_code, runner.run())
 
 

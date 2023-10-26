@@ -234,7 +234,27 @@ fi
         return exit_code, return_data
 
 
-def run_one(vmname, command, show_output, force_color):
+def load_opts():
+    opts = salt.config.minion_config('/etc/salt/minion')
+    opts['file_client'] = 'local'
+    return opts
+
+
+def has_config(vm):
+    opts = load_opts()
+    opts['id'] = vm
+    caller = salt.client.Caller(mopts=opts)
+    top = caller.cmd('state.show_top', queue=False, concurrent=True)
+    return bool(top)
+
+
+def run_one(vmname, command, show_output, force_color, skip_top_check):
+    if not skip_top_check and 'state.highstate' in command:
+        try:
+            if not has_config(vmname):
+                return vmname, 0, "SKIP (nothing to do)"
+        except Exception as err:  # pylint: disable=broad-except
+            return vmname, 1, f"ERROR (exception {err})"
     app = qubesadmin.Qubes()
     try:
         vm = app.domains[vmname]
@@ -254,7 +274,7 @@ class ManageVMRunner(object):
     """Call salt in multiple VMs at the same time"""
 
     def __init__(self, app, vms, command, max_concurrency=4, show_output=False,
-            force_color=False):
+            force_color=False, skip_top_check=False):
         super(ManageVMRunner, self).__init__()
         self.vms = vms
         self.app = app
@@ -262,9 +282,8 @@ class ManageVMRunner(object):
         self.max_concurrency = max_concurrency
         self.show_output = show_output
         self.force_color = force_color
+        self.skip_top_check = skip_top_check
         self.exit_code = 0
-        self._opts = salt.config.minion_config('/etc/salt/minion')
-        self._opts['file_client'] = 'local'
 
         # this do patch already imported salt modules
         try:
@@ -282,24 +301,14 @@ class ManageVMRunner(object):
         else:
             print(name + ": " + result)
 
-    def has_config(self, vm):
-        opts = self._opts.copy()
-        opts['id'] = vm.name
-        caller = salt.client.Caller(mopts=opts)
-        top = caller.function('state.show_top')
-        return bool(top)
-
     def run(self):
         pool = multiprocessing.Pool(self.max_concurrency)
         for vm in self.vms:
-            # TODO: add some override for this check
-            if 'state.highstate' not in self.command or self.has_config(vm):
-                pool.apply_async(run_one,
-                    (vm.name, self.command, self.show_output, self.force_color),
-                    callback=self.collect_result
-                )
-            else:
-                self.collect_result((vm.name, 0, "SKIP (nothing to do)"))
+            pool.apply_async(run_one,
+                (vm.name, self.command, self.show_output, self.force_color,
+                    self.skip_top_check),
+                callback=self.collect_result
+            )
         pool.close()
         pool.join()
         return self.exit_code

@@ -21,7 +21,7 @@ OPTIONS
 --show-output
 Show output of management commands
 
---force-colour
+--force-color
 Show output in colour, and allow control characters from qubes.
 This option is UNSAFE
 
@@ -43,6 +43,8 @@ Target all non disposable VMs, (Templates and AppVMs)
 --max-concurrency <number>
 Maximum number of VMs configured simultaneously. Default: 4
 
+--skip-top-check
+Do not skip targeted qubes during a highstate if it appears they are not targeted by any state.
 
 AUTHORS
 =======
