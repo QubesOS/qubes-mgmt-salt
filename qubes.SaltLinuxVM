@@ -42,6 +42,10 @@ mkdir -p /etc/salt
 if [ -f /srv/master ]; then
   mv /srv/master /etc/salt/
 fi
+if [ -d /srv/_extmods ]; then
+    mkdir -p /var/cache/salt/master
+    mv /srv/_extmods /var/cache/salt/master/extmods
+fi
 # do not fail if 'salt' user doesn't exit, we run as root
 echo 'verify_env: False' >> /etc/salt/master
 (cd /srv/salt; find _tops -type f -o -type l| sed -e 's/^/- /' > tops.yaml)

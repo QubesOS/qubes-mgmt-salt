@@ -82,7 +82,7 @@ class ManageVM(object):
         tmpdir = tempfile.mkdtemp()
         output_dir = os.path.join(tmpdir, 'srv')
         shutil.copytree('/srv', output_dir)
-        # make sure only pillars for given host are send
+        # make sure only pillars for given host are sent
 
         p = subprocess.Popen(
             ['qubesctl', '--dom0-only',
@@ -93,24 +93,29 @@ class ManageVM(object):
         pillar_data = pillar_data['local']
         # remove source pillar files
         # TODO: remove also pillar modules
-        for _, roots in pillar_data['master']['pillar_roots'].items():
+        for roots in pillar_data['master']['pillar_roots'].values():
             for root in roots:
                 # do not use os.path.join on purpose - root is absolute path
                 pillar_path = tmpdir + root
                 if os.path.exists(pillar_path):
                     shutil.rmtree(tmpdir + root)
 
+        extmod_cache = pillar_data['master'].get('extension_modules',
+                                    '/var/cache/salt/minion/extmods')
+        if os.path.exists(extmod_cache):
+            shutil.copytree(extmod_cache, os.path.join(output_dir, "_extmods"))
+
         # pass selected configuration options
         master_conf = {}
         for opt in ['file_roots']:
-            if opt in pillar_data['master'].keys():
+            if opt in pillar_data['master']:
                 master_conf[opt] = pillar_data['master'][opt]
         with open(os.path.join(output_dir, 'master'), 'w') as f:
             f.write(yaml.safe_dump(master_conf))
 
-        # remove unneded pillar entries
+        # remove unneeded pillar entries
         for entry in ('master',):
-            if entry in pillar_data.keys():
+            if entry in pillar_data:
                 del pillar_data[entry]
 
         # save rendered pillar data
