@@ -1,3 +1,18 @@
+qubes-mgmt-salt (4.2.0-1) unstable; urgency=medium
+
+  [ Demi Marie Obenour ]
+  * Allow other default user home directories
+  * Use shlex.quote not pipes.quote
+
+  [ jeanluc ]
+  * Check for targeted states in parallel
+  * Add opt to skip check for targeted states in highstate
+  * Fix --force-colo[u]r docs
+  * Limit catching exceptions to `has_config`
+  * Fix passing quoted arguments to salt-ssh
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 30 Oct 2023 05:58:51 +0100
+
 qubes-mgmt-salt (4.1.16-1) unstable; urgency=medium
 
   * Backport fix for saltstack/salt#62636
