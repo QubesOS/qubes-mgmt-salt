@@ -43,6 +43,7 @@ if [ -f /srv/master ]; then
   mv /srv/master /etc/salt/
 fi
 if [ -d /srv/_extmods ]; then
+    rm -rf /var/cache/salt/master/extmods
     mkdir -p /var/cache/salt/master
     mv /srv/_extmods /var/cache/salt/master/extmods
 fi
