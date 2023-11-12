@@ -1,3 +1,12 @@
+qubes-mgmt-salt (4.2.1-1) unstable; urgency=medium
+
+  [ jeanluc ]
+  * Ensure custom modules can run on salt-ssh master
+  * Allow syncing all module types via qubesctl
+  * Ensure `extmods` is absent from cache before renaming
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sun, 12 Nov 2023 04:52:47 +0100
+
 qubes-mgmt-salt (4.2.0-1) unstable; urgency=medium
 
   [ Demi Marie Obenour ]
