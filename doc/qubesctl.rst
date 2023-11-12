@@ -46,6 +46,10 @@ Maximum number of VMs configured simultaneously. Default: 4
 --skip-top-check
 Do not skip targeted qubes during a highstate if it appears they are not targeted by any state.
 
+--sync-extmods
+Sync all custom extension module types before running the command to ensure they will be available on the salt-ssh master.
+This is only required (once after each modification) for specific module types such as outputters, tops and wrappers.
+
 AUTHORS
 =======
 | unman <unman@thirdeyesecurity.org> 

@@ -11,6 +11,8 @@ import subprocess
 import qubessalt
 import qubesadmin
 import qubesadmin.vm
+from salt.utils import context as ctx
+from salt.runners import saltutil
 
 
 def main(args=None):  # pylint: disable=missing-docstring
@@ -29,6 +31,10 @@ def main(args=None):  # pylint: disable=missing-docstring
     parser.add_argument('--skip-top-check', action='store_true',
                         help='Do not skip targeted qubes during a highstate if '
                              'it appears they are not targeted by any state')
+    parser.add_argument('--sync-extmods', action='store_true',
+                        help='Sync *all* custom extension module types before '
+                             'running the command to ensure they will be '
+                             'available on the salt-ssh master')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--targets', action='store',
                        help='Comma separated list of VMs to target')
@@ -46,6 +52,15 @@ def main(args=None):  # pylint: disable=missing-docstring
                              'state.highstate)',
                         nargs=argparse.REMAINDER)
     args = parser.parse_args(args)
+
+    if args.sync_extmods:
+        opts = qubessalt.load_opts()
+        # Doing it this way because the RunnerClient requires actual
+        # master opts, which we could load, but we want this to end
+        # up in the minion extension_modules dir. Don't assume defaults,
+        # don't load twice.
+        with ctx.func_globals_inject(saltutil.sync_all, __opts__=opts):
+            saltutil.sync_all()
 
     if not args.skip_dom0:
         try:
