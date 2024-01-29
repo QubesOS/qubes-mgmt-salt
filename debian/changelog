@@ -1,3 +1,10 @@
+qubes-mgmt-salt (4.2.2-1) unstable; urgency=medium
+
+  * Fix handling empty base top
+  * Support 'state.apply' in addition to 'state.highstate'
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 29 Jan 2024 17:09:28 +0100
+
 qubes-mgmt-salt (4.2.1-1) unstable; urgency=medium
 
   [ jeanluc ]
