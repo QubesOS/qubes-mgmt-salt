@@ -254,7 +254,14 @@ def has_config(vm):
 
 
 def run_one(vmname, command, show_output, force_color, skip_top_check):
-    if not skip_top_check and 'state.highstate' in command:
+    uses_top = False
+    if 'state.highstate' in command:
+        uses_top = True
+    # there could be some options after, but lean on the safe side - better
+    # just disable optimization than skip some state to apply
+    if command[-1] == 'state.apply':
+        uses_top = True
+    if not skip_top_check and uses_top:
         try:
             if not has_config(vmname):
                 return vmname, 0, "SKIP (nothing to do)"
