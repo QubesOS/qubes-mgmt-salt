@@ -221,9 +221,13 @@ fi
                             self.mgmt_template),
                         self.mgmt_template)
             else:
-                return_data = "OK" if p.returncode == 0 else \
-                    "ERROR (exit code {}, details in {})".format(
-                        p.returncode,     self.log_path)
+                if p.returncode == 0:
+                    return_data = "OK"
+                elif p.returncode == 20:
+                    return_data = "NOTHING TO DO"
+                else:
+                    return_data = "ERROR (exit code {}, details in {})".format(
+                        p.returncode, self.log_path)
             if self.vm.is_running() and not initially_running:
                 self.vm.shutdown()
                 # FIXME: convert to self.vm.shutdown(wait=True) in core3
