@@ -55,6 +55,7 @@ $target_vm:
   host: $target_vm
 EOF
 export PATH="/usr/lib/qubes-vm-connector/ssh-wrapper:$PATH"
+export PYTHONPATH="/usr/lib/qubes-vm-connector/python-override:$PYTHONPATH"
 
 # Ensure the arguments for salt-ssh are tokenized correctly.
 # Without this parsing, the salt_command is just split on whitespace.

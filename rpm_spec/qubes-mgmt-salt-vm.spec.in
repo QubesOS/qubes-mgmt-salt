@@ -45,6 +45,7 @@ make install-vm DESTDIR=%{buildroot}
 %defattr(-,root,root)
 /etc/qubes-rpc/qubes.SaltLinuxVM
 /usr/lib/qubes-vm-connector/ssh-wrapper
+/usr/lib/qubes-vm-connector/python-override
 
 %changelog
 @CHANGELOG@

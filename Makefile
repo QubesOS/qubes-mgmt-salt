@@ -46,6 +46,9 @@ install-vm:
 	install ssh-wrapper $(DESTDIR)/usr/lib/qubes-vm-connector/ssh-wrapper/ssh
 	ln -s ssh $(DESTDIR)/usr/lib/qubes-vm-connector/ssh-wrapper/scp
 	ln -s /bin/true $(DESTDIR)/usr/lib/qubes-vm-connector/ssh-wrapper/ssh-keygen
+	install -d $(DESTDIR)/usr/lib/qubes-vm-connector/python-override
+	cp -r python-override/certifi \
+		$(DESTDIR)/usr/lib/qubes-vm-connector/python-override/
 	install -d $(DESTDIR)/etc/qubes-rpc
 	install qubes.SaltLinuxVM $(DESTDIR)/etc/qubes-rpc
 
