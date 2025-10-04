@@ -1,3 +1,10 @@
+qubes-mgmt-salt (4.2.3-1) unstable; urgency=medium
+
+  * Include forked certifi package that handles both Debian and Fedora
+  * CI: drop R4.1, add R4.3
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 04 Oct 2025 23:25:58 +0200
+
 qubes-mgmt-salt (4.2.2-1) unstable; urgency=medium
 
   * Fix handling empty base top
