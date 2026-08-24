@@ -1,3 +1,13 @@
+qubes-mgmt-salt (4.2.4-1) unstable; urgency=medium
+
+  [ Nihal ]
+  * qubesctl: rename `--app` to `--apps` for consistency
+
+  [ Marek Marczykowski-Górecki ]
+  * Fix reporting exceptions
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Mon, 24 Aug 2026 20:42:55 +0200
+
 qubes-mgmt-salt (4.2.3-1) unstable; urgency=medium
 
   * Include forked certifi package that handles both Debian and Fedora
