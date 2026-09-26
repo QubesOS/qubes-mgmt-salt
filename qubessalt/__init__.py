@@ -36,6 +36,7 @@ import fcntl
 import yaml
 import salt.client
 import salt.config
+import salt.version
 import qubesadmin.exc
 import qubesadmin.vm
 try:
@@ -84,10 +85,14 @@ class ManageVM(object):
         shutil.copytree('/srv', output_dir)
         # make sure only pillars for given host are sent
 
-        p = subprocess.Popen(
-            ['qubesctl', '--dom0-only',
+        cmd = ['qubesctl', '--dom0-only',
                 '--id={}'.format(self.vm.name), '--output=yaml',
-                'pillar.items'], stdout=subprocess.PIPE)
+                'pillar.items']
+        if int(salt.version.__version__.split(".")[0]) >= 3008:
+            # salt >= 3008.0 replaces all strings in pillar.items output with
+            # stars by default
+            cmd.append("unmask=True")
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         (pillar_items_output, _) = p.communicate()
         pillar_data = yaml.safe_load(pillar_items_output.decode())
         pillar_data = pillar_data['local']
