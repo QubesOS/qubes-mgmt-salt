@@ -74,13 +74,13 @@ def scp(args):
     source_content = open(src_path, 'rb').read()
     p = subprocess.Popen(['qrexec-client-vm', dst_host, 'qubes.VMRootShell'],
         stdin=subprocess.PIPE)
-    p.communicate('cat > "{}"\n'.format(dst_path).encode() + source_content)
+    p.communicate('cat > "{}"; exit\n'.format(dst_path).encode() + source_content)
     # if qubes.VMRootShell service not supported, fallback to qubes.VMShell and
     # hope it will have appropriate permissions
     if p.returncode == 127:
         p = subprocess.Popen(['qrexec-client-vm', dst_host, 'qubes.VMShell'],
             stdin=subprocess.PIPE)
-        p.communicate('cat > "{}"\n'.format(dst_path).encode() + source_content)
+        p.communicate('cat > "{}"; exit\n'.format(dst_path).encode() + source_content)
     if p.returncode != 0:
         raise RuntimeError('Failed to write target file {}'.format(dst_path))
     return 0
