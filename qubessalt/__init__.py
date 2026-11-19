@@ -24,6 +24,7 @@ import logging
 import multiprocessing
 import os
 import shlex
+import signal
 import tempfile
 import shutil
 import subprocess
@@ -46,6 +47,7 @@ except ImportError:
 
 FORMAT_LOG = '%(asctime)s %(message)s'
 LOGPATH = '/var/log/qubes'
+EXIT_SIGNALS = (signal.SIGTERM, signal.SIGHUP, signal.SIGINT)
 
 formatter_log = logging.Formatter(FORMAT_LOG)
 
@@ -155,9 +157,9 @@ class ManageVM(object):
             dispvm.features['gui'] = False
             dispvm.netvm = None
             dispvm.auto_cleanup = True
-        qrexec_policy(dispvm.name, self.vm.name, True)
         return_data = "NO RESULT"
         try:
+            qrexec_policy(dispvm.name, self.vm.name, True)
             initially_running = self.vm.is_running()
             if not dispvm.is_running():
                 dispvm.start()
@@ -235,12 +237,16 @@ fi
                 while self.vm.is_running():
                     time.sleep(1)
         finally:
-            qrexec_policy(dispvm.name, self.vm.name, False)
+            signal.pthread_sigmask(signal.SIG_BLOCK, EXIT_SIGNALS)
             try:
-                dispvm.kill()
-            except (qubesadmin.exc.QubesVMNotStartedError,
-                    qubesadmin.exc.QubesDaemonNoResponseError):
-                pass
+                qrexec_policy(dispvm.name, self.vm.name, False)
+                try:
+                    dispvm.kill()
+                except (qubesadmin.exc.QubesVMNotStartedError,
+                        qubesadmin.exc.QubesDaemonNoResponseError):
+                    pass
+            finally:
+                signal.pthread_sigmask(signal.SIG_UNBLOCK, EXIT_SIGNALS)
         return exit_code, return_data
 
 
@@ -256,6 +262,18 @@ def has_config(vm):
     caller = salt.client.Caller(mopts=opts)
     top = caller.cmd('state.show_top', queue=False, concurrent=True)
     return bool(top)
+
+
+def exit_on_signal(signum, _frame):
+    # ignore repeated signals, so the cleanup in salt_call() can finish
+    for sig in EXIT_SIGNALS:
+        signal.signal(sig, signal.SIG_IGN)
+    sys.exit(128 + signum)
+
+
+def handle_exit_signals():
+    for sig in EXIT_SIGNALS:
+        signal.signal(sig, exit_on_signal)
 
 
 def run_one(vmname, command, show_output, force_color, skip_top_check):
@@ -319,7 +337,10 @@ class ManageVMRunner(object):
             print(name + ": " + result)
 
     def run(self):
-        pool = multiprocessing.Pool(self.max_concurrency)
+        # on exit, the pool sends SIGTERM to the workers
+        handle_exit_signals()
+        pool = multiprocessing.Pool(self.max_concurrency,
+                                    initializer=handle_exit_signals)
         for vm in self.vms:
             pool.apply_async(run_one,
                 (vm.name, self.command, self.show_output, self.force_color,
@@ -333,7 +354,7 @@ class ManageVMRunner(object):
 
 def qrexec_policy(src, dst, allow):
     while True:
-        path = '/etc/qubes/policy.d/30-qubesctl-salt.policy'
+        path = '/run/qubes/policy.d/30-qubesctl-salt.policy'
         # Mode is a bit tricky here. We want to *atomically*:
         # - open an existing file for reading (do not truncate it)
         # - if the file does not exist - create it
