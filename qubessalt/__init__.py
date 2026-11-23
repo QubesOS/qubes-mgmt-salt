@@ -319,7 +319,10 @@ class ManageVMRunner(object):
             print(name + ": " + result)
 
     def run(self):
-        pool = multiprocessing.Pool(self.max_concurrency)
+        # not fork: workers would share files the parent keeps open (like a
+        # zipped package cached by importlib_metadata) and corrupt each
+        # other's reads
+        pool = multiprocessing.get_context('spawn').Pool(self.max_concurrency)
         for vm in self.vms:
             pool.apply_async(run_one,
                 (vm.name, self.command, self.show_output, self.force_color,
