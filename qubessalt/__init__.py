@@ -339,8 +339,13 @@ class ManageVMRunner(object):
     def run(self):
         # on exit, the pool sends SIGTERM to the workers
         handle_exit_signals()
-        pool = multiprocessing.Pool(self.max_concurrency,
-                                    initializer=handle_exit_signals)
+        # not fork: workers would share files the parent keeps open (like a
+        # zipped package cached by importlib_metadata) and corrupt each
+        # other's reads
+        pool = multiprocessing.get_context('spawn').Pool(
+            self.max_concurrency,
+            initializer=handle_exit_signals
+        )
         for vm in self.vms:
             pool.apply_async(run_one,
                 (vm.name, self.command, self.show_output, self.force_color,
